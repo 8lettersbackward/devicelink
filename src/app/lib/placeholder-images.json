@@ -1,0 +1,29 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "hero-mobile",
+      "description": "Minimalist mobile app interface on a clean background",
+      "imageUrl": "https://picsum.photos/seed/monochrome1/1200/800",
+      "imageHint": "minimalist mobile"
+    },
+    {
+      "id": "feature-1",
+      "description": "Abstract monochrome architecture representing structure",
+      "imageUrl": "https://picsum.photos/seed/monochrome2/600/400",
+      "imageHint": "monochrome architecture"
+    },
+    {
+      "id": "feature-2",
+      "description": "Soft light and shadows on a white wall",
+      "imageUrl": "https://picsum.photos/seed/monochrome3/600/400",
+      "imageHint": "minimal shadows"
+    },
+    {
+      "id": "avatar-user",
+      "description": "Minimalist portrait silhouette",
+      "imageUrl": "https://picsum.photos/seed/monochrome4/100/100",
+      "imageHint": "minimal portrait"
+    }
+  ]
+}
