@@ -1,11 +1,14 @@
 
 "use client";
 
-import { useUser } from "@/firebase";
+import { useUser, useFirestore, useCollection } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useState, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Plus, 
   Settings, 
@@ -14,24 +17,90 @@ import {
   Activity,
   ChevronRight,
   ShieldCheck,
-  Smartphone
+  Smartphone,
+  Loader2,
+  Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { doc, setDoc, collection, deleteDoc, serverTimestamp } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 
 type TabType = 'register' | 'manage' | 'notifications' | 'settings';
 
 export default function DashboardPage() {
-  const { user, loading } = useUser();
+  const { user, loading: userLoading } = useUser();
+  const db = useFirestore();
   const router = useRouter();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>('manage');
+  
+  // Registration form state
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    deviceId: '',
+    type: 'Sensor',
+    status: 'online'
+  });
+
+  // Fetch devices
+  const devicesQuery = useMemo(() => {
+    if (!db || !user) return null;
+    return collection(db, "users", user.uid, "devices");
+  }, [db, user]);
+
+  const { data: devices, loading: devicesLoading } = useCollection(devicesQuery);
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!userLoading && !user) {
       router.push("/login");
     }
-  }, [user, loading, router]);
+  }, [user, userLoading, router]);
 
-  if (loading) return (
+  const handleRegisterDevice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !db) return;
+
+    setRegisterLoading(true);
+    const deviceRef = doc(db, "users", user.uid, "devices", formData.deviceId);
+
+    setDoc(deviceRef, {
+      name: formData.name,
+      id: formData.deviceId,
+      type: formData.type,
+      status: formData.status,
+      ownerId: user.uid,
+      registeredAt: serverTimestamp(),
+    }, { merge: true })
+      .then(() => {
+        setFormData({ name: '', deviceId: '', type: 'Sensor', status: 'online' });
+        setActiveTab('manage');
+      })
+      .catch((error) => {
+        toast({
+          variant: "destructive",
+          title: "Registration Error",
+          description: error.message
+        });
+      })
+      .finally(() => {
+        setRegisterLoading(false);
+      });
+  };
+
+  const handleDeleteDevice = (deviceId: string) => {
+    if (!user || !db) return;
+    const deviceRef = doc(db, "users", user.uid, "devices", deviceId);
+    deleteDoc(deviceRef).catch((error) => {
+      toast({
+        variant: "destructive",
+        title: "Deletion Error",
+        description: error.message
+      });
+    });
+  };
+
+  if (userLoading) return (
     <div className="flex items-center justify-center h-[80vh]">
       <div className="animate-pulse flex flex-col items-center">
         <div className="h-1 bg-primary w-24 mb-4"></div>
@@ -79,7 +148,7 @@ export default function DashboardPage() {
           <div className="mt-20 px-4">
              <div className="p-6 border border-dashed text-center">
                 <p className="text-[10px] uppercase font-bold text-muted-foreground mb-4">Total Nodes Active</p>
-                <p className="text-4xl font-headline font-bold">08</p>
+                <p className="text-4xl font-headline font-bold">{devices?.length || 0}</p>
              </div>
           </div>
         </div>
@@ -102,49 +171,145 @@ export default function DashboardPage() {
 
           {activeTab === 'manage' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[1, 2, 3].map((i) => (
-                <Card key={i} className="border-none shadow-none bg-muted/30 hover:bg-muted/50 transition-colors group cursor-pointer">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-lg font-bold tracking-tight uppercase">Device Node 0{i}</CardTitle>
-                    <Activity className="h-4 w-4 text-primary" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                      <span className="text-[10px] font-bold uppercase tracking-wider">Status: Operational</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs text-muted-foreground">
-                      <span>Uptime: 14d 2h</span>
-                      <ChevronRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {devicesLoading ? (
+                <div className="col-span-full py-12 flex flex-col items-center">
+                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
+                   <p className="text-xs font-bold uppercase tracking-widest">Scanning Network...</p>
+                </div>
+              ) : devices.length === 0 ? (
+                <div className="col-span-full py-20 border-2 border-dashed flex flex-col items-center justify-center text-center px-4">
+                  <Smartphone className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
+                  <p className="text-lg font-bold uppercase mb-2">No active nodes</p>
+                  <p className="text-sm text-muted-foreground mb-6">Your device registry is currently empty.</p>
+                  <Button onClick={() => setActiveTab('register')} variant="outline" className="rounded-none uppercase font-bold text-[10px]">Initialize New Device</Button>
+                </div>
+              ) : (
+                devices.map((device: any) => (
+                  <Card key={device.id} className="border-none shadow-none bg-muted/30 hover:bg-muted/50 transition-colors group">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg font-bold tracking-tight uppercase">{device.name}</CardTitle>
+                        <p className="text-[10px] text-muted-foreground font-mono">ID: {device.id}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                         <Button 
+                           variant="ghost" 
+                           size="icon" 
+                           className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                           onClick={() => handleDeleteDevice(device.id)}
+                         >
+                           <Trash2 className="h-4 w-4" />
+                         </Button>
+                         <Activity className={cn("h-4 w-4", device.status === 'error' ? 'text-destructive' : 'text-primary')} />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className={cn(
+                          "h-2 w-2 rounded-full",
+                          device.status === 'online' ? 'bg-primary animate-pulse' : 
+                          device.status === 'offline' ? 'bg-muted-foreground' : 'bg-destructive'
+                        )} />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Status: {device.status}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] uppercase font-bold text-muted-foreground">
+                        <span>Type: {device.type}</span>
+                        <ChevronRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           )}
 
           {activeTab === 'register' && (
-            <Card className="border-none shadow-none bg-muted/30 max-w-xl">
-              <CardContent className="pt-6 space-y-6">
-                <div className="space-y-4">
-                  <div className="p-4 bg-background border flex items-center gap-4">
-                    <Smartphone className="h-8 w-8 text-muted-foreground" />
-                    <div>
-                      <p className="font-bold text-sm uppercase">Quick Pair</p>
-                      <p className="text-xs text-muted-foreground">Scan for nearby hardware nodes.</p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+              <Card className="border-none shadow-none bg-muted/30 h-fit">
+                <CardHeader>
+                  <CardTitle className="text-sm uppercase font-bold tracking-widest">Device Details</CardTitle>
+                  <CardDescription className="text-xs">Provide the unique hardware identifiers.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleRegisterDevice} className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="name" className="text-[10px] uppercase font-bold tracking-widest">Device Name</Label>
+                      <Input 
+                        id="name" 
+                        placeholder="e.g. Master Terminal" 
+                        className="rounded-none bg-background border-none h-12"
+                        value={formData.name}
+                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        required 
+                      />
                     </div>
-                  </div>
-                  <div className="p-4 bg-background border flex items-center gap-4">
-                    <ShieldCheck className="h-8 w-8 text-muted-foreground" />
-                    <div>
-                      <p className="font-bold text-sm uppercase">Legacy Registration</p>
-                      <p className="text-xs text-muted-foreground">Manual key entry for older systems.</p>
+                    <div className="space-y-2">
+                      <Label htmlFor="deviceId" className="text-[10px] uppercase font-bold tracking-widest">Device ID</Label>
+                      <Input 
+                        id="deviceId" 
+                        placeholder="e.g. NODE-X-01" 
+                        className="rounded-none bg-background border-none h-12"
+                        value={formData.deviceId}
+                        onChange={(e) => setFormData({...formData, deviceId: e.target.value})}
+                        required 
+                      />
                     </div>
-                  </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] uppercase font-bold tracking-widest">Type</Label>
+                        <Select value={formData.type} onValueChange={(v) => setFormData({...formData, type: v})}>
+                          <SelectTrigger className="rounded-none bg-background border-none h-12">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Sensor">Sensor</SelectItem>
+                            <SelectItem value="Actuator">Actuator</SelectItem>
+                            <SelectItem value="Gateway">Gateway</SelectItem>
+                            <SelectItem value="Display">Display</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] uppercase font-bold tracking-widest">Initial Status</Label>
+                        <Select value={formData.status} onValueChange={(v) => setFormData({...formData, status: v})}>
+                          <SelectTrigger className="rounded-none bg-background border-none h-12">
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="online">Online</SelectItem>
+                            <SelectItem value="offline">Offline</SelectItem>
+                            <SelectItem value="error">Error</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <Button type="submit" className="w-full rounded-none h-14 uppercase font-bold tracking-widest text-sm" disabled={registerLoading}>
+                      {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Authorize Device"}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              <div className="space-y-6">
+                <div className="p-8 border-2 border-dashed bg-muted/10">
+                  <h3 className="text-xs font-bold uppercase mb-4 tracking-[0.2em]">Registration Protocol</h3>
+                  <ul className="space-y-4">
+                    {[
+                      { icon: Smartphone, title: "Hardware Handshake", desc: "Ensure device is powered and broadcasting." },
+                      { icon: ShieldCheck, title: "Secure Handshake", desc: "Encryption keys are generated on-the-fly." },
+                    ].map((step, i) => (
+                      <li key={i} className="flex gap-4">
+                        <step.icon className="h-5 w-5 text-muted-foreground shrink-0" />
+                        <div>
+                          <p className="text-[10px] font-bold uppercase">{step.title}</p>
+                          <p className="text-[10px] text-muted-foreground">{step.desc}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <Button className="w-full rounded-none h-12 uppercase font-bold tracking-widest">Begin Discovery</Button>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {activeTab === 'notifications' && (
