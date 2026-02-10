@@ -11,6 +11,7 @@
         "status": { "type": "string", "enum": ["online", "offline", "error"] },
         "ownerId": { "type": "string" },
         "type": { "type": "string" },
+        "specialData": { "type": "string", "description": "Additional custom data for 'Other' type devices." },
         "registeredAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "ownerId", "status"]

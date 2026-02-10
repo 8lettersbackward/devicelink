@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Plus, 
@@ -19,7 +20,8 @@ import {
   ShieldCheck,
   Smartphone,
   Loader2,
-  Trash2
+  Trash2,
+  Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { doc, setDoc, collection, deleteDoc, serverTimestamp } from "firebase/firestore";
@@ -40,7 +42,8 @@ export default function DashboardPage() {
     name: '',
     deviceId: '',
     type: 'Sensor',
-    status: 'online'
+    status: 'online',
+    specialData: ''
   });
 
   // Fetch devices
@@ -64,17 +67,24 @@ export default function DashboardPage() {
     setRegisterLoading(true);
     const deviceRef = doc(db, "users", user.uid, "devices", formData.deviceId);
 
-    setDoc(deviceRef, {
+    const payload = {
       name: formData.name,
       id: formData.deviceId,
       type: formData.type,
       status: formData.status,
       ownerId: user.uid,
       registeredAt: serverTimestamp(),
-    }, { merge: true })
+      ...(formData.type === 'Other' && { specialData: formData.specialData })
+    };
+
+    setDoc(deviceRef, payload, { merge: true })
       .then(() => {
-        setFormData({ name: '', deviceId: '', type: 'Sensor', status: 'online' });
+        setFormData({ name: '', deviceId: '', type: 'Sensor', status: 'online', specialData: '' });
         setActiveTab('manage');
+        toast({
+          title: "Device Registered",
+          description: "Hardware node successfully authorized."
+        });
       })
       .catch((error) => {
         toast({
@@ -212,9 +222,19 @@ export default function DashboardPage() {
                         )} />
                         <span className="text-[10px] font-bold uppercase tracking-wider">Status: {device.status}</span>
                       </div>
-                      <div className="flex justify-between items-center text-[10px] uppercase font-bold text-muted-foreground">
-                        <span>Type: {device.type}</span>
-                        <ChevronRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center text-[10px] uppercase font-bold text-muted-foreground">
+                          <span>Type: {device.type}</span>
+                          <ChevronRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        {device.specialData && (
+                          <div className="p-3 bg-background/50 rounded-sm">
+                            <p className="text-[9px] uppercase font-bold text-muted-foreground mb-1 flex items-center gap-1">
+                              <Info className="h-3 w-3" /> Special Data
+                            </p>
+                            <p className="text-[10px] line-clamp-2">{device.specialData}</p>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -266,6 +286,7 @@ export default function DashboardPage() {
                             <SelectItem value="Actuator">Actuator</SelectItem>
                             <SelectItem value="Gateway">Gateway</SelectItem>
                             <SelectItem value="Display">Display</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -283,6 +304,20 @@ export default function DashboardPage() {
                         </Select>
                       </div>
                     </div>
+
+                    {formData.type === 'Other' && (
+                      <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <Label htmlFor="specialData" className="text-[10px] uppercase font-bold tracking-widest">Special Data / Info</Label>
+                        <Textarea 
+                          id="specialData" 
+                          placeholder="Provide specific details about this hardware node..." 
+                          className="rounded-none bg-background border-none min-h-[100px]"
+                          value={formData.specialData}
+                          onChange={(e) => setFormData({...formData, specialData: e.target.value})}
+                        />
+                      </div>
+                    )}
+
                     <Button type="submit" className="w-full rounded-none h-14 uppercase font-bold tracking-widest text-sm" disabled={registerLoading}>
                       {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Authorize Device"}
                     </Button>
