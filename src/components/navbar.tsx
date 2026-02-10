@@ -1,16 +1,15 @@
-
 "use client";
 
 import Link from "next/link";
-import { useAuth } from "@/components/auth-provider";
+import { useUser, useAuth } from "@/firebase";
 import { Button } from "@/components/ui/button";
-import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { Menu, X, User as UserIcon } from "lucide-react";
 import { useState } from "react";
 
 export function Navbar() {
-  const { user } = useAuth();
+  const { user } = useUser();
+  const auth = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
