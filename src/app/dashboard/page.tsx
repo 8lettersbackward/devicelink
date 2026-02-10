@@ -11,6 +11,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { 
   Plus, 
   Settings, 
   Bell, 
@@ -21,10 +29,12 @@ import {
   Smartphone,
   Loader2,
   Trash2,
-  Info
+  Info,
+  Edit,
+  Eye
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { doc, setDoc, collection, deleteDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, collection, deleteDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
 type TabType = 'register' | 'manage' | 'notifications' | 'settings';
@@ -46,6 +56,12 @@ export default function DashboardPage() {
     specialData: ''
   });
 
+  // Edit/View state
+  const [editingDevice, setEditingDevice] = useState<any>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [viewingDevice, setViewingDevice] = useState<any>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+
   // Fetch devices
   const devicesQuery = useMemo(() => {
     if (!db || !user) return null;
@@ -60,7 +76,7 @@ export default function DashboardPage() {
     }
   }, [user, userLoading, router]);
 
-  const handleRegisterDevice = async (e: React.FormEvent) => {
+  const handleRegisterDevice = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !db) return;
 
@@ -95,6 +111,32 @@ export default function DashboardPage() {
       })
       .finally(() => {
         setRegisterLoading(false);
+      });
+  };
+
+  const handleUpdateDevice = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !db || !editingDevice) return;
+
+    const deviceRef = doc(db, "users", user.uid, "devices", editingDevice.id);
+    
+    const { id, ...updateData } = editingDevice;
+    
+    setDoc(deviceRef, updateData, { merge: true })
+      .then(() => {
+        setIsEditDialogOpen(false);
+        setEditingDevice(null);
+        toast({
+          title: "Device Updated",
+          description: "Node configuration saved."
+        });
+      })
+      .catch((error) => {
+        toast({
+          variant: "destructive",
+          title: "Update Error",
+          description: error.message
+        });
       });
   };
 
@@ -195,21 +237,13 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 devices.map((device: any) => (
-                  <Card key={device.id} className="border-none shadow-none bg-muted/30 hover:bg-muted/50 transition-colors group">
+                  <Card key={device.id} className="border-none shadow-none bg-muted/30 hover:bg-muted/50 transition-colors group relative">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                       <div className="space-y-1">
                         <CardTitle className="text-lg font-bold tracking-tight uppercase">{device.name}</CardTitle>
                         <p className="text-[10px] text-muted-foreground font-mono">ID: {device.id}</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                         <Button 
-                           variant="ghost" 
-                           size="icon" 
-                           className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                           onClick={() => handleDeleteDevice(device.id)}
-                         >
-                           <Trash2 className="h-4 w-4" />
-                         </Button>
+                      <div className="flex items-center gap-1">
                          <Activity className={cn("h-4 w-4", device.status === 'error' ? 'text-destructive' : 'text-primary')} />
                       </div>
                     </CardHeader>
@@ -222,19 +256,39 @@ export default function DashboardPage() {
                         )} />
                         <span className="text-[10px] font-bold uppercase tracking-wider">Status: {device.status}</span>
                       </div>
+                      
+                      <div className="flex gap-2 mb-4">
+                         <Button 
+                           variant="outline" 
+                           size="sm" 
+                           className="h-8 px-3 rounded-none text-[9px] uppercase font-bold tracking-widest"
+                           onClick={() => { setViewingDevice(device); setIsViewDialogOpen(true); }}
+                         >
+                           <Eye className="h-3 w-3 mr-2" /> View
+                         </Button>
+                         <Button 
+                           variant="outline" 
+                           size="sm" 
+                           className="h-8 px-3 rounded-none text-[9px] uppercase font-bold tracking-widest"
+                           onClick={() => { setEditingDevice({...device}); setIsEditDialogOpen(true); }}
+                         >
+                           <Edit className="h-3 w-3 mr-2" /> Edit
+                         </Button>
+                         <Button 
+                           variant="outline" 
+                           size="sm" 
+                           className="h-8 px-3 rounded-none text-[9px] uppercase font-bold tracking-widest text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                           onClick={() => handleDeleteDevice(device.id)}
+                         >
+                           <Trash2 className="h-3 w-3" />
+                         </Button>
+                      </div>
+
                       <div className="space-y-2">
                         <div className="flex justify-between items-center text-[10px] uppercase font-bold text-muted-foreground">
                           <span>Type: {device.type}</span>
                           <ChevronRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
-                        {device.specialData && (
-                          <div className="p-3 bg-background/50 rounded-sm">
-                            <p className="text-[9px] uppercase font-bold text-muted-foreground mb-1 flex items-center gap-1">
-                              <Info className="h-3 w-3" /> Special Data
-                            </p>
-                            <p className="text-[10px] line-clamp-2">{device.specialData}</p>
-                          </div>
-                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -384,6 +438,133 @@ export default function DashboardPage() {
           )}
         </div>
       </main>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md bg-background rounded-none border-none">
+          <DialogHeader>
+            <DialogTitle className="uppercase tracking-widest font-bold">Edit Device</DialogTitle>
+            <DialogDescription className="text-[10px] uppercase font-bold text-muted-foreground">Modify active node configuration</DialogDescription>
+          </DialogHeader>
+          {editingDevice && (
+            <form onSubmit={handleUpdateDevice} className="space-y-6 py-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase font-bold tracking-widest">Device Name</Label>
+                <Input 
+                  className="rounded-none bg-muted/30 border-none"
+                  value={editingDevice.name}
+                  onChange={(e) => setEditingDevice({...editingDevice, name: e.target.value})}
+                  required 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-bold tracking-widest">Type</Label>
+                  <Select value={editingDevice.type} onValueChange={(v) => setEditingDevice({...editingDevice, type: v})}>
+                    <SelectTrigger className="rounded-none bg-muted/30 border-none">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Sensor">Sensor</SelectItem>
+                      <SelectItem value="Actuator">Actuator</SelectItem>
+                      <SelectItem value="Gateway">Gateway</SelectItem>
+                      <SelectItem value="Display">Display</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-bold tracking-widest">Status</Label>
+                  <Select value={editingDevice.status} onValueChange={(v) => setEditingDevice({...editingDevice, status: v})}>
+                    <SelectTrigger className="rounded-none bg-muted/30 border-none">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="online">Online</SelectItem>
+                      <SelectItem value="offline">Offline</SelectItem>
+                      <SelectItem value="error">Error</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {editingDevice.type === 'Other' && (
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-bold tracking-widest">Special Data</Label>
+                  <Textarea 
+                    className="rounded-none bg-muted/30 border-none min-h-[80px]"
+                    value={editingDevice.specialData || ''}
+                    onChange={(e) => setEditingDevice({...editingDevice, specialData: e.target.value})}
+                  />
+                </div>
+              )}
+              
+              <DialogFooter className="flex gap-2">
+                <Button type="button" variant="ghost" onClick={() => setIsEditDialogOpen(false)} className="rounded-none uppercase text-[10px] font-bold">Cancel</Button>
+                <Button type="submit" className="rounded-none uppercase text-[10px] font-bold px-8">Update Node</Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* View Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-md bg-background rounded-none border-none">
+          <DialogHeader>
+            <DialogTitle className="uppercase tracking-widest font-bold">Node Details</DialogTitle>
+          </DialogHeader>
+          {viewingDevice && (
+            <div className="space-y-6 py-4">
+              <div className="grid grid-cols-2 gap-y-4">
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Device Name</p>
+                  <p className="text-sm font-bold uppercase tracking-tight">{viewingDevice.name}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Status</p>
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "h-2 w-2 rounded-full",
+                      viewingDevice.status === 'online' ? 'bg-primary' : 
+                      viewingDevice.status === 'offline' ? 'bg-muted-foreground' : 'bg-destructive'
+                    )} />
+                    <p className="text-sm font-bold uppercase tracking-tight">{viewingDevice.status}</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Identifier</p>
+                  <p className="text-[10px] font-mono">{viewingDevice.id}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Type</p>
+                  <p className="text-sm font-bold uppercase tracking-tight">{viewingDevice.type}</p>
+                </div>
+              </div>
+
+              {viewingDevice.specialData && (
+                <div className="p-4 bg-muted/20 border border-dashed">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-2 flex items-center gap-2">
+                    <Info className="h-3 w-3" /> Custom Metadata
+                  </p>
+                  <p className="text-xs font-medium leading-relaxed">{viewingDevice.specialData}</p>
+                </div>
+              )}
+
+              <div className="pt-4 border-t border-dashed">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground">Authorized Since</p>
+                <p className="text-[10px] font-mono">
+                  {viewingDevice.registeredAt?.toDate?.() ? viewingDevice.registeredAt.toDate().toLocaleString() : "N/A"}
+                </p>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsViewDialogOpen(false)} className="rounded-none w-full uppercase text-[10px] font-bold">Close Portal</Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
