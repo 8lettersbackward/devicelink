@@ -31,10 +31,11 @@ import {
   Trash2,
   Info,
   Edit,
-  Eye
+  Eye,
+  CheckCircle2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { doc, setDoc, collection, deleteDoc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { doc, setDoc, collection, deleteDoc, serverTimestamp, addDoc, query, orderBy, limit } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
 type TabType = 'register' | 'manage' | 'notifications' | 'settings';
@@ -70,11 +71,34 @@ export default function DashboardPage() {
 
   const { data: devices, loading: devicesLoading } = useCollection(devicesQuery);
 
+  // Fetch notifications
+  const notificationsQuery = useMemo(() => {
+    if (!db || !user) return null;
+    return query(
+      collection(db, "users", user.uid, "notifications"),
+      orderBy("createdAt", "desc"),
+      limit(50)
+    );
+  }, [db, user]);
+
+  const { data: notifications, loading: notificationsLoading } = useCollection(notificationsQuery);
+
   useEffect(() => {
     if (!userLoading && !user) {
       router.push("/login");
     }
   }, [user, userLoading, router]);
+
+  const createNotification = (message: string) => {
+    if (!user || !db) return;
+    const notificationsRef = collection(db, "users", user.uid, "notifications");
+    addDoc(notificationsRef, {
+      userId: user.uid,
+      message,
+      read: false,
+      createdAt: serverTimestamp()
+    });
+  };
 
   const handleRegisterDevice = (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,6 +119,7 @@ export default function DashboardPage() {
 
     setDoc(deviceRef, payload, { merge: true })
       .then(() => {
+        createNotification(`New device authorized: ${formData.name} (ID: ${formData.deviceId})`);
         setFormData({ name: '', deviceId: '', type: 'Sensor', status: 'online', specialData: '' });
         setActiveTab('manage');
         toast({
@@ -119,11 +144,11 @@ export default function DashboardPage() {
     if (!user || !db || !editingDevice) return;
 
     const deviceRef = doc(db, "users", user.uid, "devices", editingDevice.id);
-    
     const { id, ...updateData } = editingDevice;
     
     setDoc(deviceRef, updateData, { merge: true })
       .then(() => {
+        createNotification(`Device configuration updated: ${editingDevice.name}`);
         setIsEditDialogOpen(false);
         setEditingDevice(null);
         toast({
@@ -140,16 +165,30 @@ export default function DashboardPage() {
       });
   };
 
-  const handleDeleteDevice = (deviceId: string) => {
+  const handleDeleteDevice = (device: any) => {
     if (!user || !db) return;
-    const deviceRef = doc(db, "users", user.uid, "devices", deviceId);
-    deleteDoc(deviceRef).catch((error) => {
-      toast({
-        variant: "destructive",
-        title: "Deletion Error",
-        description: error.message
+    const deviceRef = doc(db, "users", user.uid, "devices", device.id);
+    deleteDoc(deviceRef)
+      .then(() => {
+        createNotification(`Device removed from network: ${device.name}`);
+        toast({
+          title: "Device Deleted",
+          description: "Hardware node disconnected and purged."
+        });
+      })
+      .catch((error) => {
+        toast({
+          variant: "destructive",
+          title: "Deletion Error",
+          description: error.message
+        });
       });
-    });
+  };
+
+  const handleDeleteNotification = (notificationId: string) => {
+    if (!user || !db) return;
+    const notificationRef = doc(db, "users", user.uid, "notifications", notificationId);
+    deleteDoc(notificationRef);
   };
 
   if (userLoading) return (
@@ -278,7 +317,7 @@ export default function DashboardPage() {
                            variant="outline" 
                            size="sm" 
                            className="h-8 px-3 rounded-none text-[9px] uppercase font-bold tracking-widest text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                           onClick={() => handleDeleteDevice(device.id)}
+                           onClick={() => handleDeleteDevice(device)}
                          >
                            <Trash2 className="h-3 w-3" />
                          </Button>
@@ -403,18 +442,39 @@ export default function DashboardPage() {
 
           {activeTab === 'notifications' && (
             <div className="space-y-4">
-              {[1, 2, 3, 4].map(n => (
-                <div key={n} className="p-4 border-b flex justify-between items-center group cursor-pointer hover:bg-muted/10">
-                  <div className="flex gap-4 items-center">
-                    <div className="h-2 w-2 bg-primary rounded-none" />
-                    <div>
-                      <p className="text-sm font-bold uppercase tracking-tight">System Update Protocol 7-{n}</p>
-                      <p className="text-[10px] text-muted-foreground uppercase">Timestamp: 2024-05-2{n}T10:00:00Z</p>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 uppercase text-[10px] font-bold">Archive</Button>
+              {notificationsLoading ? (
+                <div className="py-12 flex flex-col items-center">
+                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
+                   <p className="text-xs font-bold uppercase tracking-widest">Retrieving Logs...</p>
                 </div>
-              ))}
+              ) : notifications.length === 0 ? (
+                <div className="py-20 border-2 border-dashed flex flex-col items-center justify-center text-center">
+                   <Bell className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
+                   <p className="text-sm font-bold uppercase text-muted-foreground">System logs clear</p>
+                </div>
+              ) : (
+                notifications.map((notif: any) => (
+                  <div key={notif.id} className="p-4 border-b flex justify-between items-center group cursor-pointer hover:bg-muted/10">
+                    <div className="flex gap-4 items-center">
+                      <div className="h-2 w-2 bg-primary rounded-none" />
+                      <div>
+                        <p className="text-sm font-bold uppercase tracking-tight">{notif.message}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase">
+                          Timestamp: {notif.createdAt?.toDate?.() ? notif.createdAt.toDate().toLocaleString() : "Syncing..."}
+                        </p>
+                      </div>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDeleteNotification(notif.id)}
+                      className="opacity-0 group-hover:opacity-100 uppercase text-[10px] font-bold"
+                    >
+                      Archive
+                    </Button>
+                  </div>
+                ))
+              )}
             </div>
           )}
 
