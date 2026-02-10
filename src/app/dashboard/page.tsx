@@ -4,7 +4,7 @@
 import { useUser } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   Plus, 
@@ -51,8 +51,42 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col md:flex-row min-h-[calc(100vh-4rem)] bg-background">
+      {/* Left Side Navigation */}
+      <aside className="w-full md:w-80 border-r bg-muted/5 order-1">
+        <div className="sticky top-16 p-6 space-y-2">
+          <div className="mb-8 px-4 py-2">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Hub Navigation</p>
+          </div>
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={cn(
+                "w-full flex items-center justify-between px-4 py-4 transition-all duration-200 group",
+                activeTab === item.id 
+                  ? "bg-primary text-primary-foreground font-bold" 
+                  : "hover:bg-muted text-muted-foreground"
+              )}
+            >
+              <div className="flex items-center gap-4">
+                <item.icon className={cn("h-4 w-4", activeTab === item.id ? "" : "group-hover:text-primary")} />
+                <span className="text-xs uppercase tracking-widest font-bold">{item.label}</span>
+              </div>
+              {activeTab === item.id && <div className="h-1 w-1 bg-primary-foreground rotate-45" />}
+            </button>
+          ))}
+
+          <div className="mt-20 px-4">
+             <div className="p-6 border border-dashed text-center">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground mb-4">Total Nodes Active</p>
+                <p className="text-4xl font-headline font-bold">08</p>
+             </div>
+          </div>
+        </div>
+      </aside>
+
       {/* Main Content Area */}
-      <main className="flex-1 p-6 md:p-10 order-2 md:order-1">
+      <main className="flex-1 p-6 md:p-10 order-2">
         <div className="max-w-4xl">
           <header className="mb-10">
             <h1 className="text-4xl font-headline font-bold tracking-tighter uppercase mb-2">
@@ -150,40 +184,6 @@ export default function DashboardPage() {
           )}
         </div>
       </main>
-
-      {/* Right Side Navigation */}
-      <aside className="w-full md:w-80 border-l bg-muted/5 order-1 md:order-2">
-        <div className="sticky top-16 p-6 space-y-2">
-          <div className="mb-8 px-4 py-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Hub Navigation</p>
-          </div>
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={cn(
-                "w-full flex items-center justify-between px-4 py-4 transition-all duration-200 group",
-                activeTab === item.id 
-                  ? "bg-primary text-primary-foreground font-bold" 
-                  : "hover:bg-muted text-muted-foreground"
-              )}
-            >
-              <div className="flex items-center gap-4">
-                <item.icon className={cn("h-4 w-4", activeTab === item.id ? "" : "group-hover:text-primary")} />
-                <span className="text-xs uppercase tracking-widest font-bold">{item.label}</span>
-              </div>
-              {activeTab === item.id && <div className="h-1 w-1 bg-primary-foreground rotate-45" />}
-            </button>
-          ))}
-
-          <div className="mt-20 px-4">
-             <div className="p-6 border border-dashed text-center">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground mb-4">Total Nodes Active</p>
-                <p className="text-4xl font-headline font-bold">08</p>
-             </div>
-          </div>
-        </div>
-      </aside>
     </div>
   );
 }
