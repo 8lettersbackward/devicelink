@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -51,7 +50,7 @@ export default function SignupPage() {
       <Card className="w-full max-w-md shadow-2xl border-none">
         <CardHeader className="space-y-2 text-center">
           <CardTitle className="text-3xl font-headline tracking-tighter">Create Account</CardTitle>
-          <CardDescription>Enter your email to start your monochrome journey</CardDescription>
+          <CardDescription>Enter your email to start your 1tap journey</CardDescription>
         </CardHeader>
         <form onSubmit={handleSignup}>
           <CardContent className="space-y-4">

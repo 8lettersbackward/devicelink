@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -12,10 +11,10 @@ export default function Home() {
       <section className="flex-1 flex items-center justify-center px-4 bg-background">
         <div className="max-w-4xl text-center">
           <h1 className="text-6xl md:text-8xl font-headline font-bold tracking-tighter mb-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-            MONOCHROME <br /> <span className="text-muted-foreground">DEVICE HUB</span>
+            1TAP <br /> <span className="text-muted-foreground">DEVICE HUB</span>
           </h1>
           <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
-            A minimalist approach to device orchestration. Pure clarity, absolute control.
+            Instant orchestration for your hardware ecosystem. Pure clarity, absolute control in a single tap.
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-500">
             <Link href="/signup">
@@ -35,7 +34,7 @@ export default function Home() {
       {/* Simplified Footer */}
       <footer className="py-8 border-t text-center text-muted-foreground text-xs tracking-widest uppercase">
         <div className="max-w-7xl mx-auto px-4">
-          <p>© 2024 Monochrome Mobile. Clarity in Control.</p>
+          <p>© 2024 1tap. Clarity in Control.</p>
         </div>
       </footer>
     </div>

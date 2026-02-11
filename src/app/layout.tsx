@@ -5,8 +5,8 @@ import { Navbar } from '@/components/navbar';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'Monochrome Mobile',
-  description: 'Minimalist dashboard for modern users',
+  title: '1tap',
+  description: 'Instant device orchestration and control',
 };
 
 export default function RootLayout({
