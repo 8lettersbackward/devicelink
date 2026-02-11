@@ -208,10 +208,10 @@ export default function DashboardPage() {
     };
     setDoc(deviceRef, payload, { merge: true })
       .then(() => {
-        createNotification(`Safety device registered: ${formData.name}`);
+        createNotification(`New Buddy / Node registered: ${formData.name}`);
         setFormData({ name: '', deviceId: '', type: 'SOS Beacon', status: 'online', specialData: '' });
         setActiveTab('manage');
-        toast({ title: "Protection Activated", description: "Emergency node successfully authorized." });
+        toast({ title: "Protection Activated", description: "Buddy / Node successfully authorized." });
       })
       .catch((error) => {
         toast({ variant: "destructive", title: "Error", description: error.message });
@@ -226,10 +226,10 @@ export default function DashboardPage() {
     const { id, ...updateData } = editingDevice;
     setDoc(deviceRef, updateData, { merge: true })
       .then(() => {
-        createNotification(`Emergency protocol updated: ${editingDevice.name}`);
+        createNotification(`Buddy / Node protocol updated: ${editingDevice.name}`);
         setIsEditDialogOpen(false);
         setEditingDevice(null);
-        toast({ title: "Protocol Saved", description: "Safety configuration updated." });
+        toast({ title: "Protocol Saved", description: "Buddy / Node configuration updated." });
       });
   };
 
@@ -237,8 +237,8 @@ export default function DashboardPage() {
     if (!user || !db) return;
     const deviceRef = doc(db, "users", user.uid, "devices", device.id);
     deleteDoc(deviceRef).then(() => {
-      createNotification(`Protection deactivated for: ${device.name}`);
-      toast({ title: "Node Purged", description: "Safety device removed from network." });
+      createNotification(`Protection deactivated for Buddy / Node: ${device.name}`);
+      toast({ title: "Buddy / Node Purged", description: "Buddy / Node removed from network." });
     });
   };
 
@@ -257,8 +257,8 @@ export default function DashboardPage() {
 
   const navItems = [
     { id: 'overview', label: 'Safety Overview', icon: LayoutDashboard },
-    { id: 'register', label: 'Add Buddy Node', icon: Plus },
-    { id: 'manage', label: 'Manage Buddies', icon: Cpu },
+    { id: 'register', label: 'Add Buddy / Node', icon: Plus },
+    { id: 'manage', label: 'Manage Buddy / Node', icon: Cpu },
     { id: 'notifications', label: 'Safety Alerts', icon: Bell },
     { id: 'settings', label: 'Security Settings', icon: Settings },
   ] as const;
@@ -281,7 +281,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="mb-8 px-4 py-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Emergency Buddy</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Emergency Buddy Hub</p>
           </div>
           {navItems.map((item) => (
             <button
@@ -319,8 +319,8 @@ export default function DashboardPage() {
             </h1>
             <p className="text-muted-foreground text-sm tracking-wide">
               {activeTab === 'overview' && `Protection status for ${currentName}. Active heartbeat and alerts.`}
-              {activeTab === 'manage' && "Registry of your emergency buddies and safety nodes."}
-              {activeTab === 'register' && "Pair a new emergency buddy or safety device to your profile."}
+              {activeTab === 'manage' && "Registry of your emergency Buddy / Node hardware."}
+              {activeTab === 'register' && "Pair a new emergency Buddy / Node to your profile."}
               {activeTab === 'notifications' && "Critical safety logs and heartbeat history."}
               {activeTab === 'settings' && "Configure security protocols and account privacy."}
             </p>
@@ -355,7 +355,7 @@ export default function DashboardPage() {
                       <div className="relative group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary" />
                         <Input 
-                          placeholder="FILTER SAFETY NODES, IDS, OR PROTOCOLS..." 
+                          placeholder="FILTER BUDDY / NODE, IDS, OR PROTOCOLS..." 
                           className="pl-12 h-14 rounded-none border-none bg-muted/30 uppercase text-[10px] font-bold tracking-widest"
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
@@ -366,7 +366,7 @@ export default function DashboardPage() {
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
                         <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                          <ShieldAlert className="h-4 w-4" /> Buddy Node Registry
+                          <ShieldAlert className="h-4 w-4" /> Buddy / Node Registry
                         </h3>
                       </div>
                       
@@ -438,14 +438,14 @@ export default function DashboardPage() {
               {devicesLoading ? (
                 <div className="col-span-full py-12 flex flex-col items-center">
                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
-                   <p className="text-xs font-bold uppercase tracking-widest">Scanning Buddy Network...</p>
+                   <p className="text-xs font-bold uppercase tracking-widest">Scanning Buddy / Node Network...</p>
                 </div>
               ) : devices.length === 0 ? (
                 <div className="col-span-full py-20 border-2 border-dashed flex flex-col items-center justify-center text-center px-4">
                   <ShieldAlert className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
-                  <p className="text-lg font-bold uppercase mb-2">No emergency buddies</p>
+                  <p className="text-lg font-bold uppercase mb-2">No Buddy / Node Registered</p>
                   <p className="text-sm text-muted-foreground mb-6">Your safety network is currently unmonitored.</p>
-                  <Button onClick={() => setActiveTab('register')} variant="outline" className="rounded-none uppercase font-bold text-[10px]">Onboard New Buddy</Button>
+                  <Button onClick={() => setActiveTab('register')} variant="outline" className="rounded-none uppercase font-bold text-[10px]">Onboard New Buddy / Node</Button>
                 </div>
               ) : (
                 devices.map((device: any) => (
@@ -478,17 +478,17 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
               <Card className="border-none shadow-none bg-muted/30 h-fit">
                 <CardHeader>
-                  <CardTitle className="text-sm uppercase font-bold tracking-widest">Buddy Credentials</CardTitle>
+                  <CardTitle className="text-sm uppercase font-bold tracking-widest">Buddy / Node Credentials</CardTitle>
                   <CardDescription className="text-xs">Provide unique identifiers for your emergency equipment.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleRegisterDevice} className="space-y-6">
                     <div className="space-y-2">
-                      <Label htmlFor="name" className="text-[10px] uppercase font-bold tracking-widest">Buddy Name</Label>
+                      <Label htmlFor="name" className="text-[10px] uppercase font-bold tracking-widest">Buddy / Node Name</Label>
                       <Input id="name" placeholder="e.g. Personal SOS" className="rounded-none h-12" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="deviceId" className="text-[10px] uppercase font-bold tracking-widest">Node ID</Label>
+                      <Label htmlFor="deviceId" className="text-[10px] uppercase font-bold tracking-widest">Master Node ID</Label>
                       <Input id="deviceId" placeholder="e.g. SOS-X1" className="rounded-none h-12" value={formData.deviceId} onChange={(e) => setFormData({...formData, deviceId: e.target.value})} required />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -524,11 +524,11 @@ export default function DashboardPage() {
                     {formData.type === 'Other' && (
                       <div className="space-y-2">
                         <Label className="text-[10px] uppercase font-bold tracking-widest">Medical / Safety Data</Label>
-                        <Textarea placeholder="Provide specific safety details..." className="rounded-none min-h-[100px]" value={formData.specialData} onChange={(e) => setFormData({...formData, specialData: e.target.value})} />
+                        <Textarea placeholder="Provide specific safety details for this node..." className="rounded-none min-h-[100px]" value={formData.specialData} onChange={(e) => setFormData({...formData, specialData: e.target.value})} />
                       </div>
                     )}
                     <Button type="submit" className="w-full rounded-none h-14 uppercase font-bold tracking-widest" disabled={registerLoading}>
-                      {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Arm Safety Buddy"}
+                      {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Arm Buddy / Node"}
                     </Button>
                   </form>
                 </CardContent>
@@ -536,7 +536,7 @@ export default function DashboardPage() {
 
               <div className="p-8 border-2 border-dashed bg-muted/10 h-fit">
                 <h3 className="text-xs font-bold uppercase mb-4 tracking-[0.2em]">Protection Protocol</h3>
-                <p className="text-[10px] text-muted-foreground leading-relaxed">By registering a Buddy Node, you activate 24/7 monitoring for this device. Ensure the hardware is within proximity for emergency handshakes.</p>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">By registering a Buddy / Node, you activate 24/7 monitoring. Ensure the hardware is within proximity for emergency handshakes and heartbeat verification.</p>
               </div>
             </div>
           )}
@@ -587,11 +587,11 @@ export default function DashboardPage() {
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="rounded-none border-none">
-          <DialogHeader><DialogTitle className="uppercase font-bold">Edit Buddy</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="uppercase font-bold">Edit Buddy / Node</DialogTitle></DialogHeader>
           {editingDevice && (
             <form onSubmit={handleUpdateDevice} className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold">Buddy Name</Label>
+                <Label className="text-[10px] uppercase font-bold">Buddy / Node Name</Label>
                 <Input className="rounded-none" value={editingDevice.name} onChange={(e) => setEditingDevice({...editingDevice, name: e.target.value})} required />
               </div>
               <DialogFooter><Button type="submit" className="rounded-none uppercase text-[10px] font-bold">Update Protocol</Button></DialogFooter>
@@ -602,7 +602,7 @@ export default function DashboardPage() {
 
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="rounded-none border-none">
-          <DialogHeader><DialogTitle className="uppercase font-bold">Buddy Details</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="uppercase font-bold">Buddy / Node Details</DialogTitle></DialogHeader>
           {viewingDevice && (
             <div className="space-y-4">
               <p className="text-[10px] uppercase font-bold text-muted-foreground">Identifier: <span className="text-foreground font-mono">{viewingDevice.id}</span></p>
