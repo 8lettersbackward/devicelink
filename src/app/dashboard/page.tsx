@@ -40,12 +40,15 @@ import {
   Search,
   LayoutDashboard,
   History,
-  Filter
+  Filter,
+  PieChart as PieChartIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { doc, setDoc, collection, deleteDoc, serverTimestamp, addDoc, query, orderBy, limit } from "firebase/firestore";
 import { signOut, verifyBeforeUpdateEmail } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 type TabType = 'overview' | 'register' | 'manage' | 'notifications' | 'settings';
 
@@ -152,7 +155,30 @@ export default function DashboardPage() {
 
   const { data: notifications, loading: notificationsLoading } = useCollection(notificationsQuery);
 
-  // Filtering Logic - Expanded to Status and Type
+  // Stats Calculation
+  const statusStats = useMemo(() => {
+    if (!devices || devices.length === 0) return { online: 0, offline: 0, error: 0, total: 0 };
+    const stats = devices.reduce((acc: any, d: any) => {
+      acc[d.status] = (acc[d.status] || 0) + 1;
+      acc.total++;
+      return acc;
+    }, { online: 0, offline: 0, error: 0, total: 0 });
+    return stats;
+  }, [devices]);
+
+  const chartData = useMemo(() => [
+    { name: 'Online', value: statusStats.online, fill: "var(--color-online)" },
+    { name: 'Offline', value: statusStats.offline, fill: "var(--color-offline)" },
+    { name: 'Error', value: statusStats.error, fill: "var(--color-error)" },
+  ], [statusStats]);
+
+  const chartConfig = {
+    online: { label: "Online", color: "hsl(var(--primary))" },
+    offline: { label: "Offline", color: "hsl(var(--muted-foreground))" },
+    error: { label: "Error", color: "hsl(var(--destructive))" },
+  };
+
+  // Filtering Logic
   const filteredDevices = useMemo(() => {
     if (!devices) return [];
     if (!searchQuery) return devices;
@@ -340,106 +366,132 @@ export default function DashboardPage() {
 
           {activeTab === 'overview' && (
             <div className="space-y-10">
-              {/* Enhanced Search Section */}
-              <div className="space-y-4">
-                <div className="relative group">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                  <Input 
-                    placeholder="SEARCH BY NAME, ID, TYPE, OR STATUS..." 
-                    className="pl-12 h-14 rounded-none border-none bg-muted/30 uppercase text-[10px] font-bold tracking-widest focus:bg-muted/50 transition-all"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-muted-foreground opacity-30" />
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {['Online', 'Offline', 'Error', 'Sensor', 'Actuator', 'Gateway'].map(tag => (
-                    <button 
-                      key={tag}
-                      onClick={() => setSearchQuery(tag)}
-                      className="px-3 py-1 bg-muted/20 hover:bg-muted/40 text-[9px] uppercase font-bold tracking-wider transition-colors"
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                  {searchQuery && (
-                    <button 
-                      onClick={() => setSearchQuery("")}
-                      className="px-3 py-1 text-primary text-[9px] uppercase font-bold tracking-wider underline underline-offset-4"
-                    >
-                      Clear Filter
-                    </button>
-                  )}
-                </div>
+              {/* Demographics Summary Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                 {[
+                   { label: 'Online', count: statusStats.online, color: 'bg-primary' },
+                   { label: 'Offline', count: statusStats.offline, color: 'bg-muted-foreground' },
+                   { label: 'Error', count: statusStats.error, color: 'bg-destructive' },
+                 ].map((stat) => (
+                   <Card key={stat.label} className="rounded-none border-none bg-muted/20 shadow-none">
+                     <CardContent className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                           <div className={cn("h-2 w-2", stat.color)} />
+                           <span className="text-[10px] font-mono font-bold text-muted-foreground">
+                             {statusStats.total > 0 ? ((stat.count / statusStats.total) * 100).toFixed(1) : 0}%
+                           </span>
+                        </div>
+                        <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">{stat.label}</p>
+                        <p className="text-3xl font-bold font-headline mt-1">{stat.count}</p>
+                     </CardContent>
+                   </Card>
+                 ))}
               </div>
 
+              {/* Demographics Chart & Search */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                {/* Filtered Devices Summary */}
-                <div className="lg:col-span-2 space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                      <Cpu className="h-4 w-4" /> Node Registry Status
-                    </h3>
-                    <span className="text-[9px] font-mono text-muted-foreground">{filteredDevices.length} MATCHES</span>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 gap-4">
-                    {filteredDevices.slice(0, 5).map((device: any) => (
-                      <div key={device.id} className="p-4 bg-muted/20 border border-transparent hover:border-primary/20 transition-all flex items-center justify-between group">
-                        <div className="flex items-center gap-4">
-                          <div className={cn(
-                            "h-2 w-2 rounded-none",
-                            device.status === 'online' ? 'bg-primary' : 
-                            device.status === 'error' ? 'bg-destructive' : 'bg-muted-foreground'
-                          )} />
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="text-xs font-bold uppercase">{device.name}</p>
-                              <span className="text-[8px] bg-muted px-1.5 py-0.5 font-bold uppercase tracking-tighter opacity-70">{device.type}</span>
-                            </div>
-                            <p className="text-[9px] font-mono text-muted-foreground">NODE_ID: {device.id}</p>
-                          </div>
-                        </div>
-                        <Button variant="ghost" size="sm" onClick={() => { setViewingDevice(device); setIsViewDialogOpen(true); }} className="opacity-0 group-hover:opacity-100 uppercase text-[9px] font-bold">Inspect</Button>
+                 <div className="lg:col-span-2 space-y-10">
+                    <div className="space-y-4">
+                      <div className="relative group">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                        <Input 
+                          placeholder="SEARCH BY NAME, ID, TYPE, OR STATUS..." 
+                          className="pl-12 h-14 rounded-none border-none bg-muted/30 uppercase text-[10px] font-bold tracking-widest focus:bg-muted/50 transition-all"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                        />
                       </div>
-                    ))}
-                    {filteredDevices.length > 5 && (
-                      <Button variant="link" onClick={() => setActiveTab('manage')} className="text-[9px] uppercase font-bold p-0 h-auto justify-start">
-                        + View {filteredDevices.length - 5} more devices in Management
-                      </Button>
-                    )}
-                    {filteredDevices.length === 0 && (
-                      <div className="py-10 text-center border border-dashed">
-                        <p className="text-[10px] uppercase font-bold text-muted-foreground">No matching nodes found in network</p>
+                      <div className="flex flex-wrap gap-2">
+                        {['Online', 'Offline', 'Error', 'Sensor', 'Actuator'].map(tag => (
+                          <button 
+                            key={tag}
+                            onClick={() => setSearchQuery(tag)}
+                            className="px-3 py-1 bg-muted/20 hover:bg-muted/40 text-[9px] uppercase font-bold tracking-wider transition-colors"
+                          >
+                            {tag}
+                          </button>
+                        ))}
                       </div>
-                    )}
-                  </div>
-                </div>
+                    </div>
 
-                {/* Recent Activity Mini-Feed */}
-                <div className="space-y-6">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                    <History className="h-4 w-4" /> Recent Activity
-                  </h3>
-                  <div className="space-y-4">
-                    {notifications?.slice(0, 5).map((notif: any) => (
-                      <div key={notif.id} className="p-4 border-l-2 border-primary bg-muted/10">
-                        <p className="text-[10px] font-bold uppercase mb-1">{notif.message}</p>
-                        <p className="text-[9px] text-muted-foreground font-mono">
-                          {notif.createdAt?.toDate?.() ? notif.createdAt.toDate().toLocaleTimeString() : "PENDING..."}
-                        </p>
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                          <Cpu className="h-4 w-4" /> Node Registry Status
+                        </h3>
+                        <span className="text-[9px] font-mono text-muted-foreground">{filteredDevices.length} MATCHES</span>
                       </div>
-                    ))}
-                    {notifications.length === 0 && (
-                      <p className="text-[10px] uppercase font-bold text-muted-foreground italic">Activity log is empty.</p>
-                    )}
-                    <Button variant="outline" onClick={() => setActiveTab('notifications')} className="w-full rounded-none uppercase text-[9px] font-bold h-10">
-                      View All Logs
-                    </Button>
-                  </div>
-                </div>
+                      
+                      <div className="grid grid-cols-1 gap-4">
+                        {filteredDevices.slice(0, 5).map((device: any) => (
+                          <div key={device.id} className="p-4 bg-muted/20 border border-transparent hover:border-primary/20 transition-all flex items-center justify-between group">
+                            <div className="flex items-center gap-4">
+                              <div className={cn(
+                                "h-2 w-2 rounded-none",
+                                device.status === 'online' ? 'bg-primary' : 
+                                device.status === 'error' ? 'bg-destructive' : 'bg-muted-foreground'
+                              )} />
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-xs font-bold uppercase">{device.name}</p>
+                                  <span className="text-[8px] bg-muted px-1.5 py-0.5 font-bold uppercase tracking-tighter opacity-70">{device.type}</span>
+                                </div>
+                                <p className="text-[9px] font-mono text-muted-foreground">ID: {device.id}</p>
+                              </div>
+                            </div>
+                            <Button variant="ghost" size="sm" onClick={() => { setViewingDevice(device); setIsViewDialogOpen(true); }} className="opacity-0 group-hover:opacity-100 uppercase text-[9px] font-bold">Inspect</Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                 </div>
+
+                 {/* Right Sidebar: Visual Demographics & History */}
+                 <div className="space-y-10">
+                    <div className="space-y-6">
+                      <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                        <PieChartIcon className="h-4 w-4" /> Network Demographics
+                      </h3>
+                      <div className="aspect-square bg-muted/10 p-4 border border-dashed flex items-center justify-center">
+                        {statusStats.total > 0 ? (
+                           <ChartContainer config={chartConfig} className="w-full h-full">
+                              <PieChart>
+                                <Pie
+                                  data={chartData}
+                                  innerRadius={60}
+                                  outerRadius={80}
+                                  paddingAngle={5}
+                                  dataKey="value"
+                                >
+                                  {chartData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.fill} stroke="transparent" />
+                                  ))}
+                                </Pie>
+                                <ChartTooltip content={<ChartTooltipContent />} />
+                              </PieChart>
+                           </ChartContainer>
+                        ) : (
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground opacity-50">Insufficient Data</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                        <History className="h-4 w-4" /> Recent Activity
+                      </h3>
+                      <div className="space-y-4">
+                        {notifications?.slice(0, 3).map((notif: any) => (
+                          <div key={notif.id} className="p-4 border-l-2 border-primary bg-muted/10">
+                            <p className="text-[10px] font-bold uppercase mb-1">{notif.message}</p>
+                            <p className="text-[9px] text-muted-foreground font-mono">
+                              {notif.createdAt?.toDate?.() ? notif.createdAt.toDate().toLocaleTimeString() : "SYNCING..."}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                 </div>
               </div>
             </div>
           )}
