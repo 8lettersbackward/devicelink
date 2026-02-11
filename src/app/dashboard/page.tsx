@@ -331,53 +331,6 @@ export default function DashboardPage() {
     { id: 'settings', label: 'Security Settings', icon: Settings },
   ] as const;
 
-  const BuddyRegistrationForm = ({ isModal = false }: { isModal?: boolean }) => (
-    <div className={cn("grid grid-cols-1 gap-10", !isModal && "lg:grid-cols-2")}>
-      <Card className="border-none shadow-none bg-muted/30 h-fit">
-        {!isModal && (
-          <CardHeader>
-            <CardTitle className="text-sm uppercase font-bold tracking-widest">Buddy Credentials</CardTitle>
-            <CardDescription className="text-xs">Enlist a trusted contact for emergency orchestration.</CardDescription>
-          </CardHeader>
-        )}
-        <CardContent className={cn(isModal && "pt-6")}>
-          <form onSubmit={(e) => handleRegisterDevice(e, 'buddy')} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="buddy-name" className="text-[10px] uppercase font-bold tracking-widest">Buddy Name</Label>
-              <Input id="buddy-name" placeholder="e.g. Elvin" className="rounded-none h-12" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="buddy-phone" className="text-[10px] uppercase font-bold tracking-widest">Phone Number</Label>
-              <Input id="buddy-phone" placeholder="+1..." className="rounded-none h-12" value={formData.phoneNumber} onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})} required />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-bold tracking-widest">Group / Relationship</Label>
-              <Select value={formData.group} onValueChange={(v) => setFormData({...formData, group: v})}>
-                <SelectTrigger className="rounded-none h-12">
-                  <SelectValue placeholder="Select group" />
-                </SelectTrigger>
-                <SelectContent>
-                  {buddyGroups.map(g => (
-                    <SelectItem key={g} value={g}>{g}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {formData.group === 'Others' && (
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold tracking-widest">Specific Group Details</Label>
-                <Textarea placeholder="Define specific emergency role or group metadata..." className="rounded-none min-h-[80px]" value={formData.specialData} onChange={(e) => setFormData({...formData, specialData: e.target.value})} />
-              </div>
-            )}
-            <Button type="submit" className="w-full rounded-none h-14 uppercase font-bold tracking-widest" disabled={registerLoading}>
-              {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Authorize Buddy"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
-  );
-
   return (
     <div className="flex flex-col md:flex-row min-h-[calc(100vh-4rem)] bg-background">
       <aside className="w-full md:w-80 border-r bg-muted/5 order-1">
@@ -696,7 +649,40 @@ export default function DashboardPage() {
             <DialogTitle className="uppercase font-bold">Enlist New Buddy</DialogTitle>
             <DialogDescription className="text-xs">Provide credentials for your emergency orchestration contact.</DialogDescription>
           </DialogHeader>
-          <BuddyRegistrationForm isModal />
+          <div className="pt-6">
+            <form onSubmit={(e) => handleRegisterDevice(e, 'buddy')} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="buddy-name" className="text-[10px] uppercase font-bold tracking-widest">Buddy Name</Label>
+                <Input id="buddy-name" placeholder="e.g. Elvin" className="rounded-none h-12" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="buddy-phone" className="text-[10px] uppercase font-bold tracking-widest">Phone Number</Label>
+                <Input id="buddy-phone" placeholder="+1..." className="rounded-none h-12" value={formData.phoneNumber} onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})} required />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase font-bold tracking-widest">Group / Relationship</Label>
+                <Select value={formData.group} onValueChange={(v) => setFormData({...formData, group: v})}>
+                  <SelectTrigger className="rounded-none h-12">
+                    <SelectValue placeholder="Select group" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {buddyGroups.map(g => (
+                      <SelectItem key={g} value={g}>{g}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {formData.group === 'Others' && (
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-bold tracking-widest">Specific Group Details</Label>
+                  <Textarea placeholder="Define specific emergency role or group metadata..." className="rounded-none min-h-[80px]" value={formData.specialData} onChange={(e) => setFormData({...formData, specialData: e.target.value})} />
+                </div>
+              )}
+              <Button type="submit" className="w-full rounded-none h-14 uppercase font-bold tracking-widest" disabled={registerLoading}>
+                {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Authorize Buddy"}
+              </Button>
+            </form>
+          </div>
         </DialogContent>
       </Dialog>
 
