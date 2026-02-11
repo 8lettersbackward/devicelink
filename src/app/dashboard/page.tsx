@@ -36,14 +36,17 @@ import {
   LogOut,
   Moon,
   Sun,
-  Mail
+  Mail,
+  Search,
+  LayoutDashboard,
+  History
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { doc, setDoc, collection, deleteDoc, serverTimestamp, addDoc, query, orderBy, limit } from "firebase/firestore";
 import { signOut, verifyBeforeUpdateEmail } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 
-type TabType = 'register' | 'manage' | 'notifications' | 'settings';
+type TabType = 'overview' | 'register' | 'manage' | 'notifications' | 'settings';
 
 export default function DashboardPage() {
   const { user, loading: userLoading } = useUser();
@@ -51,10 +54,13 @@ export default function DashboardPage() {
   const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<TabType>('manage');
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
   
   // Theme state
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Registration form state
   const [registerLoading, setRegisterLoading] = useState(false);
@@ -144,6 +150,17 @@ export default function DashboardPage() {
   }, [db, user]);
 
   const { data: notifications, loading: notificationsLoading } = useCollection(notificationsQuery);
+
+  // Filtering Logic
+  const filteredDevices = useMemo(() => {
+    if (!devices) return [];
+    if (!searchQuery) return devices;
+    const lowerQuery = searchQuery.toLowerCase();
+    return devices.filter((d: any) => 
+      d.name.toLowerCase().includes(lowerQuery) || 
+      d.id.toLowerCase().includes(lowerQuery)
+    );
+  }, [devices, searchQuery]);
 
   const createNotification = (message: string) => {
     if (!user || !db) return;
@@ -259,6 +276,7 @@ export default function DashboardPage() {
   if (!user) return null;
 
   const navItems = [
+    { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'register', label: 'Register Device', icon: Plus },
     { id: 'manage', label: 'Manage Devices', icon: Cpu },
     { id: 'notifications', label: 'Notifications', icon: Bell },
@@ -309,12 +327,91 @@ export default function DashboardPage() {
               {navItems.find(t => t.id === activeTab)?.label}
             </h1>
             <p className="text-muted-foreground text-sm tracking-wide">
+              {activeTab === 'overview' && "Central hub status and real-time activity stream."}
               {activeTab === 'manage' && "Active monitoring of your monochrome ecosystem."}
               {activeTab === 'register' && "Onboard new hardware to the central hub."}
               {activeTab === 'notifications' && "Recent system alerts and heartbeat logs."}
               {activeTab === 'settings' && "Global hub configuration and security protocols."}
             </p>
           </header>
+
+          {activeTab === 'overview' && (
+            <div className="space-y-10">
+              {/* Search Section */}
+              <div className="relative group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                <Input 
+                  placeholder="SEARCH NODES BY ID OR NAME..." 
+                  className="pl-12 h-14 rounded-none border-none bg-muted/30 uppercase text-[10px] font-bold tracking-widest focus:bg-muted/50 transition-all"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                {/* Filtered Devices Summary */}
+                <div className="lg:col-span-2 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                      <Cpu className="h-4 w-4" /> Node Registry Status
+                    </h3>
+                    <span className="text-[9px] font-mono text-muted-foreground">{filteredDevices.length} MATCHES</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-4">
+                    {filteredDevices.slice(0, 5).map((device: any) => (
+                      <div key={device.id} className="p-4 bg-muted/20 border border-transparent hover:border-primary/20 transition-all flex items-center justify-between group">
+                        <div className="flex items-center gap-4">
+                          <div className={cn(
+                            "h-2 w-2 rounded-none",
+                            device.status === 'online' ? 'bg-primary' : 'bg-muted-foreground'
+                          )} />
+                          <div>
+                            <p className="text-xs font-bold uppercase">{device.name}</p>
+                            <p className="text-[9px] font-mono text-muted-foreground">NODE_ID: {device.id}</p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => { setViewingDevice(device); setIsViewDialogOpen(true); }} className="opacity-0 group-hover:opacity-100 uppercase text-[9px] font-bold">Inspect</Button>
+                      </div>
+                    ))}
+                    {filteredDevices.length > 5 && (
+                      <Button variant="link" onClick={() => setActiveTab('manage')} className="text-[9px] uppercase font-bold p-0 h-auto justify-start">
+                        + View {filteredDevices.length - 5} more devices in Management
+                      </Button>
+                    )}
+                    {filteredDevices.length === 0 && (
+                      <div className="py-10 text-center border border-dashed">
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground">No matching nodes found in network</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Recent Activity Mini-Feed */}
+                <div className="space-y-6">
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                    <History className="h-4 w-4" /> Recent Activity
+                  </h3>
+                  <div className="space-y-4">
+                    {notifications?.slice(0, 5).map((notif: any) => (
+                      <div key={notif.id} className="p-4 border-l-2 border-primary bg-muted/10">
+                        <p className="text-[10px] font-bold uppercase mb-1">{notif.message}</p>
+                        <p className="text-[9px] text-muted-foreground font-mono">
+                          {notif.createdAt?.toDate?.() ? notif.createdAt.toDate().toLocaleTimeString() : "PENDING..."}
+                        </p>
+                      </div>
+                    ))}
+                    {notifications.length === 0 && (
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground italic">Activity log is empty.</p>
+                    )}
+                    <Button variant="outline" onClick={() => setActiveTab('notifications')} className="w-full rounded-none uppercase text-[9px] font-bold h-10">
+                      View All Logs
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {activeTab === 'manage' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
