@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useUser, useAuth } from "@/firebase";
 import { Button } from "@/components/ui/button";
 import { signOut } from "firebase/auth";
-import { Menu, X, User as UserIcon } from "lucide-react";
+import { Menu, X, User as UserIcon, Hexagon } from "lucide-react";
 import { useState } from "react";
 
 export function Navbar() {
@@ -22,8 +22,9 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <div className="flex-shrink-0">
-            <Link href="/" className="text-xl font-headline font-bold tracking-[0.2em] text-primary">
-              MONOCHROME
+            <Link href="/" className="flex items-center gap-2 text-primary group">
+              <Hexagon className="h-6 w-6 transition-transform group-hover:rotate-12" />
+              <span className="sr-only">Home</span>
             </Link>
           </div>
           
