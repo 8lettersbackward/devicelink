@@ -11,10 +11,11 @@
         "status": { "type": "string", "enum": ["online", "offline", "error"] },
         "ownerId": { "type": "string" },
         "type": { "type": "string" },
+        "category": { "type": "string", "enum": ["buddy", "node"] },
         "specialData": { "type": "string", "description": "Additional custom data for 'Other' type safety equipment." },
         "registeredAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["name", "ownerId", "status"]
+      "required": ["name", "ownerId", "status", "category"]
     },
     "Notification": {
       "title": "Safety Alert",

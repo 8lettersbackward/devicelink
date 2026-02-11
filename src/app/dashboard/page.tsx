@@ -41,7 +41,9 @@ import {
   LayoutDashboard,
   History,
   PieChart as PieChartIcon,
-  ShieldAlert
+  ShieldAlert,
+  PlusCircle,
+  PlusSquare
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { doc, setDoc, collection, deleteDoc, serverTimestamp, addDoc, query, orderBy, limit } from "firebase/firestore";
@@ -51,7 +53,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-type TabType = 'overview' | 'register' | 'manage' | 'notifications' | 'settings';
+type TabType = 'overview' | 'add-buddy' | 'add-node' | 'manage-buddy' | 'manage-node' | 'notifications' | 'settings';
 
 export default function DashboardPage() {
   const { user, loading: userLoading } = useUser();
@@ -78,15 +80,9 @@ export default function DashboardPage() {
   const [viewingDevice, setViewingDevice] = useState<any>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 
-  const [newEmail, setNewEmail] = useState("");
-  const [emailLoading, setEmailLoading] = useState(false);
-
   useEffect(() => {
     if (!userLoading && !user) {
       router.push("/login");
-    }
-    if (user) {
-      setNewEmail(user.email || "");
     }
     const isDark = document.documentElement.classList.contains('dark');
     setTheme(isDark ? 'dark' : 'light');
@@ -107,23 +103,6 @@ export default function DashboardPage() {
     } else {
       document.documentElement.classList.remove('dark');
     }
-  };
-
-  const handleUpdateEmail = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !newEmail || newEmail === user.email) return;
-    setEmailLoading(true);
-    verifyBeforeUpdateEmail(user, newEmail)
-      .then(() => {
-        toast({
-          title: "Verification Sent",
-          description: `Security verification sent to ${newEmail}.`
-        });
-      })
-      .catch((error) => {
-        toast({ variant: "destructive", title: "Update Failed", description: error.message });
-      })
-      .finally(() => setEmailLoading(false));
   };
 
   const handleLogout = () => {
@@ -171,15 +150,28 @@ export default function DashboardPage() {
 
   const filteredDevices = useMemo(() => {
     if (!devices) return [];
-    if (!searchQuery) return devices;
-    const lowerQuery = searchQuery.toLowerCase();
-    return devices.filter((d: any) => 
-      d.name?.toLowerCase().includes(lowerQuery) || 
-      d.id?.toLowerCase().includes(lowerQuery) ||
-      d.type?.toLowerCase().includes(lowerQuery) ||
-      d.status?.toLowerCase().includes(lowerQuery)
-    );
-  }, [devices, searchQuery]);
+    
+    // Filter by search query
+    let filtered = devices;
+    if (searchQuery) {
+      const lowerQuery = searchQuery.toLowerCase();
+      filtered = filtered.filter((d: any) => 
+        d.name?.toLowerCase().includes(lowerQuery) || 
+        d.id?.toLowerCase().includes(lowerQuery) ||
+        d.type?.toLowerCase().includes(lowerQuery) ||
+        d.status?.toLowerCase().includes(lowerQuery)
+      );
+    }
+
+    // Filter by tab category
+    if (activeTab === 'manage-buddy') {
+      filtered = filtered.filter((d: any) => d.category === 'buddy');
+    } else if (activeTab === 'manage-node') {
+      filtered = filtered.filter((d: any) => d.category === 'node');
+    }
+
+    return filtered;
+  }, [devices, searchQuery, activeTab]);
 
   const createNotification = (message: string) => {
     if (!user || !db) return;
@@ -192,7 +184,7 @@ export default function DashboardPage() {
     });
   };
 
-  const handleRegisterDevice = (e: React.FormEvent) => {
+  const handleRegisterDevice = (e: React.FormEvent, category: 'buddy' | 'node') => {
     e.preventDefault();
     if (!user || !db) return;
     setRegisterLoading(true);
@@ -202,16 +194,18 @@ export default function DashboardPage() {
       id: formData.deviceId,
       type: formData.type,
       status: formData.status,
+      category: category,
       ownerId: user.uid,
       registeredAt: serverTimestamp(),
       ...(formData.type === 'Other' && { specialData: formData.specialData })
     };
     setDoc(deviceRef, payload, { merge: true })
       .then(() => {
-        createNotification(`New Buddy / Node registered: ${formData.name}`);
+        const typeLabel = category === 'buddy' ? 'Buddy' : 'Node';
+        createNotification(`New ${typeLabel} registered: ${formData.name}`);
         setFormData({ name: '', deviceId: '', type: 'SOS Beacon', status: 'online', specialData: '' });
-        setActiveTab('manage');
-        toast({ title: "Protection Activated", description: "Buddy / Node successfully authorized." });
+        setActiveTab(category === 'buddy' ? 'manage-buddy' : 'manage-node');
+        toast({ title: "Protection Activated", description: `${typeLabel} successfully authorized.` });
       })
       .catch((error) => {
         toast({ variant: "destructive", title: "Error", description: error.message });
@@ -226,10 +220,11 @@ export default function DashboardPage() {
     const { id, ...updateData } = editingDevice;
     setDoc(deviceRef, updateData, { merge: true })
       .then(() => {
-        createNotification(`Buddy / Node protocol updated: ${editingDevice.name}`);
+        const typeLabel = editingDevice.category === 'buddy' ? 'Buddy' : 'Node';
+        createNotification(`${typeLabel} protocol updated: ${editingDevice.name}`);
         setIsEditDialogOpen(false);
         setEditingDevice(null);
-        toast({ title: "Protocol Saved", description: "Buddy / Node configuration updated." });
+        toast({ title: "Protocol Saved", description: "Configuration updated." });
       });
   };
 
@@ -237,8 +232,9 @@ export default function DashboardPage() {
     if (!user || !db) return;
     const deviceRef = doc(db, "users", user.uid, "devices", device.id);
     deleteDoc(deviceRef).then(() => {
-      createNotification(`Protection deactivated for Buddy / Node: ${device.name}`);
-      toast({ title: "Buddy / Node Purged", description: "Buddy / Node removed from network." });
+      const typeLabel = device.category === 'buddy' ? 'Buddy' : 'Node';
+      createNotification(`Protection deactivated for ${typeLabel}: ${device.name}`);
+      toast({ title: "Asset Purged", description: "Removed from network." });
     });
   };
 
@@ -257,8 +253,10 @@ export default function DashboardPage() {
 
   const navItems = [
     { id: 'overview', label: 'Safety Overview', icon: LayoutDashboard },
-    { id: 'register', label: 'Add Buddy / Node', icon: Plus },
-    { id: 'manage', label: 'Manage Buddy / Node', icon: Cpu },
+    { id: 'add-buddy', label: 'Add Buddy', icon: PlusCircle },
+    { id: 'add-node', label: 'Add Node', icon: PlusSquare },
+    { id: 'manage-buddy', label: 'Manage Buddy', icon: Smartphone },
+    { id: 'manage-node', label: 'Manage Node', icon: Cpu },
     { id: 'notifications', label: 'Safety Alerts', icon: Bell },
     { id: 'settings', label: 'Security Settings', icon: Settings },
   ] as const;
@@ -280,15 +278,15 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="mb-8 px-4 py-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Emergency Buddy Hub</p>
+          <div className="mb-4 px-4 py-2">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Control Center</p>
           </div>
           {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={cn(
-                "w-full flex items-center justify-between px-4 py-4 transition-all duration-200 group",
+                "w-full flex items-center justify-between px-4 py-3 transition-all duration-200 group",
                 activeTab === item.id 
                   ? "bg-primary text-primary-foreground font-bold" 
                   : "hover:bg-muted text-muted-foreground"
@@ -296,18 +294,11 @@ export default function DashboardPage() {
             >
               <div className="flex items-center gap-4">
                 <item.icon className={cn("h-4 w-4", activeTab === item.id ? "" : "group-hover:text-primary")} />
-                <span className="text-xs uppercase tracking-widest font-bold">{item.label}</span>
+                <span className="text-[10px] uppercase tracking-widest font-bold">{item.label}</span>
               </div>
               {activeTab === item.id && <div className="h-1 w-1 bg-primary-foreground rotate-45" />}
             </button>
           ))}
-
-          <div className="mt-20 px-4">
-             <div className="p-6 border border-dashed text-center">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground mb-4">Active Safety Nodes</p>
-                <p className="text-4xl font-headline font-bold">{devices?.length || 0}</p>
-             </div>
-          </div>
         </div>
       </aside>
 
@@ -319,8 +310,8 @@ export default function DashboardPage() {
             </h1>
             <p className="text-muted-foreground text-sm tracking-wide">
               {activeTab === 'overview' && `Protection status for ${currentName}. Active heartbeat and alerts.`}
-              {activeTab === 'manage' && "Registry of your emergency Buddy / Node hardware."}
-              {activeTab === 'register' && "Pair a new emergency Buddy / Node to your profile."}
+              {(activeTab === 'manage-buddy' || activeTab === 'manage-node') && "Registry of your active safety hardware nodes."}
+              {(activeTab === 'add-buddy' || activeTab === 'add-node') && "Pair a new emergency asset to your secure profile."}
               {activeTab === 'notifications' && "Critical safety logs and heartbeat history."}
               {activeTab === 'settings' && "Configure security protocols and account privacy."}
             </p>
@@ -355,7 +346,7 @@ export default function DashboardPage() {
                       <div className="relative group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary" />
                         <Input 
-                          placeholder="FILTER BUDDY / NODE, IDS, OR PROTOCOLS..." 
+                          placeholder="FILTER ASSETS, IDS, OR STATUS..." 
                           className="pl-12 h-14 rounded-none border-none bg-muted/30 uppercase text-[10px] font-bold tracking-widest"
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
@@ -366,12 +357,12 @@ export default function DashboardPage() {
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
                         <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                          <ShieldAlert className="h-4 w-4" /> Buddy / Node Registry
+                          <ShieldAlert className="h-4 w-4" /> Global Asset Registry
                         </h3>
                       </div>
                       
                       <div className="grid grid-cols-1 gap-4">
-                        {filteredDevices.slice(0, 5).map((device: any) => (
+                        {filteredDevices.slice(0, 10).map((device: any) => (
                           <div key={device.id} className="p-4 bg-muted/20 border border-transparent hover:border-primary/20 transition-all flex items-center justify-between group">
                             <div className="flex items-center gap-4">
                               <div className={cn(
@@ -382,7 +373,7 @@ export default function DashboardPage() {
                               <div>
                                 <div className="flex items-center gap-2">
                                   <p className="text-xs font-bold uppercase">{device.name}</p>
-                                  <span className="text-[8px] bg-muted px-1.5 py-0.5 font-bold uppercase opacity-70">{device.type}</span>
+                                  <span className="text-[8px] bg-muted px-1.5 py-0.5 font-bold uppercase opacity-70">{device.category}</span>
                                 </div>
                                 <p className="text-[9px] font-mono text-muted-foreground">ID: {device.id}</p>
                               </div>
@@ -433,22 +424,22 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {activeTab === 'manage' && (
+          {(activeTab === 'manage-buddy' || activeTab === 'manage-node') && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {devicesLoading ? (
                 <div className="col-span-full py-12 flex flex-col items-center">
                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
-                   <p className="text-xs font-bold uppercase tracking-widest">Scanning Buddy / Node Network...</p>
+                   <p className="text-xs font-bold uppercase tracking-widest">Scanning Network...</p>
                 </div>
-              ) : devices.length === 0 ? (
+              ) : filteredDevices.length === 0 ? (
                 <div className="col-span-full py-20 border-2 border-dashed flex flex-col items-center justify-center text-center px-4">
                   <ShieldAlert className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
-                  <p className="text-lg font-bold uppercase mb-2">No Buddy / Node Registered</p>
-                  <p className="text-sm text-muted-foreground mb-6">Your safety network is currently unmonitored.</p>
-                  <Button onClick={() => setActiveTab('register')} variant="outline" className="rounded-none uppercase font-bold text-[10px]">Onboard New Buddy / Node</Button>
+                  <p className="text-lg font-bold uppercase mb-2">No {activeTab === 'manage-buddy' ? 'Buddy' : 'Node'} Registered</p>
+                  <p className="text-sm text-muted-foreground mb-6">This section of your safety network is currently unmonitored.</p>
+                  <Button onClick={() => setActiveTab(activeTab === 'manage-buddy' ? 'add-buddy' : 'add-node')} variant="outline" className="rounded-none uppercase font-bold text-[10px]">Onboard New Asset</Button>
                 </div>
               ) : (
-                devices.map((device: any) => (
+                filteredDevices.map((device: any) => (
                   <Card key={device.id} className="border-none shadow-none bg-muted/30 hover:bg-muted/50 transition-colors group relative">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                       <div className="space-y-1">
@@ -474,21 +465,21 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {activeTab === 'register' && (
+          {(activeTab === 'add-buddy' || activeTab === 'add-node') && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
               <Card className="border-none shadow-none bg-muted/30 h-fit">
                 <CardHeader>
-                  <CardTitle className="text-sm uppercase font-bold tracking-widest">Buddy / Node Credentials</CardTitle>
-                  <CardDescription className="text-xs">Provide unique identifiers for your emergency equipment.</CardDescription>
+                  <CardTitle className="text-sm uppercase font-bold tracking-widest">Credentials</CardTitle>
+                  <CardDescription className="text-xs">Provide identifiers for your emergency asset.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleRegisterDevice} className="space-y-6">
+                  <form onSubmit={(e) => handleRegisterDevice(e, activeTab === 'add-buddy' ? 'buddy' : 'node')} className="space-y-6">
                     <div className="space-y-2">
-                      <Label htmlFor="name" className="text-[10px] uppercase font-bold tracking-widest">Buddy / Node Name</Label>
-                      <Input id="name" placeholder="e.g. Personal SOS" className="rounded-none h-12" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
+                      <Label htmlFor="name" className="text-[10px] uppercase font-bold tracking-widest">Asset Name</Label>
+                      <Input id="name" placeholder="e.g. Primary SOS" className="rounded-none h-12" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="deviceId" className="text-[10px] uppercase font-bold tracking-widest">Master Node ID</Label>
+                      <Label htmlFor="deviceId" className="text-[10px] uppercase font-bold tracking-widest">Unique Node ID</Label>
                       <Input id="deviceId" placeholder="e.g. SOS-X1" className="rounded-none h-12" value={formData.deviceId} onChange={(e) => setFormData({...formData, deviceId: e.target.value})} required />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -508,7 +499,7 @@ export default function DashboardPage() {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-[10px] uppercase font-bold tracking-widest">State</Label>
+                        <Label className="text-[10px] uppercase font-bold tracking-widest">Initial State</Label>
                         <Select value={formData.status} onValueChange={(v) => setFormData({...formData, status: v})}>
                           <SelectTrigger className="rounded-none h-12">
                             <SelectValue placeholder="Select status" />
@@ -523,12 +514,12 @@ export default function DashboardPage() {
                     </div>
                     {formData.type === 'Other' && (
                       <div className="space-y-2">
-                        <Label className="text-[10px] uppercase font-bold tracking-widest">Medical / Safety Data</Label>
+                        <Label className="text-[10px] uppercase font-bold tracking-widest">Technical Data</Label>
                         <Textarea placeholder="Provide specific safety details for this node..." className="rounded-none min-h-[100px]" value={formData.specialData} onChange={(e) => setFormData({...formData, specialData: e.target.value})} />
                       </div>
                     )}
                     <Button type="submit" className="w-full rounded-none h-14 uppercase font-bold tracking-widest" disabled={registerLoading}>
-                      {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Arm Buddy / Node"}
+                      {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : `Arm ${activeTab === 'add-buddy' ? 'Buddy' : 'Node'}`}
                     </Button>
                   </form>
                 </CardContent>
@@ -536,7 +527,7 @@ export default function DashboardPage() {
 
               <div className="p-8 border-2 border-dashed bg-muted/10 h-fit">
                 <h3 className="text-xs font-bold uppercase mb-4 tracking-[0.2em]">Protection Protocol</h3>
-                <p className="text-[10px] text-muted-foreground leading-relaxed">By registering a Buddy / Node, you activate 24/7 monitoring. Ensure the hardware is within proximity for emergency handshakes and heartbeat verification.</p>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">By registering an asset, you activate 24/7 monitoring. Ensure the hardware is within proximity for emergency handshakes and heartbeat verification.</p>
               </div>
             </div>
           )}
@@ -587,11 +578,11 @@ export default function DashboardPage() {
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="rounded-none border-none">
-          <DialogHeader><DialogTitle className="uppercase font-bold">Edit Buddy / Node</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="uppercase font-bold">Edit Configuration</DialogTitle></DialogHeader>
           {editingDevice && (
             <form onSubmit={handleUpdateDevice} className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold">Buddy / Node Name</Label>
+                <Label className="text-[10px] uppercase font-bold">Asset Name</Label>
                 <Input className="rounded-none" value={editingDevice.name} onChange={(e) => setEditingDevice({...editingDevice, name: e.target.value})} required />
               </div>
               <DialogFooter><Button type="submit" className="rounded-none uppercase text-[10px] font-bold">Update Protocol</Button></DialogFooter>
@@ -602,10 +593,11 @@ export default function DashboardPage() {
 
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="rounded-none border-none">
-          <DialogHeader><DialogTitle className="uppercase font-bold">Buddy / Node Details</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="uppercase font-bold">Asset Details</DialogTitle></DialogHeader>
           {viewingDevice && (
             <div className="space-y-4">
               <p className="text-[10px] uppercase font-bold text-muted-foreground">Identifier: <span className="text-foreground font-mono">{viewingDevice.id}</span></p>
+              <p className="text-[10px] uppercase font-bold text-muted-foreground">Category: <span className="text-foreground">{viewingDevice.category}</span></p>
               <p className="text-[10px] uppercase font-bold text-muted-foreground">Protocol: <span className="text-foreground">{viewingDevice.type}</span></p>
               <Button variant="outline" onClick={() => setIsViewDialogOpen(false)} className="rounded-none w-full uppercase text-[10px] font-bold">Close Hub</Button>
             </div>
