@@ -70,7 +70,8 @@ import {
   LocateFixed,
   Map as MapIcon,
   Navigation,
-  Star
+  Star,
+  Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { doc, setDoc, collection, deleteDoc, serverTimestamp, addDoc, query, orderBy, limit } from "firebase/firestore";
@@ -351,6 +352,24 @@ export default function DashboardPage() {
         ? current.filter(g => g !== group)
         : [...current, group];
       setFormData({ ...formData, alertGroups: updated });
+    }
+  };
+
+  const triggerNodeAlert = (node: any) => {
+    if (!user || !db || !devices) return;
+    
+    const nodeAlertGroups = node.alertGroups || [];
+    const targetBuddies = devices.filter(d => d.category === 'buddy' && nodeAlertGroups.includes(d.group));
+
+    if (targetBuddies.length > 0) {
+      targetBuddies.forEach(buddy => {
+        createNotification(`ALERT: SOS from Node ${node.name}. Contact ${buddy.name} (${buddy.phoneNumber}) notified.`);
+      });
+      toast({ title: "Orchestration Success", description: `Alerts dispatched to ${targetBuddies.length} buddies.` });
+    } else {
+      const groupsText = nodeAlertGroups.length > 0 ? nodeAlertGroups.join(", ") : "None assigned";
+      createNotification(`WARNING: SOS from Node ${node.name} triggered, but NO CONTACTS found in groups: ${groupsText}`);
+      toast({ variant: "destructive", title: "Orchestration Warning", description: "No buddies found in the assigned groups. Check your registry." });
     }
   };
 
@@ -690,6 +709,9 @@ export default function DashboardPage() {
                           <span className="text-[10px] font-bold uppercase tracking-wider">Status: {device.status === 'online' ? 'Online' : device.status === 'error' ? 'In Alert Mode' : 'Idle'}</span>
                         </div>
                         <div className="flex gap-2">
+                           <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold" onClick={() => triggerNodeAlert(device)}>
+                             <Zap className="h-3 w-3 mr-1" /> Trigger SOS
+                           </Button>
                            <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold" onClick={() => { setViewingDevice(device); setIsViewDialogOpen(true); }}>View</Button>
                            <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold" onClick={() => { setEditingDevice({...device}); setIsEditDialogOpen(true); }}>Edit</Button>
                            <Button 
@@ -1161,3 +1183,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
