@@ -39,7 +39,8 @@ import {
   Mail,
   Search,
   LayoutDashboard,
-  History
+  History,
+  Filter
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { doc, setDoc, collection, deleteDoc, serverTimestamp, addDoc, query, orderBy, limit } from "firebase/firestore";
@@ -151,14 +152,16 @@ export default function DashboardPage() {
 
   const { data: notifications, loading: notificationsLoading } = useCollection(notificationsQuery);
 
-  // Filtering Logic
+  // Filtering Logic - Expanded to Status and Type
   const filteredDevices = useMemo(() => {
     if (!devices) return [];
     if (!searchQuery) return devices;
     const lowerQuery = searchQuery.toLowerCase();
     return devices.filter((d: any) => 
-      d.name.toLowerCase().includes(lowerQuery) || 
-      d.id.toLowerCase().includes(lowerQuery)
+      d.name?.toLowerCase().includes(lowerQuery) || 
+      d.id?.toLowerCase().includes(lowerQuery) ||
+      d.type?.toLowerCase().includes(lowerQuery) ||
+      d.status?.toLowerCase().includes(lowerQuery)
     );
   }, [devices, searchQuery]);
 
@@ -337,15 +340,39 @@ export default function DashboardPage() {
 
           {activeTab === 'overview' && (
             <div className="space-y-10">
-              {/* Search Section */}
-              <div className="relative group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                <Input 
-                  placeholder="SEARCH NODES BY ID OR NAME..." 
-                  className="pl-12 h-14 rounded-none border-none bg-muted/30 uppercase text-[10px] font-bold tracking-widest focus:bg-muted/50 transition-all"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+              {/* Enhanced Search Section */}
+              <div className="space-y-4">
+                <div className="relative group">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                  <Input 
+                    placeholder="SEARCH BY NAME, ID, TYPE, OR STATUS..." 
+                    className="pl-12 h-14 rounded-none border-none bg-muted/30 uppercase text-[10px] font-bold tracking-widest focus:bg-muted/50 transition-all"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground opacity-30" />
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {['Online', 'Offline', 'Error', 'Sensor', 'Actuator', 'Gateway'].map(tag => (
+                    <button 
+                      key={tag}
+                      onClick={() => setSearchQuery(tag)}
+                      className="px-3 py-1 bg-muted/20 hover:bg-muted/40 text-[9px] uppercase font-bold tracking-wider transition-colors"
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                  {searchQuery && (
+                    <button 
+                      onClick={() => setSearchQuery("")}
+                      className="px-3 py-1 text-primary text-[9px] uppercase font-bold tracking-wider underline underline-offset-4"
+                    >
+                      Clear Filter
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -364,10 +391,14 @@ export default function DashboardPage() {
                         <div className="flex items-center gap-4">
                           <div className={cn(
                             "h-2 w-2 rounded-none",
-                            device.status === 'online' ? 'bg-primary' : 'bg-muted-foreground'
+                            device.status === 'online' ? 'bg-primary' : 
+                            device.status === 'error' ? 'bg-destructive' : 'bg-muted-foreground'
                           )} />
                           <div>
-                            <p className="text-xs font-bold uppercase">{device.name}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs font-bold uppercase">{device.name}</p>
+                              <span className="text-[8px] bg-muted px-1.5 py-0.5 font-bold uppercase tracking-tighter opacity-70">{device.type}</span>
+                            </div>
                             <p className="text-[9px] font-mono text-muted-foreground">NODE_ID: {device.id}</p>
                           </div>
                         </div>
