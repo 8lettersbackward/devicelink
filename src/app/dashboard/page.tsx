@@ -71,7 +71,8 @@ import {
   Map as MapIcon,
   Navigation,
   Star,
-  Zap
+  Zap,
+  ScrollText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { doc, setDoc, collection, deleteDoc, serverTimestamp, addDoc, query, orderBy, limit } from "firebase/firestore";
@@ -80,6 +81,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type TabType = 'overview' | 'manage-buddy' | 'manage-node' | 'location' | 'notifications' | 'settings';
 
@@ -931,7 +933,7 @@ export default function DashboardPage() {
                 </div>
               )}
               <Button type="submit" className="w-full rounded-none h-14 uppercase font-bold tracking-widest" disabled={registerLoading}>
-                {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Authorize Buddy"}
+                {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save & Authorize Buddy"}
               </Button>
             </form>
           </div>
@@ -991,54 +993,60 @@ export default function DashboardPage() {
             <DialogDescription className="text-xs">Provide identifiers for your emergency hardware asset.</DialogDescription>
           </DialogHeader>
           <form onSubmit={(e) => handleRegisterDevice(e, 'node')} className="space-y-6 pt-4">
-            <div className="space-y-2">
-              <Label htmlFor="modal-node-name" className="text-[10px] uppercase font-bold tracking-widest">Node Name</Label>
-              <Input id="modal-node-name" placeholder="e.g. Primary SOS Beacon" className="rounded-none h-12" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="modal-node-id" className="text-[10px] uppercase font-bold tracking-widest">Hardware ID</Label>
-              <Input id="modal-node-id" placeholder="e.g. BEACON-01" className="rounded-none h-12" value={formData.deviceId} onChange={(e) => setFormData({...formData, deviceId: e.target.value})} required />
-            </div>
-            
-            <div className="space-y-4">
-              <Label className="text-[10px] uppercase font-bold flex items-center gap-2">
-                <Radio className="h-3 w-3" /> Target Contact Groups
-              </Label>
-              <div className="grid grid-cols-2 gap-2 p-4 bg-muted/30 border border-dashed rounded-none max-h-[160px] overflow-y-auto">
-                {buddyGroups.map((group) => (
-                  <div key={group} className="flex items-center space-x-2">
-                    <Checkbox 
-                      id={`group-${group}`} 
-                      checked={formData.alertGroups.includes(group)}
-                      onCheckedChange={() => toggleAlertGroup(group)}
-                    />
-                    <Label htmlFor={`group-${group}`} className="text-[10px] uppercase font-bold cursor-pointer">{group}</Label>
+            <ScrollArea className="max-h-[60vh] pr-4">
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="modal-node-name" className="text-[10px] uppercase font-bold tracking-widest">Node Name</Label>
+                  <Input id="modal-node-name" placeholder="e.g. Primary SOS Beacon" className="rounded-none h-12" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="modal-node-id" className="text-[10px] uppercase font-bold tracking-widest">Hardware ID</Label>
+                  <Input id="modal-node-id" placeholder="e.g. BEACON-01" className="rounded-none h-12" value={formData.deviceId} onChange={(e) => setFormData({...formData, deviceId: e.target.value})} required />
+                </div>
+                
+                <div className="space-y-4">
+                  <Label className="text-[10px] uppercase font-bold flex items-center gap-2">
+                    <Radio className="h-3 w-3" /> Target Contact Groups
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2 p-4 bg-muted/30 border border-dashed rounded-none max-h-[160px] overflow-y-auto">
+                    {buddyGroups.map((group) => (
+                      <div key={group} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`group-${group}`} 
+                          checked={formData.alertGroups.includes(group)}
+                          onCheckedChange={() => toggleAlertGroup(group)}
+                        />
+                        <Label htmlFor={`group-${group}`} className="text-[10px] uppercase font-bold cursor-pointer">{group}</Label>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              
-              {/* Linked Buddies Preview */}
-              <div className="space-y-2">
-                <p className="text-[8px] text-muted-foreground uppercase font-bold">Auto-Linked Recipients ({getLinkedBuddies(formData.alertGroups).length})</p>
-                <div className="flex flex-wrap gap-1">
-                  {getLinkedBuddies(formData.alertGroups).length > 0 ? (
-                    getLinkedBuddies(formData.alertGroups).map(b => (
-                      <span key={b.id} className="text-[8px] bg-primary/10 text-primary px-2 py-0.5 border border-primary/20 font-bold uppercase">{b.name}</span>
-                    ))
-                  ) : (
-                    <span className="text-[8px] text-muted-foreground italic">No buddies currently linked to these groups.</span>
-                  )}
+                  
+                  {/* Linked Buddies Preview */}
+                  <div className="space-y-2">
+                    <p className="text-[8px] text-muted-foreground uppercase font-bold">Auto-Linked Recipients ({getLinkedBuddies(formData.alertGroups).length})</p>
+                    <div className="flex flex-wrap gap-1">
+                      {getLinkedBuddies(formData.alertGroups).length > 0 ? (
+                        getLinkedBuddies(formData.alertGroups).map(b => (
+                          <span key={b.id} className="text-[8px] bg-primary/10 text-primary px-2 py-0.5 border border-primary/20 font-bold uppercase">{b.name}</span>
+                        ))
+                      ) : (
+                        <span className="text-[8px] text-muted-foreground italic">No buddies currently linked to these groups.</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-bold tracking-widest">Technical Data</Label>
+                  <Textarea placeholder="Provide specific safety details for this node..." className="rounded-none min-h-[100px]" value={formData.specialData} onChange={(e) => setFormData({...formData, specialData: e.target.value})} />
                 </div>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-bold tracking-widest">Technical Data</Label>
-              <Textarea placeholder="Provide specific safety details for this node..." className="rounded-none min-h-[100px]" value={formData.specialData} onChange={(e) => setFormData({...formData, specialData: e.target.value})} />
-            </div>
-            <Button type="submit" className="w-full rounded-none h-14 uppercase font-bold tracking-widest" disabled={registerLoading}>
-              {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Arm Node"}
-            </Button>
+            </ScrollArea>
+            <DialogFooter className="pt-4 border-t border-dashed">
+              <Button type="submit" className="w-full rounded-none h-14 uppercase font-bold tracking-widest" disabled={registerLoading}>
+                {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save & Arm Node"}
+              </Button>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
@@ -1048,82 +1056,88 @@ export default function DashboardPage() {
           <DialogHeader><DialogTitle className="uppercase font-bold">Update Configuration</DialogTitle></DialogHeader>
           {editingDevice && (
             <form onSubmit={handleUpdateDevice} className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold">Label</Label>
-                <Input className="rounded-none" value={editingDevice.name} onChange={(e) => setEditingDevice({...editingDevice, name: e.target.value})} required />
-              </div>
-              {editingDevice.category === 'buddy' ? (
-                <>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] uppercase font-bold">Phone Number</Label>
-                    <Input className="rounded-none" value={editingDevice.phoneNumber} onChange={(e) => setEditingDevice({...editingDevice, phoneNumber: e.target.value})} required />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] uppercase font-bold">Role</Label>
-                      <Input className="rounded-none" value={editingDevice.role} onChange={(e) => setEditingDevice({...editingDevice, role: e.target.value})} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] uppercase font-bold">Priority</Label>
-                      <Select value={editingDevice.priority} onValueChange={(v) => setEditingDevice({...editingDevice, priority: v})}>
-                        <SelectTrigger className="rounded-none">
-                          <SelectValue placeholder="Priority" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Low">Low</SelectItem>
-                          <SelectItem value="Medium">Medium</SelectItem>
-                          <SelectItem value="High">High</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] uppercase font-bold">Contact Group</Label>
-                    <Select value={editingDevice.group} onValueChange={(v) => setEditingDevice({...editingDevice, group: v})}>
-                      <SelectTrigger className="rounded-none">
-                        <SelectValue placeholder="Group" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {buddyGroups.map(g => (
-                          <SelectItem key={g} value={g}>{g}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </>
-              ) : (
+              <ScrollArea className="max-h-[60vh] pr-4">
                 <div className="space-y-4">
-                  <Label className="text-[10px] uppercase font-bold flex items-center gap-2">
-                    <Radio className="h-3 w-3" /> Target Contact Groups
-                  </Label>
-                  <div className="grid grid-cols-2 gap-2 p-4 bg-muted/30 border border-dashed rounded-none max-h-[160px] overflow-y-auto">
-                    {buddyGroups.map((group) => (
-                      <div key={group} className="flex items-center space-x-2">
-                        <Checkbox 
-                          id={`edit-group-${group}`} 
-                          checked={(editingDevice.alertGroups || []).includes(group)}
-                          onCheckedChange={() => toggleAlertGroup(group, true)}
-                        />
-                        <Label htmlFor={`edit-group-${group}`} className="text-[10px] uppercase font-bold cursor-pointer">{group}</Label>
-                      </div>
-                    ))}
-                  </div>
-
                   <div className="space-y-2">
-                    <p className="text-[8px] text-muted-foreground uppercase font-bold">Auto-Linked Recipients ({getLinkedBuddies(editingDevice.alertGroups).length})</p>
-                    <div className="flex flex-wrap gap-1">
-                      {getLinkedBuddies(editingDevice.alertGroups).length > 0 ? (
-                        getLinkedBuddies(editingDevice.alertGroups).map(b => (
-                          <span key={b.id} className="text-[8px] bg-primary/10 text-primary px-2 py-0.5 border border-primary/20 font-bold uppercase">{b.name}</span>
-                        ))
-                      ) : (
-                        <span className="text-[8px] text-muted-foreground italic">No buddies currently linked to these groups.</span>
-                      )}
-                    </div>
+                    <Label className="text-[10px] uppercase font-bold">Label</Label>
+                    <Input className="rounded-none" value={editingDevice.name} onChange={(e) => setEditingDevice({...editingDevice, name: e.target.value})} required />
                   </div>
+                  {editingDevice.category === 'buddy' ? (
+                    <>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] uppercase font-bold">Phone Number</Label>
+                        <Input className="rounded-none" value={editingDevice.phoneNumber} onChange={(e) => setEditingDevice({...editingDevice, phoneNumber: e.target.value})} required />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] uppercase font-bold">Role</Label>
+                          <Input className="rounded-none" value={editingDevice.role} onChange={(e) => setEditingDevice({...editingDevice, role: e.target.value})} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] uppercase font-bold">Priority</Label>
+                          <Select value={editingDevice.priority} onValueChange={(v) => setEditingDevice({...editingDevice, priority: v})}>
+                            <SelectTrigger className="rounded-none">
+                              <SelectValue placeholder="Priority" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Low">Low</SelectItem>
+                              <SelectItem value="Medium">Medium</SelectItem>
+                              <SelectItem value="High">High</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] uppercase font-bold">Contact Group</Label>
+                        <Select value={editingDevice.group} onValueChange={(v) => setEditingDevice({...editingDevice, group: v})}>
+                          <SelectTrigger className="rounded-none">
+                            <SelectValue placeholder="Group" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {buddyGroups.map(g => (
+                              <SelectItem key={g} value={g}>{g}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-4">
+                      <Label className="text-[10px] uppercase font-bold flex items-center gap-2">
+                        <Radio className="h-3 w-3" /> Target Contact Groups
+                      </Label>
+                      <div className="grid grid-cols-2 gap-2 p-4 bg-muted/30 border border-dashed rounded-none max-h-[160px] overflow-y-auto">
+                        {buddyGroups.map((group) => (
+                          <div key={group} className="flex items-center space-x-2">
+                            <Checkbox 
+                              id={`edit-group-${group}`} 
+                              checked={(editingDevice.alertGroups || []).includes(group)}
+                              onCheckedChange={() => toggleAlertGroup(group, true)}
+                            />
+                            <Label htmlFor={`edit-group-${group}`} className="text-[10px] uppercase font-bold cursor-pointer">{group}</Label>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="space-y-2">
+                        <p className="text-[8px] text-muted-foreground uppercase font-bold">Auto-Linked Recipients ({getLinkedBuddies(editingDevice.alertGroups).length})</p>
+                        <div className="flex flex-wrap gap-1">
+                          {getLinkedBuddies(editingDevice.alertGroups).length > 0 ? (
+                            getLinkedBuddies(editingDevice.alertGroups).map(b => (
+                              <span key={b.id} className="text-[8px] bg-primary/10 text-primary px-2 py-0.5 border border-primary/20 font-bold uppercase">{b.name}</span>
+                            ))
+                          ) : (
+                            <span className="text-[8px] text-muted-foreground italic">No buddies currently linked to these groups.</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-              <DialogFooter><Button type="submit" className="rounded-none uppercase text-[10px] font-bold w-full">Synchronize Changes</Button></DialogFooter>
+              </ScrollArea>
+              <DialogFooter className="pt-4 border-t border-dashed">
+                <Button type="submit" className="rounded-none uppercase text-[10px] font-bold w-full h-12">Save Configuration</Button>
+              </DialogFooter>
             </form>
           )}
         </DialogContent>
