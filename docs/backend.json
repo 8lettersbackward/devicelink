@@ -13,10 +13,13 @@
         "type": { "type": "string", "description": "The specific type or relationship of the asset." },
         "category": { "type": "string", "enum": ["buddy", "node"] },
         "phoneNumber": { "type": "string", "description": "Contact number for human buddies." },
+        "role": { "type": "string", "description": "The safety role of the buddy, e.g., Primary Emergency Contact." },
+        "priority": { "type": "string", "enum": ["Low", "Medium", "High"], "description": "The alert priority for this contact." },
         "group": { "type": "string", "enum": ["Family", "Friend", "Close Friend", "Segurulo", "Others"], "description": "The safety group classification for buddies." },
         "alertGroups": { "type": "array", "items": { "type": "string" }, "description": "The buddy groups alerted by this node." },
         "specialData": { "type": "string", "description": "Additional custom data for 'Others' group or specific safety info." },
-        "registeredAt": { "type": "string", "format": "date-time" }
+        "registeredAt": { "type": "string", "format": "date-time" },
+        "lastActiveAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "ownerId", "status", "category"]
     },

@@ -21,6 +21,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   Plus, 
   Settings, 
@@ -54,7 +64,8 @@ import {
   MapPin,
   LocateFixed,
   Map as MapIcon,
-  Navigation
+  Navigation,
+  Star
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { doc, setDoc, collection, deleteDoc, serverTimestamp, addDoc, query, orderBy, limit } from "firebase/firestore";
@@ -87,6 +98,8 @@ export default function DashboardPage() {
     status: 'online',
     phoneNumber: '',
     group: 'Friend',
+    role: 'Primary Emergency Contact',
+    priority: 'High',
     alertGroups: [] as string[],
     specialData: ''
   });
@@ -101,6 +114,8 @@ export default function DashboardPage() {
   const [isAddBuddyDialogOpen, setIsAddBuddyDialogOpen] = useState(false);
   const [isAddNodeDialogOpen, setIsAddNodeDialogOpen] = useState(false);
   const [isManageGroupsDialogOpen, setIsManageGroupsDialogOpen] = useState(false);
+  const [deviceToDelete, setDeviceToDelete] = useState<any>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
 
   useEffect(() => {
@@ -243,9 +258,12 @@ export default function DashboardPage() {
       category: category,
       ownerId: user.uid,
       registeredAt: serverTimestamp(),
+      lastActiveAt: serverTimestamp(),
       ...(category === 'buddy' ? {
         phoneNumber: formData.phoneNumber,
         group: formData.group,
+        role: formData.role,
+        priority: formData.priority,
         specialData: formData.group === 'Others' ? formData.specialData : ''
       } : {
         type: formData.type,
@@ -258,7 +276,7 @@ export default function DashboardPage() {
       .then(() => {
         const label = category === 'buddy' ? 'Buddy' : 'Node';
         createNotification(`New ${label} registered: ${formData.name}`);
-        setFormData({ name: '', deviceId: '', type: 'SOS Beacon', status: 'online', phoneNumber: '', group: 'Friend', alertGroups: [], specialData: '' });
+        setFormData({ name: '', deviceId: '', type: 'SOS Beacon', status: 'online', phoneNumber: '', group: 'Friend', role: 'Primary Emergency Contact', priority: 'High', alertGroups: [], specialData: '' });
         setIsAddBuddyDialogOpen(false);
         setIsAddNodeDialogOpen(false);
         toast({ title: "Protocol Activated", description: `${label} successfully added to your network.` });
@@ -283,12 +301,14 @@ export default function DashboardPage() {
       });
   };
 
-  const handleDeleteDevice = (device: any) => {
-    if (!user || !db) return;
-    const deviceRef = doc(db, "users", user.uid, "devices", device.id);
+  const confirmDeleteDevice = () => {
+    if (!user || !db || !deviceToDelete) return;
+    const deviceRef = doc(db, "users", user.uid, "devices", deviceToDelete.id);
     deleteDoc(deviceRef).then(() => {
-      createNotification(`Removed from network: ${device.name}`);
+      createNotification(`Removed from network: ${deviceToDelete.name}`);
       toast({ title: "Asset Purged", description: "Removed from your security profile." });
+      setIsDeleteDialogOpen(false);
+      setDeviceToDelete(null);
     });
   };
 
@@ -567,19 +587,34 @@ export default function DashboardPage() {
                       <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <div className="space-y-1">
                           <CardTitle className="text-lg font-bold tracking-tight uppercase">{device.name}</CardTitle>
-                          <p className="text-[10px] text-muted-foreground font-mono">{device.group} | {device.phoneNumber}</p>
+                          <div className="flex flex-col gap-0.5 mt-1">
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Role: {device.role || 'Emergency Contact'}</p>
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1">
+                              Priority: <Star className="h-2 w-2 fill-primary text-primary" /> {device.priority || 'High'}
+                            </p>
+                          </div>
+                          <p className="text-[9px] text-muted-foreground font-mono mt-2">{device.group} | {device.phoneNumber}</p>
                         </div>
                         <Users className="h-4 w-4 text-primary" />
                       </CardHeader>
                       <CardContent>
                         <div className="flex items-center gap-2 mb-4">
                           <div className={cn("h-2 w-2 rounded-full", device.status === 'online' ? 'bg-primary animate-pulse' : 'bg-muted-foreground')} />
-                          <span className="text-[10px] font-bold uppercase tracking-wider">Status: {device.status}</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider">
+                            {device.status === 'online' ? 'Online' : 'Offline'} · Last active 2 mins ago
+                          </span>
                         </div>
                         <div className="flex gap-2">
                            <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold" onClick={() => { setViewingDevice(device); setIsViewDialogOpen(true); }}>View</Button>
                            <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold" onClick={() => { setEditingDevice({...device}); setIsEditDialogOpen(true); }}>Edit</Button>
-                           <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold text-destructive hover:bg-destructive" onClick={() => handleDeleteDevice(device)}><Trash2 className="h-3 w-3" /></Button>
+                           <Button 
+                             variant="outline" 
+                             size="sm" 
+                             className="rounded-none text-[9px] uppercase font-bold text-destructive hover:bg-destructive" 
+                             onClick={() => { setDeviceToDelete(device); setIsDeleteDialogOpen(true); }}
+                           >
+                            <Trash2 className="h-3 w-3" />
+                           </Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -627,7 +662,14 @@ export default function DashboardPage() {
                         <div className="flex gap-2">
                            <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold" onClick={() => { setViewingDevice(device); setIsViewDialogOpen(true); }}>View</Button>
                            <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold" onClick={() => { setEditingDevice({...device}); setIsEditDialogOpen(true); }}>Edit</Button>
-                           <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold text-destructive hover:bg-destructive" onClick={() => handleDeleteDevice(device)}><Trash2 className="h-3 w-3" /></Button>
+                           <Button 
+                             variant="outline" 
+                             size="sm" 
+                             className="rounded-none text-[9px] uppercase font-bold text-destructive hover:bg-destructive" 
+                             onClick={() => { setDeviceToDelete(device); setIsDeleteDialogOpen(true); }}
+                           >
+                            <Trash2 className="h-3 w-3" />
+                           </Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -795,6 +837,25 @@ export default function DashboardPage() {
                 <Label htmlFor="buddy-phone" className="text-[10px] uppercase font-bold tracking-widest">Phone Number</Label>
                 <Input id="buddy-phone" placeholder="+1..." className="rounded-none h-12" value={formData.phoneNumber} onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})} required />
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-bold tracking-widest">Role</Label>
+                  <Input placeholder="e.g. Primary Emergency" className="rounded-none h-12" value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-bold tracking-widest">Priority</Label>
+                  <Select value={formData.priority} onValueChange={(v) => setFormData({...formData, priority: v})}>
+                    <SelectTrigger className="rounded-none h-12">
+                      <SelectValue placeholder="Priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Low">Low</SelectItem>
+                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="High">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
               <div className="space-y-2">
                 <Label className="text-[10px] uppercase font-bold tracking-widest">Group / Relationship</Label>
                 <Select value={formData.group} onValueChange={(v) => setFormData({...formData, group: v})}>
@@ -929,6 +990,25 @@ export default function DashboardPage() {
                     <Label className="text-[10px] uppercase font-bold">Phone Number</Label>
                     <Input className="rounded-none" value={editingDevice.phoneNumber} onChange={(e) => setEditingDevice({...editingDevice, phoneNumber: e.target.value})} required />
                   </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] uppercase font-bold">Role</Label>
+                      <Input className="rounded-none" value={editingDevice.role} onChange={(e) => setEditingDevice({...editingDevice, role: e.target.value})} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] uppercase font-bold">Priority</Label>
+                      <Select value={editingDevice.priority} onValueChange={(v) => setEditingDevice({...editingDevice, priority: v})}>
+                        <SelectTrigger className="rounded-none">
+                          <SelectValue placeholder="Priority" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Low">Low</SelectItem>
+                          <SelectItem value="Medium">Medium</SelectItem>
+                          <SelectItem value="High">High</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] uppercase font-bold">Group</Label>
                     <Select value={editingDevice.group} onValueChange={(v) => setEditingDevice({...editingDevice, group: v})}>
@@ -990,6 +1070,18 @@ export default function DashboardPage() {
                   <p className="text-[8px] uppercase font-bold text-muted-foreground">Protocol Type</p>
                   <p className="text-xs uppercase">{viewingDevice.type || viewingDevice.group || "N/A"}</p>
                 </div>
+                {viewingDevice.category === 'buddy' && (
+                  <>
+                    <div className="space-y-1">
+                      <p className="text-[8px] uppercase font-bold text-muted-foreground">Safety Role</p>
+                      <p className="text-xs uppercase">{viewingDevice.role || 'Primary Contact'}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[8px] uppercase font-bold text-muted-foreground">Alert Priority</p>
+                      <p className="text-xs uppercase">{viewingDevice.priority || 'High'}</p>
+                    </div>
+                  </>
+                )}
                 {viewingDevice.category === 'node' && viewingDevice.alertGroups && viewingDevice.alertGroups.length > 0 && (
                   <div className="space-y-1 col-span-2">
                     <p className="text-[8px] uppercase font-bold text-muted-foreground">Alert Contact Groups</p>
@@ -1018,6 +1110,24 @@ export default function DashboardPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Deletion Confirmation */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent className="rounded-none border-none">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="uppercase font-bold tracking-tight">Purge Security Asset?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs uppercase leading-relaxed">
+              Removing this buddy will stop alerts and location sharing. This action is final and will truncate the safety orchestration protocol.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-none uppercase text-[10px] font-bold">Abort</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteDevice} className="rounded-none uppercase text-[10px] font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Confirm Purge
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
