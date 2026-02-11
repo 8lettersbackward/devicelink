@@ -40,7 +40,9 @@
       "properties": {
         "displayName": { "type": "string" },
         "email": { "type": "string" },
-        "avatarUrl": { "type": "string" }
+        "avatarUrl": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" }
       }
     }
   },

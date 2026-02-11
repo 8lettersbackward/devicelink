@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useUser, useFirestore, useCollection, useFirebase, useDoc } from "@/firebase";
@@ -49,7 +50,9 @@ import {
   Users,
   UserPlus,
   Radio,
-  Layers
+  Layers,
+  MapPin,
+  LocateFixed
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { doc, setDoc, collection, deleteDoc, serverTimestamp, addDoc, query, orderBy, limit } from "firebase/firestore";
@@ -59,7 +62,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-type TabType = 'overview' | 'manage-buddy' | 'manage-node' | 'notifications' | 'settings';
+type TabType = 'overview' | 'manage-buddy' | 'manage-node' | 'location' | 'notifications' | 'settings';
 
 const DEFAULT_BUDDY_GROUPS = ["Family", "Friend", "Close Friend", "Segurulo", "Others"];
 
@@ -86,6 +89,9 @@ export default function DashboardPage() {
     specialData: ''
   });
 
+  const [locationData, setLocationData] = useState({ lat: '', lng: '' });
+  const [updatingLocation, setUpdatingLocation] = useState(false);
+
   const [editingDevice, setEditingDevice] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [viewingDevice, setViewingDevice] = useState<any>(null);
@@ -109,6 +115,15 @@ export default function DashboardPage() {
   }, [db, user]);
 
   const { data: profileData } = useDoc(profileRef);
+
+  useEffect(() => {
+    if (profileData) {
+      setLocationData({
+        lat: profileData.latitude?.toString() || '',
+        lng: profileData.longitude?.toString() || ''
+      });
+    }
+  }, [profileData]);
 
   const groupsQuery = useMemo(() => {
     if (!db || !user) return null;
@@ -312,6 +327,26 @@ export default function DashboardPage() {
     }
   };
 
+  const handleUpdateLocation = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !db) return;
+    setUpdatingLocation(true);
+    const userRef = doc(db, "users", user.uid);
+    setDoc(userRef, {
+      latitude: parseFloat(locationData.lat),
+      longitude: parseFloat(locationData.lng),
+      updatedAt: serverTimestamp()
+    }, { merge: true })
+      .then(() => {
+        createNotification("Safety coordinates updated.");
+        toast({ title: "Coordinates Locked", description: "Emergency beacon location updated." });
+      })
+      .catch((err) => {
+        toast({ variant: "destructive", title: "Update Error", description: err.message });
+      })
+      .finally(() => setUpdatingLocation(false));
+  };
+
   if (userLoading) return (
     <div className="flex items-center justify-center h-[80vh]">
       <div className="animate-pulse flex flex-col items-center">
@@ -329,6 +364,7 @@ export default function DashboardPage() {
     { id: 'overview', label: 'Safety Overview', icon: LayoutDashboard },
     { id: 'manage-buddy', label: 'Manage Buddy', icon: Smartphone },
     { id: 'manage-node', label: 'Manage Node', icon: Cpu },
+    { id: 'location', label: 'Location Hub', icon: MapPin },
     { id: 'notifications', label: 'Safety Alerts', icon: Bell },
     { id: 'settings', label: 'Security Settings', icon: Settings },
   ] as const;
@@ -385,6 +421,7 @@ export default function DashboardPage() {
                 {activeTab === 'overview' && `Protection status for ${currentName}. Active heartbeat and alerts.`}
                 {activeTab === 'manage-buddy' && "Manage your trusted emergency contacts and human safety network."}
                 {activeTab === 'manage-node' && "Registry of your active hardware safety nodes and sensors."}
+                {activeTab === 'location' && "Configure specific GPS coordinates for your safety beacon."}
                 {activeTab === 'notifications' && "Critical safety logs and heartbeat history."}
                 {activeTab === 'settings' && "Configure security protocols and account privacy."}
               </p>
@@ -598,6 +635,65 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {activeTab === 'location' && (
+            <div className="max-w-xl space-y-10">
+              <Card className="border-none bg-muted/20 rounded-none">
+                <CardHeader>
+                  <CardTitle className="text-[10px] uppercase font-bold tracking-widest flex items-center gap-2">
+                    <LocateFixed className="h-4 w-4" /> Safety Coordinates
+                  </CardTitle>
+                  <CardDescription className="text-[10px] uppercase">Define your primary emergency beacon location.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleUpdateLocation} className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="lat" className="text-[10px] font-bold uppercase tracking-widest">Latitude</Label>
+                        <Input 
+                          id="lat" 
+                          placeholder="e.g. 14.5995" 
+                          className="rounded-none h-12 border-none bg-background font-mono text-[10px]" 
+                          value={locationData.lat} 
+                          onChange={(e) => setLocationData({...locationData, lat: e.target.value})}
+                          required 
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="lng" className="text-[10px] font-bold uppercase tracking-widest">Longitude</Label>
+                        <Input 
+                          id="lng" 
+                          placeholder="e.g. 120.9842" 
+                          className="rounded-none h-12 border-none bg-background font-mono text-[10px]" 
+                          value={locationData.lng} 
+                          onChange={(e) => setLocationData({...locationData, lng: e.target.value})}
+                          required 
+                        />
+                      </div>
+                    </div>
+                    <Button type="submit" disabled={updatingLocation} className="w-full h-14 rounded-none uppercase font-bold tracking-[0.2em] text-[10px]">
+                      {updatingLocation ? <Loader2 className="h-5 w-5 animate-spin" /> : "Lock Coordinates"}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              <div className="p-6 border-l-2 border-primary bg-muted/10 space-y-4">
+                <div className="flex items-center gap-3">
+                  <Info className="h-4 w-4 text-primary" />
+                  <p className="text-[10px] font-bold uppercase tracking-widest">Current Active Beacon</p>
+                </div>
+                <p className="text-[10px] leading-relaxed uppercase opacity-70">
+                  These coordinates are transmitted to your "Buddy" network during emergency orchestrations initiated from any hardware node.
+                </p>
+                {profileData?.latitude && profileData?.longitude && (
+                   <div className="mt-4 pt-4 border-t border-dashed">
+                      <p className="text-[10px] font-bold uppercase text-primary">Last Registered: {profileData.latitude}, {profileData.longitude}</p>
+                   </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {activeTab === 'notifications' && (
             <div className="space-y-4">
               {!notifications || notifications.length === 0 ? (
@@ -751,7 +847,7 @@ export default function DashboardPage() {
             </div>
             
             <div className="space-y-4">
-              <Label className="text-[10px] uppercase font-bold tracking-widest flex items-center gap-2">
+              <Label className="text-[10px] uppercase font-bold flex items-center gap-2">
                 <Radio className="h-3 w-3" /> Alert Contact Groups
               </Label>
               <div className="grid grid-cols-2 gap-2 p-4 bg-muted/30 border border-dashed rounded-none max-h-[160px] overflow-y-auto">
