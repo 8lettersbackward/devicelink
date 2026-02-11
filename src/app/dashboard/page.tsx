@@ -57,7 +57,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-type TabType = 'overview' | 'add-buddy' | 'add-node' | 'manage-buddy' | 'manage-node' | 'notifications' | 'settings';
+type TabType = 'overview' | 'manage-buddy' | 'manage-node' | 'notifications' | 'settings';
 
 export default function DashboardPage() {
   const { user, loading: userLoading } = useUser();
@@ -200,7 +200,7 @@ export default function DashboardPage() {
     const payload = {
       name: formData.name,
       id: finalId,
-      status: 'online', // Default to online as requested
+      status: 'online', 
       category: category,
       ownerId: user.uid,
       registeredAt: serverTimestamp(),
@@ -268,8 +268,6 @@ export default function DashboardPage() {
 
   const navItems = [
     { id: 'overview', label: 'Safety Overview', icon: LayoutDashboard },
-    { id: 'add-buddy', label: 'Add Buddy', icon: PlusCircle },
-    { id: 'add-node', label: 'Add Node', icon: PlusSquare },
     { id: 'manage-buddy', label: 'Manage Buddy', icon: Smartphone },
     { id: 'manage-node', label: 'Manage Node', icon: Cpu },
     { id: 'notifications', label: 'Safety Alerts', icon: Bell },
@@ -386,8 +384,6 @@ export default function DashboardPage() {
                 {activeTab === 'overview' && `Protection status for ${currentName}. Active heartbeat and alerts.`}
                 {activeTab === 'manage-buddy' && "Manage your trusted emergency contacts and human safety network."}
                 {activeTab === 'manage-node' && "Registry of your active hardware safety nodes and sensors."}
-                {activeTab === 'add-buddy' && "Enlist a new trusted person into your emergency response circle."}
-                {activeTab === 'add-node' && "Pair a new emergency hardware node to your secure profile."}
                 {activeTab === 'notifications' && "Critical safety logs and heartbeat history."}
                 {activeTab === 'settings' && "Configure security protocols and account privacy."}
               </p>
@@ -629,45 +625,6 @@ export default function DashboardPage() {
                   </Card>
                 ))
               )}
-            </div>
-          )}
-
-          {activeTab === 'add-buddy' && <BuddyRegistrationForm />}
-
-          {activeTab === 'add-node' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-              <Card className="border-none shadow-none bg-muted/30 h-fit">
-                <CardHeader>
-                  <CardTitle className="text-sm uppercase font-bold tracking-widest">Node Credentials</CardTitle>
-                  <CardDescription className="text-xs">Provide identifiers for your emergency hardware asset.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={(e) => handleRegisterDevice(e, 'node')} className="space-y-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="node-name" className="text-[10px] uppercase font-bold tracking-widest">Node Name</Label>
-                      <Input id="node-name" placeholder="e.g. Primary SOS Beacon" className="rounded-none h-12" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="node-id" className="text-[10px] uppercase font-bold tracking-widest">Hardware ID</Label>
-                      <Input id="node-id" placeholder="e.g. BEACON-01" className="rounded-none h-12" value={formData.deviceId} onChange={(e) => setFormData({...formData, deviceId: e.target.value})} required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] uppercase font-bold tracking-widest">Technical Data</Label>
-                      <Textarea placeholder="Provide specific safety details for this node..." className="rounded-none min-h-[100px]" value={formData.specialData} onChange={(e) => setFormData({...formData, specialData: e.target.value})} />
-                    </div>
-                    <Button type="submit" className="w-full rounded-none h-14 uppercase font-bold tracking-widest" disabled={registerLoading}>
-                      {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Arm Node"}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-
-              <div className="p-8 border-2 border-dashed bg-muted/10 h-fit">
-                <h3 className="text-xs font-bold uppercase mb-4 tracking-[0.2em]">Node Integrity</h3>
-                <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  Nodes act as passive listeners in your safety hub. Ensure the hardware ID matches the sticker on your physical device to maintain 1:1 encryption and correct heartbeat mapping.
-                </p>
-              </div>
             </div>
           )}
 
