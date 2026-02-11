@@ -536,35 +536,20 @@ export default function DashboardPage() {
                       <Label htmlFor="buddy-phone" className="text-[10px] uppercase font-bold tracking-widest">Phone Number</Label>
                       <Input id="buddy-phone" placeholder="+1..." className="rounded-none h-12" value={formData.phoneNumber} onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})} required />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] uppercase font-bold tracking-widest">Group / Relationship</Label>
-                        <Select value={formData.group} onValueChange={(v) => setFormData({...formData, group: v})}>
-                          <SelectTrigger className="rounded-none h-12">
-                            <SelectValue placeholder="Select group" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Family">Family</SelectItem>
-                            <SelectItem value="Friend">Friend</SelectItem>
-                            <SelectItem value="Close Friend">Close Friend</SelectItem>
-                            <SelectItem value="Segurulo">Segurulo</SelectItem>
-                            <SelectItem value="Others">Others</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] uppercase font-bold tracking-widest">Initial Status</Label>
-                        <Select value={formData.status} onValueChange={(v) => setFormData({...formData, status: v})}>
-                          <SelectTrigger className="rounded-none h-12">
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="online">Armed</SelectItem>
-                            <SelectItem value="offline">Inactive</SelectItem>
-                            <SelectItem value="error">Check Status</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] uppercase font-bold tracking-widest">Group / Relationship</Label>
+                      <Select value={formData.group} onValueChange={(v) => setFormData({...formData, group: v})}>
+                        <SelectTrigger className="rounded-none h-12">
+                          <SelectValue placeholder="Select group" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Family">Family</SelectItem>
+                          <SelectItem value="Friend">Friend</SelectItem>
+                          <SelectItem value="Close Friend">Close Friend</SelectItem>
+                          <SelectItem value="Segurulo">Segurulo</SelectItem>
+                          <SelectItem value="Others">Others</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     {formData.group === 'Others' && (
                       <div className="space-y-2">
