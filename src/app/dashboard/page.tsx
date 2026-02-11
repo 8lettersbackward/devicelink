@@ -207,7 +207,7 @@ export default function DashboardPage() {
         specialData: formData.group === 'Others' ? formData.specialData : ''
       } : {
         type: formData.type,
-        specialData: formData.type === 'Other' ? formData.specialData : ''
+        specialData: formData.specialData
       })
     };
 
@@ -590,42 +590,10 @@ export default function DashboardPage() {
                       <Label htmlFor="node-id" className="text-[10px] uppercase font-bold tracking-widest">Hardware ID</Label>
                       <Input id="node-id" placeholder="e.g. BEACON-01" className="rounded-none h-12" value={formData.deviceId} onChange={(e) => setFormData({...formData, deviceId: e.target.value})} required />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] uppercase font-bold tracking-widest">Category</Label>
-                        <Select value={formData.type} onValueChange={(v) => setFormData({...formData, type: v})}>
-                          <SelectTrigger className="rounded-none h-12">
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="SOS Beacon">SOS Beacon</SelectItem>
-                            <SelectItem value="Fall Sensor">Fall Sensor</SelectItem>
-                            <SelectItem value="GPS Tracker">GPS Tracker</SelectItem>
-                            <SelectItem value="Panic Button">Panic Button</SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] uppercase font-bold tracking-widest">Initial State</Label>
-                        <Select value={formData.status} onValueChange={(v) => setFormData({...formData, status: v})}>
-                          <SelectTrigger className="rounded-none h-12">
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="online">Armed</SelectItem>
-                            <SelectItem value="offline">Inactive</SelectItem>
-                            <SelectItem value="error">Maintenance</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] uppercase font-bold tracking-widest">Technical Data</Label>
+                      <Textarea placeholder="Provide specific safety details for this node..." className="rounded-none min-h-[100px]" value={formData.specialData} onChange={(e) => setFormData({...formData, specialData: e.target.value})} />
                     </div>
-                    {formData.type === 'Other' && (
-                      <div className="space-y-2">
-                        <Label className="text-[10px] uppercase font-bold tracking-widest">Technical Data</Label>
-                        <Textarea placeholder="Provide specific safety details for this node..." className="rounded-none min-h-[100px]" value={formData.specialData} onChange={(e) => setFormData({...formData, specialData: e.target.value})} />
-                      </div>
-                    )}
                     <Button type="submit" className="w-full rounded-none h-14 uppercase font-bold tracking-widest" disabled={registerLoading}>
                       {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Arm Node"}
                     </Button>
