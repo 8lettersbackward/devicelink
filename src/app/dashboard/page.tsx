@@ -566,10 +566,6 @@ export default function DashboardPage() {
                     <Smartphone className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
                     <p className="text-lg font-bold uppercase mb-2">No Buddies Enlisted</p>
                     <p className="text-sm text-muted-foreground mb-6">Your human safety network is currently unmonitored.</p>
-                    <div className="flex gap-4">
-                      <Button onClick={() => setIsAddBuddyDialogOpen(true)} variant="outline" className="rounded-none uppercase font-bold text-[10px]">Enlist Buddy</Button>
-                      <Button onClick={() => setIsManageGroupsDialogOpen(true)} variant="outline" className="rounded-none uppercase font-bold text-[10px]">Manage Groups</Button>
-                    </div>
                   </div>
                 ) : (
                   filteredDevices.map((device: any) => (
@@ -618,7 +614,6 @@ export default function DashboardPage() {
                     <Cpu className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
                     <p className="text-lg font-bold uppercase mb-2">No Nodes Registered</p>
                     <p className="text-sm text-muted-foreground mb-6">No hardware safety nodes currently active.</p>
-                    <Button onClick={() => setIsAddNodeDialogOpen(true)} variant="outline" className="rounded-none uppercase font-bold text-[10px]">Add Node</Button>
                   </div>
                 ) : (
                   filteredDevices.map((device: any) => (
