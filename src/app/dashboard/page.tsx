@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useUser, useFirestore, useCollection, useFirebase } from "@/firebase";
+import { useUser, useFirestore, useCollection, useFirebase, useDoc } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -41,7 +41,8 @@ import {
   LayoutDashboard,
   History,
   Filter,
-  PieChart as PieChartIcon
+  PieChart as PieChartIcon,
+  User as UserIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { doc, setDoc, collection, deleteDoc, serverTimestamp, addDoc, query, orderBy, limit } from "firebase/firestore";
@@ -49,6 +50,7 @@ import { signOut, verifyBeforeUpdateEmail } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 type TabType = 'overview' | 'register' | 'manage' | 'notifications' | 'settings';
 
@@ -98,6 +100,13 @@ export default function DashboardPage() {
     const isDark = document.documentElement.classList.contains('dark');
     setTheme(isDark ? 'dark' : 'light');
   }, [user, userLoading, router]);
+
+  const profileRef = useMemo(() => {
+    if (!db || !user) return null;
+    return doc(db, "users", user.uid);
+  }, [db, user]);
+
+  const { data: profileData } = useDoc(profileRef);
 
   const toggleTheme = (isDark: boolean) => {
     const newTheme = isDark ? 'dark' : 'light';
@@ -304,6 +313,8 @@ export default function DashboardPage() {
 
   if (!user) return null;
 
+  const currentName = profileData?.displayName || user.displayName || "Operator";
+
   const navItems = [
     { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'register', label: 'Register Device', icon: Plus },
@@ -317,6 +328,20 @@ export default function DashboardPage() {
       {/* Left Side Navigation */}
       <aside className="w-full md:w-80 border-r bg-muted/5 order-1">
         <div className="sticky top-16 p-6 space-y-2">
+          {/* User Identification Section */}
+          <div className="px-4 py-6 mb-4 flex items-center gap-4 border-b border-dashed">
+            <Avatar className="h-10 w-10 rounded-none border border-primary">
+              <AvatarImage src={profileData?.avatarUrl || user.photoURL || ""} alt={currentName} />
+              <AvatarFallback className="rounded-none bg-primary text-primary-foreground font-bold text-xs">
+                {currentName[0].toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="overflow-hidden">
+              <p className="text-[10px] font-bold uppercase tracking-widest truncate">{currentName}</p>
+              <p className="text-[8px] text-muted-foreground uppercase font-mono truncate">{user.email}</p>
+            </div>
+          </div>
+
           <div className="mb-8 px-4 py-2">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Hub Navigation</p>
           </div>
@@ -356,7 +381,7 @@ export default function DashboardPage() {
               {navItems.find(t => t.id === activeTab)?.label}
             </h1>
             <p className="text-muted-foreground text-sm tracking-wide">
-              {activeTab === 'overview' && "Central hub status and real-time activity stream."}
+              {activeTab === 'overview' && `Welcome back, ${currentName}. Central hub status and activity.`}
               {activeTab === 'manage' && "Active monitoring of your monochrome ecosystem."}
               {activeTab === 'register' && "Onboard new hardware to the central hub."}
               {activeTab === 'notifications' && "Recent system alerts and heartbeat logs."}

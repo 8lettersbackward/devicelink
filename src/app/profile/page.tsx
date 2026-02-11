@@ -39,9 +39,9 @@ export default function ProfilePage() {
     if (!userLoading && !user) {
       router.push("/login");
     }
-    if (user && !profileLoading) {
-      setDisplayName(profileData?.displayName || user.displayName || "");
-      setAvatarUrl(profileData?.avatarUrl || user.photoURL || "");
+    if (user && !profileLoading && profileData) {
+      setDisplayName(profileData.displayName || user.displayName || "");
+      setAvatarUrl(profileData.avatarUrl || user.photoURL || "");
     }
   }, [user, userLoading, profileData, profileLoading, router]);
 
@@ -68,7 +68,7 @@ export default function ProfilePage() {
 
       toast({ 
         title: "Profile Synchronized", 
-        description: "Your identification credentials have been updated." 
+        description: `Identity updated to: ${displayName || 'Default Node'}` 
       });
     } catch (error: any) {
       toast({ 
@@ -118,6 +118,8 @@ export default function ProfilePage() {
 
   if (!user) return null;
 
+  const currentDisplayName = profileData?.displayName || user.displayName || "Anonymous Node";
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-12 sm:px-6 lg:px-8 bg-background min-h-screen">
       <Button 
@@ -138,12 +140,12 @@ export default function ProfilePage() {
         <aside className="space-y-4">
           <div className="p-8 border-2 border-dashed bg-muted/5 flex flex-col items-center text-center mb-6">
             <Avatar className="h-24 w-24 rounded-none border-2 border-primary mb-4">
-              <AvatarImage src={avatarUrl} alt={displayName} />
+              <AvatarImage src={avatarUrl} alt={currentDisplayName} />
               <AvatarFallback className="rounded-none bg-primary text-primary-foreground text-2xl font-bold">
-                {displayName ? displayName[0].toUpperCase() : user.email?.[0].toUpperCase()}
+                {currentDisplayName[0].toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <p className="text-xs font-bold uppercase tracking-widest truncate w-full">{displayName || "Anonymous Node"}</p>
+            <p className="text-xs font-bold uppercase tracking-widest truncate w-full">{currentDisplayName}</p>
             <p className="text-[10px] text-muted-foreground font-mono mt-1 truncate w-full">{user.email}</p>
           </div>
 
@@ -186,14 +188,15 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="display-name" className="text-[10px] font-bold uppercase tracking-widest">Display Username</Label>
+                  <Label htmlFor="display-name" className="text-[10px] font-bold uppercase tracking-widest">Display Name / Identity</Label>
                   <Input 
                     id="display-name" 
-                    placeholder="Enter system name..." 
+                    placeholder="e.g. Elvin" 
                     value={displayName} 
                     onChange={(e) => setDisplayName(e.target.value)} 
                     className="bg-background border-none rounded-none h-12 uppercase text-[10px] font-bold tracking-widest"
                   />
+                  <p className="text-[8px] text-muted-foreground uppercase">This name will be displayed across your control hub.</p>
                 </div>
 
                 <div className="space-y-2">
