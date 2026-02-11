@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Dialog,
   DialogContent,
@@ -47,7 +48,8 @@ import {
   PlusSquare,
   Phone,
   Users,
-  UserPlus
+  UserPlus,
+  Radio
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { doc, setDoc, collection, deleteDoc, serverTimestamp, addDoc, query, orderBy, limit } from "firebase/firestore";
@@ -58,6 +60,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 type TabType = 'overview' | 'manage-buddy' | 'manage-node' | 'notifications' | 'settings';
+
+const BUDDY_GROUPS = ["Family", "Friend", "Close Friend", "Segurulo", "Others"];
 
 export default function DashboardPage() {
   const { user, loading: userLoading } = useUser();
@@ -78,6 +82,7 @@ export default function DashboardPage() {
     status: 'online',
     phoneNumber: '',
     group: 'Friend',
+    alertGroups: [] as string[],
     specialData: ''
   });
 
@@ -210,6 +215,7 @@ export default function DashboardPage() {
         specialData: formData.group === 'Others' ? formData.specialData : ''
       } : {
         type: formData.type,
+        alertGroups: formData.alertGroups,
         specialData: formData.specialData
       })
     };
@@ -218,7 +224,7 @@ export default function DashboardPage() {
       .then(() => {
         const label = category === 'buddy' ? 'Buddy' : 'Node';
         createNotification(`New ${label} registered: ${formData.name}`);
-        setFormData({ name: '', deviceId: '', type: 'SOS Beacon', status: 'online', phoneNumber: '', group: 'Friend', specialData: '' });
+        setFormData({ name: '', deviceId: '', type: 'SOS Beacon', status: 'online', phoneNumber: '', group: 'Friend', alertGroups: [], specialData: '' });
         setIsAddBuddyDialogOpen(false);
         setIsAddNodeDialogOpen(false);
         toast({ title: "Protocol Activated", description: `${label} successfully added to your network.` });
@@ -250,6 +256,22 @@ export default function DashboardPage() {
       createNotification(`Removed from network: ${device.name}`);
       toast({ title: "Asset Purged", description: "Removed from your security profile." });
     });
+  };
+
+  const toggleAlertGroup = (group: string, isEditing: boolean = false) => {
+    if (isEditing) {
+      const current = editingDevice.alertGroups || [];
+      const updated = current.includes(group) 
+        ? current.filter((g: string) => g !== group)
+        : [...current, group];
+      setEditingDevice({ ...editingDevice, alertGroups: updated });
+    } else {
+      const current = formData.alertGroups;
+      const updated = current.includes(group) 
+        ? current.filter(g => g !== group)
+        : [...current, group];
+      setFormData({ ...formData, alertGroups: updated });
+    }
   };
 
   if (userLoading) return (
@@ -299,11 +321,9 @@ export default function DashboardPage() {
                   <SelectValue placeholder="Select group" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Family">Family</SelectItem>
-                  <SelectItem value="Friend">Friend</SelectItem>
-                  <SelectItem value="Close Friend">Close Friend</SelectItem>
-                  <SelectItem value="Segurulo">Segurulo</SelectItem>
-                  <SelectItem value="Others">Others</SelectItem>
+                  {BUDDY_GROUPS.map(g => (
+                    <SelectItem key={g} value={g}>{g}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -642,6 +662,26 @@ export default function DashboardPage() {
               <Label htmlFor="modal-node-id" className="text-[10px] uppercase font-bold tracking-widest">Hardware ID</Label>
               <Input id="modal-node-id" placeholder="e.g. BEACON-01" className="rounded-none h-12" value={formData.deviceId} onChange={(e) => setFormData({...formData, deviceId: e.target.value})} required />
             </div>
+            
+            <div className="space-y-4">
+              <Label className="text-[10px] uppercase font-bold tracking-widest flex items-center gap-2">
+                <Radio className="h-3 w-3" /> Alert Contact Groups
+              </Label>
+              <div className="grid grid-cols-2 gap-2 p-4 bg-muted/30 border border-dashed rounded-none">
+                {BUDDY_GROUPS.map((group) => (
+                  <div key={group} className="flex items-center space-x-2">
+                    <Checkbox 
+                      id={`group-${group}`} 
+                      checked={formData.alertGroups.includes(group)}
+                      onCheckedChange={() => toggleAlertGroup(group)}
+                    />
+                    <Label htmlFor={`group-${group}`} className="text-[10px] uppercase font-bold cursor-pointer">{group}</Label>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[8px] text-muted-foreground uppercase">Selected groups will be orchestrated upon trigger.</p>
+            </div>
+
             <div className="space-y-2">
               <Label className="text-[10px] uppercase font-bold tracking-widest">Technical Data</Label>
               <Textarea placeholder="Provide specific safety details for this node..." className="rounded-none min-h-[100px]" value={formData.specialData} onChange={(e) => setFormData({...formData, specialData: e.target.value})} />
@@ -662,10 +702,28 @@ export default function DashboardPage() {
                 <Label className="text-[10px] uppercase font-bold">Label</Label>
                 <Input className="rounded-none" value={editingDevice.name} onChange={(e) => setEditingDevice({...editingDevice, name: e.target.value})} required />
               </div>
-              {editingDevice.category === 'buddy' && (
+              {editingDevice.category === 'buddy' ? (
                 <div className="space-y-2">
                   <Label className="text-[10px] uppercase font-bold">Phone Number</Label>
                   <Input className="rounded-none" value={editingDevice.phoneNumber} onChange={(e) => setEditingDevice({...editingDevice, phoneNumber: e.target.value})} required />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <Label className="text-[10px] uppercase font-bold flex items-center gap-2">
+                    <Radio className="h-3 w-3" /> Alert Contact Groups
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2 p-4 bg-muted/30 border border-dashed rounded-none">
+                    {BUDDY_GROUPS.map((group) => (
+                      <div key={group} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`edit-group-${group}`} 
+                          checked={(editingDevice.alertGroups || []).includes(group)}
+                          onCheckedChange={() => toggleAlertGroup(group, true)}
+                        />
+                        <Label htmlFor={`edit-group-${group}`} className="text-[10px] uppercase font-bold cursor-pointer">{group}</Label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
               <div className="space-y-2">
@@ -709,6 +767,16 @@ export default function DashboardPage() {
                   <p className="text-[8px] uppercase font-bold text-muted-foreground">Protocol Type</p>
                   <p className="text-xs uppercase">{viewingDevice.type || viewingDevice.group || "N/A"}</p>
                 </div>
+                {viewingDevice.category === 'node' && viewingDevice.alertGroups && viewingDevice.alertGroups.length > 0 && (
+                  <div className="space-y-1 col-span-2">
+                    <p className="text-[8px] uppercase font-bold text-muted-foreground">Alert Contact Groups</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {viewingDevice.alertGroups.map((g: string) => (
+                        <span key={g} className="text-[9px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 font-bold uppercase">{g}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {viewingDevice.phoneNumber && (
                   <div className="space-y-1 col-span-2">
                     <p className="text-[8px] uppercase font-bold text-muted-foreground">Contact Link</p>
