@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useUser, useFirestore, useCollection, useFirebase, useDoc } from "@/firebase";
@@ -826,19 +825,6 @@ export default function DashboardPage() {
                   </div>
                 </div>
               )}
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold">State</Label>
-                <Select value={editingDevice.status} onValueChange={(v) => setEditingDevice({...editingDevice, status: v})}>
-                  <SelectTrigger className="rounded-none">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="online">Armed</SelectItem>
-                    <SelectItem value="offline">Inactive</SelectItem>
-                    <SelectItem value="error">Maintenance</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
               <DialogFooter><Button type="submit" className="rounded-none uppercase text-[10px] font-bold w-full">Synchronize Changes</Button></DialogFooter>
             </form>
           )}
