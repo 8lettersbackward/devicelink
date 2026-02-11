@@ -52,7 +52,9 @@ import {
   Radio,
   Layers,
   MapPin,
-  LocateFixed
+  LocateFixed,
+  Map as MapIcon,
+  Navigation
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { doc, setDoc, collection, deleteDoc, serverTimestamp, addDoc, query, orderBy, limit } from "firebase/firestore";
@@ -636,58 +638,94 @@ export default function DashboardPage() {
           )}
 
           {activeTab === 'location' && (
-            <div className="max-w-xl space-y-10">
-              <Card className="border-none bg-muted/20 rounded-none">
-                <CardHeader>
-                  <CardTitle className="text-[10px] uppercase font-bold tracking-widest flex items-center gap-2">
-                    <LocateFixed className="h-4 w-4" /> Safety Coordinates
-                  </CardTitle>
-                  <CardDescription className="text-[10px] uppercase">Define your primary emergency beacon location.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleUpdateLocation} className="space-y-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="lat" className="text-[10px] font-bold uppercase tracking-widest">Latitude</Label>
-                        <Input 
-                          id="lat" 
-                          placeholder="e.g. 14.5995" 
-                          className="rounded-none h-12 border-none bg-background font-mono text-[10px]" 
-                          value={locationData.lat} 
-                          onChange={(e) => setLocationData({...locationData, lat: e.target.value})}
-                          required 
-                        />
+            <div className="space-y-10">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <Card className="border-none bg-muted/20 rounded-none shadow-none">
+                  <CardHeader>
+                    <CardTitle className="text-[10px] uppercase font-bold tracking-widest flex items-center gap-2">
+                      <Navigation className="h-4 w-4" /> Safety Coordinates
+                    </CardTitle>
+                    <CardDescription className="text-[10px] uppercase">Define your primary emergency beacon location.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleUpdateLocation} className="space-y-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="lat" className="text-[10px] font-bold uppercase tracking-widest">Latitude</Label>
+                          <Input 
+                            id="lat" 
+                            placeholder="e.g. 14.5995" 
+                            className="rounded-none h-12 border-none bg-background font-mono text-[10px]" 
+                            value={locationData.lat} 
+                            onChange={(e) => setLocationData({...locationData, lat: e.target.value})}
+                            required 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="lng" className="text-[10px] font-bold uppercase tracking-widest">Longitude</Label>
+                          <Input 
+                            id="lng" 
+                            placeholder="e.g. 120.9842" 
+                            className="rounded-none h-12 border-none bg-background font-mono text-[10px]" 
+                            value={locationData.lng} 
+                            onChange={(e) => setLocationData({...locationData, lng: e.target.value})}
+                            required 
+                          />
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="lng" className="text-[10px] font-bold uppercase tracking-widest">Longitude</Label>
-                        <Input 
-                          id="lng" 
-                          placeholder="e.g. 120.9842" 
-                          className="rounded-none h-12 border-none bg-background font-mono text-[10px]" 
-                          value={locationData.lng} 
-                          onChange={(e) => setLocationData({...locationData, lng: e.target.value})}
-                          required 
-                        />
+                      <Button type="submit" disabled={updatingLocation} className="w-full h-14 rounded-none uppercase font-bold tracking-[0.2em] text-[10px]">
+                        {updatingLocation ? <Loader2 className="h-5 w-5 animate-spin" /> : "Lock Coordinates"}
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+
+                <div className="space-y-6">
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                    <MapIcon className="h-4 w-4" /> Visual Beacon Tracker
+                  </h3>
+                  <div className="aspect-video bg-muted/10 border-2 border-dashed relative overflow-hidden flex items-center justify-center group">
+                    {/* Mock Map Background */}
+                    <div className="absolute inset-0 opacity-10 bg-[url('https://picsum.photos/seed/location-map/800/600')] bg-cover grayscale" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                    
+                    {/* Map Grid Overlay */}
+                    <div className="absolute inset-0 pointer-events-none opacity-20" style={{ backgroundImage: 'radial-gradient(circle, var(--primary) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+
+                    <div className="relative z-10 flex flex-col items-center">
+                      <div className="relative mb-4">
+                        <MapPin className="h-10 w-10 text-primary animate-bounce" />
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-2 w-6 bg-primary/20 blur-md rounded-full" />
+                      </div>
+                      <div className="bg-background/90 backdrop-blur-sm border p-4 text-center min-w-[200px] shadow-xl">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary mb-1">Live Beacon Active</p>
+                        <div className="h-1 w-full bg-muted mb-3 overflow-hidden">
+                          <div className="h-full bg-primary w-1/3 animate-[shimmer_2s_infinite]" style={{ backgroundImage: 'linear-gradient(to right, transparent, white, transparent)' }} />
+                        </div>
+                        <p className="text-[10px] font-mono font-bold">LAT: {locationData.lat || 'PENDING'}</p>
+                        <p className="text-[10px] font-mono font-bold">LNG: {locationData.lng || 'PENDING'}</p>
                       </div>
                     </div>
-                    <Button type="submit" disabled={updatingLocation} className="w-full h-14 rounded-none uppercase font-bold tracking-[0.2em] text-[10px]">
-                      {updatingLocation ? <Loader2 className="h-5 w-5 animate-spin" /> : "Lock Coordinates"}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
 
-              <div className="p-6 border-l-2 border-primary bg-muted/10 space-y-4">
+                    <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
+                       <div className="h-2 w-2 bg-primary animate-ping" />
+                       <p className="text-[8px] font-bold uppercase tracking-widest opacity-50">Signal Synchronized</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-8 border-l-2 border-primary bg-muted/10 space-y-4">
                 <div className="flex items-center gap-3">
                   <Info className="h-4 w-4 text-primary" />
-                  <p className="text-[10px] font-bold uppercase tracking-widest">Current Active Beacon</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest">Emergency Orchestration Protocol</p>
                 </div>
-                <p className="text-[10px] leading-relaxed uppercase opacity-70">
-                  These coordinates are transmitted to your "Buddy" network during emergency orchestrations initiated from any hardware node.
+                <p className="text-[11px] leading-relaxed uppercase opacity-70 max-w-2xl">
+                  Your coordinates represent the primary rendezvous point for all safety nodes. In the event of an orchestration trigger, these precise hashes are transmitted via the encrypted channel to your enlisted "Buddy" network.
                 </p>
                 {profileData?.latitude && profileData?.longitude && (
                    <div className="mt-4 pt-4 border-t border-dashed">
-                      <p className="text-[10px] font-bold uppercase text-primary">Last Registered: {profileData.latitude}, {profileData.longitude}</p>
+                      <p className="text-[10px] font-bold uppercase text-primary">Master Registry Locked: {profileData.latitude}, {profileData.longitude}</p>
                    </div>
                 )}
               </div>
