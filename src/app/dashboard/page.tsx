@@ -221,7 +221,6 @@ export default function DashboardPage() {
         setFormData({ name: '', deviceId: '', type: 'SOS Beacon', status: 'online', phoneNumber: '', group: 'Friend', specialData: '' });
         setIsAddBuddyDialogOpen(false);
         setIsAddNodeDialogOpen(false);
-        setActiveTab(category === 'buddy' ? 'manage-buddy' : 'manage-node');
         toast({ title: "Protocol Activated", description: `${label} successfully added to your network.` });
       })
       .catch((error) => {
@@ -320,15 +319,6 @@ export default function DashboardPage() {
           </form>
         </CardContent>
       </Card>
-
-      {!isModal && (
-        <div className="p-8 border-2 border-dashed bg-muted/10 h-fit">
-          <h3 className="text-xs font-bold uppercase mb-4 tracking-[0.2em]">Enlistment Protocol</h3>
-          <p className="text-[10px] text-muted-foreground leading-relaxed">
-            By enlisting a buddy, you authorize 1TAP to share your geolocation and safety status during triggered emergency events. Ensure the contact is aware of their role in your protection network.
-          </p>
-        </div>
-      )}
     </div>
   );
 
@@ -388,54 +378,6 @@ export default function DashboardPage() {
                 {activeTab === 'settings' && "Configure security protocols and account privacy."}
               </p>
             </div>
-            {activeTab === 'manage-buddy' && (
-              <Dialog open={isAddBuddyDialogOpen} onOpenChange={setIsAddBuddyDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="rounded-none uppercase font-bold text-[10px] tracking-widest gap-2">
-                    <UserPlus className="h-4 w-4" /> Add Buddy
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="rounded-none border-none max-w-md">
-                  <DialogHeader>
-                    <DialogTitle className="uppercase font-bold">Enlist New Buddy</DialogTitle>
-                    <DialogDescription className="text-xs">Provide credentials for your emergency orchestration contact.</DialogDescription>
-                  </DialogHeader>
-                  <BuddyRegistrationForm isModal />
-                </DialogContent>
-              </Dialog>
-            )}
-            {activeTab === 'manage-node' && (
-              <Dialog open={isAddNodeDialogOpen} onOpenChange={setIsAddNodeDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="rounded-none uppercase font-bold text-[10px] tracking-widest gap-2">
-                    <PlusSquare className="h-4 w-4" /> Add Node
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="rounded-none border-none max-w-md">
-                  <DialogHeader>
-                    <DialogTitle className="uppercase font-bold">Arm New Node</DialogTitle>
-                    <DialogDescription className="text-xs">Provide identifiers for your emergency hardware asset.</DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={(e) => handleRegisterDevice(e, 'node')} className="space-y-6 pt-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="modal-node-name" className="text-[10px] uppercase font-bold tracking-widest">Node Name</Label>
-                      <Input id="modal-node-name" placeholder="e.g. Primary SOS Beacon" className="rounded-none h-12" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="modal-node-id" className="text-[10px] uppercase font-bold tracking-widest">Hardware ID</Label>
-                      <Input id="modal-node-id" placeholder="e.g. BEACON-01" className="rounded-none h-12" value={formData.deviceId} onChange={(e) => setFormData({...formData, deviceId: e.target.value})} required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] uppercase font-bold tracking-widest">Technical Data</Label>
-                      <Textarea placeholder="Provide specific safety details for this node..." className="rounded-none min-h-[100px]" value={formData.specialData} onChange={(e) => setFormData({...formData, specialData: e.target.value})} />
-                    </div>
-                    <Button type="submit" className="w-full rounded-none h-14 uppercase font-bold tracking-widest" disabled={registerLoading}>
-                      {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Arm Node"}
-                    </Button>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            )}
           </header>
 
           {activeTab === 'overview' && (
@@ -673,6 +615,43 @@ export default function DashboardPage() {
           )}
         </div>
       </main>
+
+      {/* Persistent Dialogs */}
+      <Dialog open={isAddBuddyDialogOpen} onOpenChange={setIsAddBuddyDialogOpen}>
+        <DialogContent className="rounded-none border-none max-w-md">
+          <DialogHeader>
+            <DialogTitle className="uppercase font-bold">Enlist New Buddy</DialogTitle>
+            <DialogDescription className="text-xs">Provide credentials for your emergency orchestration contact.</DialogDescription>
+          </DialogHeader>
+          <BuddyRegistrationForm isModal />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isAddNodeDialogOpen} onOpenChange={setIsAddNodeDialogOpen}>
+        <DialogContent className="rounded-none border-none max-w-md">
+          <DialogHeader>
+            <DialogTitle className="uppercase font-bold">Arm New Node</DialogTitle>
+            <DialogDescription className="text-xs">Provide identifiers for your emergency hardware asset.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={(e) => handleRegisterDevice(e, 'node')} className="space-y-6 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="modal-node-name" className="text-[10px] uppercase font-bold tracking-widest">Node Name</Label>
+              <Input id="modal-node-name" placeholder="e.g. Primary SOS Beacon" className="rounded-none h-12" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="modal-node-id" className="text-[10px] uppercase font-bold tracking-widest">Hardware ID</Label>
+              <Input id="modal-node-id" placeholder="e.g. BEACON-01" className="rounded-none h-12" value={formData.deviceId} onChange={(e) => setFormData({...formData, deviceId: e.target.value})} required />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-bold tracking-widest">Technical Data</Label>
+              <Textarea placeholder="Provide specific safety details for this node..." className="rounded-none min-h-[100px]" value={formData.specialData} onChange={(e) => setFormData({...formData, specialData: e.target.value})} />
+            </div>
+            <Button type="submit" className="w-full rounded-none h-14 uppercase font-bold tracking-widest" disabled={registerLoading}>
+              {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Arm Node"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="rounded-none border-none">
