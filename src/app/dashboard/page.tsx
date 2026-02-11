@@ -49,7 +49,8 @@ import {
   Phone,
   Users,
   UserPlus,
-  Radio
+  Radio,
+  Layers
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { doc, setDoc, collection, deleteDoc, serverTimestamp, addDoc, query, orderBy, limit } from "firebase/firestore";
@@ -61,7 +62,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 type TabType = 'overview' | 'manage-buddy' | 'manage-node' | 'notifications' | 'settings';
 
-const BUDDY_GROUPS = ["Family", "Friend", "Close Friend", "Segurulo", "Others"];
+const DEFAULT_BUDDY_GROUPS = ["Family", "Friend", "Close Friend", "Segurulo", "Others"];
 
 export default function DashboardPage() {
   const { user, loading: userLoading } = useUser();
@@ -92,6 +93,8 @@ export default function DashboardPage() {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isAddBuddyDialogOpen, setIsAddBuddyDialogOpen] = useState(false);
   const [isAddNodeDialogOpen, setIsAddNodeDialogOpen] = useState(false);
+  const [isManageGroupsDialogOpen, setIsManageGroupsDialogOpen] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -107,6 +110,18 @@ export default function DashboardPage() {
   }, [db, user]);
 
   const { data: profileData } = useDoc(profileRef);
+
+  const groupsQuery = useMemo(() => {
+    if (!db || !user) return null;
+    return collection(db, "users", user.uid, "buddyGroups");
+  }, [db, user]);
+
+  const { data: customGroups } = useCollection(groupsQuery);
+
+  const buddyGroups = useMemo(() => {
+    const customNames = (customGroups || []).map((g: any) => g.name);
+    return Array.from(new Set([...DEFAULT_BUDDY_GROUPS, ...customNames]));
+  }, [customGroups]);
 
   const toggleTheme = (isDark: boolean) => {
     const newTheme = isDark ? 'dark' : 'light';
@@ -258,6 +273,27 @@ export default function DashboardPage() {
     });
   };
 
+  const handleAddGroup = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !db || !newGroupName.trim()) return;
+    const groupsRef = collection(db, "users", user.uid, "buddyGroups");
+    addDoc(groupsRef, {
+      name: newGroupName.trim(),
+      createdAt: serverTimestamp()
+    }).then(() => {
+      setNewGroupName("");
+      toast({ title: "Group Protocol Created", description: `Added "${newGroupName}" to custom groups.` });
+    });
+  };
+
+  const handleDeleteGroup = (groupId: string, groupName: string) => {
+    if (!user || !db) return;
+    const groupRef = doc(db, "users", user.uid, "buddyGroups", groupId);
+    deleteDoc(groupRef).then(() => {
+      toast({ title: "Group Removed", description: `Deleted group protocol: ${groupName}` });
+    });
+  };
+
   const toggleAlertGroup = (group: string, isEditing: boolean = false) => {
     if (isEditing) {
       const current = editingDevice.alertGroups || [];
@@ -321,7 +357,7 @@ export default function DashboardPage() {
                   <SelectValue placeholder="Select group" />
                 </SelectTrigger>
                 <SelectContent>
-                  {BUDDY_GROUPS.map(g => (
+                  {buddyGroups.map(g => (
                     <SelectItem key={g} value={g}>{g}</SelectItem>
                   ))}
                 </SelectContent>
@@ -509,84 +545,106 @@ export default function DashboardPage() {
           )}
 
           {activeTab === 'manage-buddy' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {devicesLoading ? (
-                <div className="col-span-full py-12 flex flex-col items-center">
-                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
-                   <p className="text-xs font-bold uppercase tracking-widest">Scanning Contacts...</p>
-                </div>
-              ) : filteredDevices.length === 0 ? (
-                <div className="col-span-full py-20 border-2 border-dashed flex flex-col items-center justify-center text-center px-4">
-                  <Smartphone className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
-                  <p className="text-lg font-bold uppercase mb-2">No Buddies Enlisted</p>
-                  <p className="text-sm text-muted-foreground mb-6">Your human safety network is currently unmonitored.</p>
-                  <Button onClick={() => setIsAddBuddyDialogOpen(true)} variant="outline" className="rounded-none uppercase font-bold text-[10px]">Enlist Buddy</Button>
-                </div>
-              ) : (
-                filteredDevices.map((device: any) => (
-                  <Card key={device.id} className="border-none shadow-none bg-muted/30 hover:bg-muted/50 transition-colors group relative">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                      <div className="space-y-1">
-                        <CardTitle className="text-lg font-bold tracking-tight uppercase">{device.name}</CardTitle>
-                        <p className="text-[10px] text-muted-foreground font-mono">{device.group} | {device.phoneNumber}</p>
-                      </div>
-                      <Users className="h-4 w-4 text-primary" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center gap-2 mb-4">
-                        <div className={cn("h-2 w-2 rounded-full", device.status === 'online' ? 'bg-primary animate-pulse' : 'bg-muted-foreground')} />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Status: {device.status}</span>
-                      </div>
-                      <div className="flex gap-2">
-                         <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold" onClick={() => { setViewingDevice(device); setIsViewDialogOpen(true); }}>View</Button>
-                         <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold" onClick={() => { setEditingDevice({...device}); setIsEditDialogOpen(true); }}>Edit</Button>
-                         <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold text-destructive hover:bg-destructive" onClick={() => handleDeleteDevice(device)}><Trash2 className="h-3 w-3" /></Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
+            <div className="space-y-6">
+              <div className="flex flex-wrap gap-4 items-center mb-6">
+                <Button onClick={() => setIsAddBuddyDialogOpen(true)} variant="outline" className="rounded-none uppercase font-bold text-[10px] flex items-center gap-2">
+                  <UserPlus className="h-4 w-4" /> Enlist Buddy
+                </Button>
+                <Button onClick={() => setIsManageGroupsDialogOpen(true)} variant="outline" className="rounded-none uppercase font-bold text-[10px] flex items-center gap-2">
+                  <Layers className="h-4 w-4" /> Manage Groups
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {devicesLoading ? (
+                  <div className="col-span-full py-12 flex flex-col items-center">
+                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
+                     <p className="text-xs font-bold uppercase tracking-widest">Scanning Contacts...</p>
+                  </div>
+                ) : filteredDevices.length === 0 ? (
+                  <div className="col-span-full py-20 border-2 border-dashed flex flex-col items-center justify-center text-center px-4">
+                    <Smartphone className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
+                    <p className="text-lg font-bold uppercase mb-2">No Buddies Enlisted</p>
+                    <p className="text-sm text-muted-foreground mb-6">Your human safety network is currently unmonitored.</p>
+                    <div className="flex gap-4">
+                      <Button onClick={() => setIsAddBuddyDialogOpen(true)} variant="outline" className="rounded-none uppercase font-bold text-[10px]">Enlist Buddy</Button>
+                      <Button onClick={() => setIsManageGroupsDialogOpen(true)} variant="outline" className="rounded-none uppercase font-bold text-[10px]">Manage Groups</Button>
+                    </div>
+                  </div>
+                ) : (
+                  filteredDevices.map((device: any) => (
+                    <Card key={device.id} className="border-none shadow-none bg-muted/30 hover:bg-muted/50 transition-colors group relative">
+                      <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <div className="space-y-1">
+                          <CardTitle className="text-lg font-bold tracking-tight uppercase">{device.name}</CardTitle>
+                          <p className="text-[10px] text-muted-foreground font-mono">{device.group} | {device.phoneNumber}</p>
+                        </div>
+                        <Users className="h-4 w-4 text-primary" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className={cn("h-2 w-2 rounded-full", device.status === 'online' ? 'bg-primary animate-pulse' : 'bg-muted-foreground')} />
+                          <span className="text-[10px] font-bold uppercase tracking-wider">Status: {device.status}</span>
+                        </div>
+                        <div className="flex gap-2">
+                           <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold" onClick={() => { setViewingDevice(device); setIsViewDialogOpen(true); }}>View</Button>
+                           <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold" onClick={() => { setEditingDevice({...device}); setIsEditDialogOpen(true); }}>Edit</Button>
+                           <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold text-destructive hover:bg-destructive" onClick={() => handleDeleteDevice(device)}><Trash2 className="h-3 w-3" /></Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
             </div>
           )}
 
           {activeTab === 'manage-node' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {devicesLoading ? (
-                <div className="col-span-full py-12 flex flex-col items-center">
-                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
-                   <p className="text-xs font-bold uppercase tracking-widest">Scanning Network...</p>
-                </div>
-              ) : filteredDevices.length === 0 ? (
-                <div className="col-span-full py-20 border-2 border-dashed flex flex-col items-center justify-center text-center px-4">
-                  <Cpu className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
-                  <p className="text-lg font-bold uppercase mb-2">No Nodes Registered</p>
-                  <p className="text-sm text-muted-foreground mb-6">No hardware safety nodes currently active.</p>
-                  <Button onClick={() => setIsAddNodeDialogOpen(true)} variant="outline" className="rounded-none uppercase font-bold text-[10px]">Add Node</Button>
-                </div>
-              ) : (
-                filteredDevices.map((device: any) => (
-                  <Card key={device.id} className="border-none shadow-none bg-muted/30 hover:bg-muted/50 transition-colors group relative">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                      <div className="space-y-1">
-                        <CardTitle className="text-lg font-bold tracking-tight uppercase">{device.name}</CardTitle>
-                        <p className="text-[10px] text-muted-foreground font-mono">ID: {device.id}</p>
-                      </div>
-                      <Cpu className="h-4 w-4 text-primary" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center gap-2 mb-4">
-                        <div className={cn("h-2 w-2 rounded-full", device.status === 'online' ? 'bg-primary animate-pulse' : 'bg-muted-foreground')} />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Status: {device.status}</span>
-                      </div>
-                      <div className="flex gap-2">
-                         <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold" onClick={() => { setViewingDevice(device); setIsViewDialogOpen(true); }}>View</Button>
-                         <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold" onClick={() => { setEditingDevice({...device}); setIsEditDialogOpen(true); }}>Edit</Button>
-                         <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold text-destructive hover:bg-destructive" onClick={() => handleDeleteDevice(device)}><Trash2 className="h-3 w-3" /></Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
+            <div className="space-y-6">
+              <div className="flex flex-wrap gap-4 items-center mb-6">
+                <Button onClick={() => setIsAddNodeDialogOpen(true)} variant="outline" className="rounded-none uppercase font-bold text-[10px] flex items-center gap-2">
+                  <PlusSquare className="h-4 w-4" /> Arm Node
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {devicesLoading ? (
+                  <div className="col-span-full py-12 flex flex-col items-center">
+                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
+                     <p className="text-xs font-bold uppercase tracking-widest">Scanning Network...</p>
+                  </div>
+                ) : filteredDevices.length === 0 ? (
+                  <div className="col-span-full py-20 border-2 border-dashed flex flex-col items-center justify-center text-center px-4">
+                    <Cpu className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
+                    <p className="text-lg font-bold uppercase mb-2">No Nodes Registered</p>
+                    <p className="text-sm text-muted-foreground mb-6">No hardware safety nodes currently active.</p>
+                    <Button onClick={() => setIsAddNodeDialogOpen(true)} variant="outline" className="rounded-none uppercase font-bold text-[10px]">Add Node</Button>
+                  </div>
+                ) : (
+                  filteredDevices.map((device: any) => (
+                    <Card key={device.id} className="border-none shadow-none bg-muted/30 hover:bg-muted/50 transition-colors group relative">
+                      <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <div className="space-y-1">
+                          <CardTitle className="text-lg font-bold tracking-tight uppercase">{device.name}</CardTitle>
+                          <p className="text-[10px] text-muted-foreground font-mono">ID: {device.id}</p>
+                        </div>
+                        <Cpu className="h-4 w-4 text-primary" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className={cn("h-2 w-2 rounded-full", device.status === 'online' ? 'bg-primary animate-pulse' : 'bg-muted-foreground')} />
+                          <span className="text-[10px] font-bold uppercase tracking-wider">Status: {device.status}</span>
+                        </div>
+                        <div className="flex gap-2">
+                           <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold" onClick={() => { setViewingDevice(device); setIsViewDialogOpen(true); }}>View</Button>
+                           <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold" onClick={() => { setEditingDevice({...device}); setIsEditDialogOpen(true); }}>Edit</Button>
+                           <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold text-destructive hover:bg-destructive" onClick={() => handleDeleteDevice(device)}><Trash2 className="h-3 w-3" /></Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
             </div>
           )}
 
@@ -647,6 +705,52 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={isManageGroupsDialogOpen} onOpenChange={setIsManageGroupsDialogOpen}>
+        <DialogContent className="rounded-none border-none max-w-md">
+          <DialogHeader>
+            <DialogTitle className="uppercase font-bold">Manage Buddy Groups</DialogTitle>
+            <DialogDescription className="text-xs">Define custom safety protocols and human categories.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 pt-4">
+            <form onSubmit={handleAddGroup} className="flex gap-2">
+              <Input 
+                placeholder="New Group Name (e.g. Work)" 
+                className="rounded-none uppercase text-[10px] font-bold tracking-widest"
+                value={newGroupName}
+                onChange={(e) => setNewGroupName(e.target.value)}
+                required
+              />
+              <Button type="submit" size="icon" className="rounded-none shrink-0"><Plus className="h-4 w-4" /></Button>
+            </form>
+            <div className="space-y-2">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Active Custom Groups</p>
+              {!customGroups || customGroups.length === 0 ? (
+                <p className="text-[10px] text-muted-foreground uppercase">No custom groups defined.</p>
+              ) : (
+                <div className="grid grid-cols-1 gap-2">
+                  {customGroups.map((group: any) => (
+                    <div key={group.id} className="flex items-center justify-between p-3 bg-muted/30 border border-dashed">
+                      <span className="text-[10px] font-bold uppercase">{group.name}</span>
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteGroup(group.id, group.name)} className="h-6 w-6 text-destructive">
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="mt-6 pt-4 border-t border-dashed">
+                <p className="text-[8px] text-muted-foreground uppercase mb-2">Default Protocols (Protected)</p>
+                <div className="flex flex-wrap gap-1">
+                  {DEFAULT_BUDDY_GROUPS.map(g => (
+                    <span key={g} className="text-[8px] bg-muted px-2 py-0.5 font-bold uppercase opacity-50">{g}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isAddNodeDialogOpen} onOpenChange={setIsAddNodeDialogOpen}>
         <DialogContent className="rounded-none border-none max-w-md">
           <DialogHeader>
@@ -667,8 +771,8 @@ export default function DashboardPage() {
               <Label className="text-[10px] uppercase font-bold tracking-widest flex items-center gap-2">
                 <Radio className="h-3 w-3" /> Alert Contact Groups
               </Label>
-              <div className="grid grid-cols-2 gap-2 p-4 bg-muted/30 border border-dashed rounded-none">
-                {BUDDY_GROUPS.map((group) => (
+              <div className="grid grid-cols-2 gap-2 p-4 bg-muted/30 border border-dashed rounded-none max-h-[160px] overflow-y-auto">
+                {buddyGroups.map((group) => (
                   <div key={group} className="flex items-center space-x-2">
                     <Checkbox 
                       id={`group-${group}`} 
@@ -703,17 +807,32 @@ export default function DashboardPage() {
                 <Input className="rounded-none" value={editingDevice.name} onChange={(e) => setEditingDevice({...editingDevice, name: e.target.value})} required />
               </div>
               {editingDevice.category === 'buddy' ? (
-                <div className="space-y-2">
-                  <Label className="text-[10px] uppercase font-bold">Phone Number</Label>
-                  <Input className="rounded-none" value={editingDevice.phoneNumber} onChange={(e) => setEditingDevice({...editingDevice, phoneNumber: e.target.value})} required />
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase font-bold">Phone Number</Label>
+                    <Input className="rounded-none" value={editingDevice.phoneNumber} onChange={(e) => setEditingDevice({...editingDevice, phoneNumber: e.target.value})} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase font-bold">Group</Label>
+                    <Select value={editingDevice.group} onValueChange={(v) => setEditingDevice({...editingDevice, group: v})}>
+                      <SelectTrigger className="rounded-none">
+                        <SelectValue placeholder="Group" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {buddyGroups.map(g => (
+                          <SelectItem key={g} value={g}>{g}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
               ) : (
                 <div className="space-y-4">
                   <Label className="text-[10px] uppercase font-bold flex items-center gap-2">
                     <Radio className="h-3 w-3" /> Alert Contact Groups
                   </Label>
-                  <div className="grid grid-cols-2 gap-2 p-4 bg-muted/30 border border-dashed rounded-none">
-                    {BUDDY_GROUPS.map((group) => (
+                  <div className="grid grid-cols-2 gap-2 p-4 bg-muted/30 border border-dashed rounded-none max-h-[160px] overflow-y-auto">
+                    {buddyGroups.map((group) => (
                       <div key={group} className="flex items-center space-x-2">
                         <Checkbox 
                           id={`edit-group-${group}`} 
