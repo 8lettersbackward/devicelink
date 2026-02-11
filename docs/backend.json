@@ -2,17 +2,19 @@
 {
   "entities": {
     "Device": {
-      "title": "Safety Device",
-      "description": "A registered emergency or safety hardware device.",
+      "title": "Safety Device / Buddy",
+      "description": "A registered emergency or safety hardware device or a human buddy.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
         "status": { "type": "string", "enum": ["online", "offline", "error"] },
         "ownerId": { "type": "string" },
-        "type": { "type": "string" },
+        "type": { "type": "string", "description": "The specific type or relationship of the asset." },
         "category": { "type": "string", "enum": ["buddy", "node"] },
-        "specialData": { "type": "string", "description": "Additional custom data for 'Other' type safety equipment." },
+        "phoneNumber": { "type": "string", "description": "Contact number for human buddies." },
+        "group": { "type": "string", "enum": ["Family", "Friend", "Close Friend", "Segurulo", "Others"], "description": "The safety group classification." },
+        "specialData": { "type": "string", "description": "Additional custom data for 'Others' group or specific safety info." },
         "registeredAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "ownerId", "status", "category"]
@@ -51,7 +53,7 @@
     },
     "/users/{userId}/devices/{deviceId}": {
       "schema": "Device",
-      "description": "Safety devices registered to a user."
+      "description": "Safety devices or buddies registered to a user."
     },
     "/users/{userId}/notifications/{notificationId}": {
       "schema": "Notification",
