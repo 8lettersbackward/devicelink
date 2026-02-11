@@ -32,6 +32,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { 
   Plus, 
   Settings, 
   Bell, 
@@ -492,6 +497,31 @@ export default function DashboardPage() {
                         <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
                           <ShieldAlert className="h-4 w-4" /> Comprehensive Network Registry
                         </h3>
+                        
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-48 p-4 rounded-none border-none bg-background shadow-xl">
+                             <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-3 text-muted-foreground">Status Legend</p>
+                             <div className="space-y-2">
+                               <div className="flex items-center gap-3">
+                                 <div className="h-2 w-2 bg-primary rounded-full" />
+                                 <span className="text-[10px] font-bold uppercase">Online</span>
+                               </div>
+                               <div className="flex items-center gap-3">
+                                 <div className="h-2 w-2 bg-muted-foreground rounded-full" />
+                                 <span className="text-[10px] font-bold uppercase">Idle</span>
+                               </div>
+                               <div className="flex items-center gap-3">
+                                 <div className="h-2 w-2 bg-destructive rounded-full" />
+                                 <span className="text-[10px] font-bold uppercase">In Alert Mode</span>
+                               </div>
+                             </div>
+                          </PopoverContent>
+                        </Popover>
                       </div>
                       
                       <div className="grid grid-cols-1 gap-4">
@@ -601,7 +631,7 @@ export default function DashboardPage() {
                         <div className="flex items-center gap-2 mb-4">
                           <div className={cn("h-2 w-2 rounded-full", device.status === 'online' ? 'bg-primary animate-pulse' : 'bg-muted-foreground')} />
                           <span className="text-[10px] font-bold uppercase tracking-wider">
-                            {device.status === 'online' ? 'Online' : 'Offline'} · Last active 2 mins ago
+                            {device.status === 'online' ? 'Online' : 'Idle'} · Last active 2 mins ago
                           </span>
                         </div>
                         <div className="flex gap-2">
@@ -657,7 +687,7 @@ export default function DashboardPage() {
                       <CardContent>
                         <div className="flex items-center gap-2 mb-4">
                           <div className={cn("h-2 w-2 rounded-full", device.status === 'online' ? 'bg-primary animate-pulse' : 'bg-muted-foreground')} />
-                          <span className="text-[10px] font-bold uppercase tracking-wider">Status: {device.status}</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider">Status: {device.status === 'online' ? 'Online' : device.status === 'error' ? 'In Alert Mode' : 'Idle'}</span>
                         </div>
                         <div className="flex gap-2">
                            <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold" onClick={() => { setViewingDevice(device); setIsViewDialogOpen(true); }}>View</Button>
