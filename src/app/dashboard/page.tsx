@@ -646,7 +646,7 @@ export default function DashboardPage() {
                           <div className="flex flex-col gap-0.5 mt-1">
                             <p className="text-[10px] text-muted-foreground uppercase font-bold">Role: {device.role || 'Emergency Contact'}</p>
                             <p className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1">
-                              Priority: <Star className="h-2 w-2 fill-primary text-primary" /> {device.priority || 'High'}
+                              Priority: <Star className="Star h-2 w-2 fill-primary text-primary" /> {device.priority || 'High'}
                             </p>
                           </div>
                           <p className="text-[9px] text-muted-foreground font-mono mt-2">{device.group} | {device.phoneNumber}</p>
