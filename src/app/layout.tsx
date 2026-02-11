@@ -1,3 +1,4 @@
+
 import type {Metadata} from 'next';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
@@ -5,8 +6,8 @@ import { Navbar } from '@/components/navbar';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: '1tap',
-  description: 'Instant device orchestration and control',
+  title: '1tap | Emergency Buddy',
+  description: 'Instant emergency help and personal safety orchestration',
 };
 
 export default function RootLayout({

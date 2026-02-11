@@ -40,9 +40,8 @@ import {
   Search,
   LayoutDashboard,
   History,
-  Filter,
   PieChart as PieChartIcon,
-  User as UserIcon
+  ShieldAlert
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { doc, setDoc, collection, deleteDoc, serverTimestamp, addDoc, query, orderBy, limit } from "firebase/firestore";
@@ -62,33 +61,26 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   
-  // Theme state
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-
-  // Search state
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Registration form state
   const [registerLoading, setRegisterLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     deviceId: '',
-    type: 'Sensor',
+    type: 'SOS Beacon',
     status: 'online',
     specialData: ''
   });
 
-  // Edit/View state
   const [editingDevice, setEditingDevice] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [viewingDevice, setViewingDevice] = useState<any>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 
-  // Settings state
   const [newEmail, setNewEmail] = useState("");
   const [emailLoading, setEmailLoading] = useState(false);
 
-  // Initializations
   useEffect(() => {
     if (!userLoading && !user) {
       router.push("/login");
@@ -96,7 +88,6 @@ export default function DashboardPage() {
     if (user) {
       setNewEmail(user.email || "");
     }
-    // Set initial theme
     const isDark = document.documentElement.classList.contains('dark');
     setTheme(isDark ? 'dark' : 'light');
   }, [user, userLoading, router]);
@@ -121,21 +112,16 @@ export default function DashboardPage() {
   const handleUpdateEmail = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !newEmail || newEmail === user.email) return;
-
     setEmailLoading(true);
     verifyBeforeUpdateEmail(user, newEmail)
       .then(() => {
         toast({
           title: "Verification Sent",
-          description: `A verification email has been sent to ${newEmail}. Please confirm to complete the change.`
+          description: `Security verification sent to ${newEmail}.`
         });
       })
       .catch((error) => {
-        toast({
-          variant: "destructive",
-          title: "Update Failed",
-          description: error.message
-        });
+        toast({ variant: "destructive", title: "Update Failed", description: error.message });
       })
       .finally(() => setEmailLoading(false));
   };
@@ -144,7 +130,6 @@ export default function DashboardPage() {
     signOut(auth).then(() => router.push("/login"));
   };
 
-  // Fetch devices
   const devicesQuery = useMemo(() => {
     if (!db || !user) return null;
     return collection(db, "users", user.uid, "devices");
@@ -152,7 +137,6 @@ export default function DashboardPage() {
 
   const { data: devices, loading: devicesLoading } = useCollection(devicesQuery);
 
-  // Fetch notifications
   const notificationsQuery = useMemo(() => {
     if (!db || !user) return null;
     return query(
@@ -164,30 +148,27 @@ export default function DashboardPage() {
 
   const { data: notifications, loading: notificationsLoading } = useCollection(notificationsQuery);
 
-  // Stats Calculation
   const statusStats = useMemo(() => {
     if (!devices || devices.length === 0) return { online: 0, offline: 0, error: 0, total: 0 };
-    const stats = devices.reduce((acc: any, d: any) => {
+    return devices.reduce((acc: any, d: any) => {
       acc[d.status] = (acc[d.status] || 0) + 1;
       acc.total++;
       return acc;
     }, { online: 0, offline: 0, error: 0, total: 0 });
-    return stats;
   }, [devices]);
 
   const chartData = useMemo(() => [
-    { name: 'Online', value: statusStats.online, fill: "var(--color-online)" },
-    { name: 'Offline', value: statusStats.offline, fill: "var(--color-offline)" },
-    { name: 'Error', value: statusStats.error, fill: "var(--color-error)" },
+    { name: 'Secured', value: statusStats.online, fill: "var(--color-online)" },
+    { name: 'Inactive', value: statusStats.offline, fill: "var(--color-offline)" },
+    { name: 'Alert', value: statusStats.error, fill: "var(--color-error)" },
   ], [statusStats]);
 
   const chartConfig = {
-    online: { label: "Online", color: "hsl(var(--primary))" },
-    offline: { label: "Offline", color: "hsl(var(--muted-foreground))" },
-    error: { label: "Error", color: "hsl(var(--destructive))" },
+    online: { label: "Secured", color: "hsl(var(--primary))" },
+    offline: { label: "Inactive", color: "hsl(var(--muted-foreground))" },
+    error: { label: "Alert", color: "hsl(var(--destructive))" },
   };
 
-  // Filtering Logic
   const filteredDevices = useMemo(() => {
     if (!devices) return [];
     if (!searchQuery) return devices;
@@ -214,10 +195,8 @@ export default function DashboardPage() {
   const handleRegisterDevice = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !db) return;
-
     setRegisterLoading(true);
     const deviceRef = doc(db, "users", user.uid, "devices", formData.deviceId);
-
     const payload = {
       name: formData.name,
       id: formData.deviceId,
@@ -227,108 +206,67 @@ export default function DashboardPage() {
       registeredAt: serverTimestamp(),
       ...(formData.type === 'Other' && { specialData: formData.specialData })
     };
-
     setDoc(deviceRef, payload, { merge: true })
       .then(() => {
-        createNotification(`New device authorized: ${formData.name} (ID: ${formData.deviceId})`);
-        setFormData({ name: '', deviceId: '', type: 'Sensor', status: 'online', specialData: '' });
+        createNotification(`Safety device registered: ${formData.name}`);
+        setFormData({ name: '', deviceId: '', type: 'SOS Beacon', status: 'online', specialData: '' });
         setActiveTab('manage');
-        toast({
-          title: "Device Registered",
-          description: "Hardware node successfully authorized."
-        });
+        toast({ title: "Protection Activated", description: "Emergency node successfully authorized." });
       })
       .catch((error) => {
-        toast({
-          variant: "destructive",
-          title: "Registration Error",
-          description: error.message
-        });
+        toast({ variant: "destructive", title: "Error", description: error.message });
       })
-      .finally(() => {
-        setRegisterLoading(false);
-      });
+      .finally(() => setRegisterLoading(false));
   };
 
   const handleUpdateDevice = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !db || !editingDevice) return;
-
     const deviceRef = doc(db, "users", user.uid, "devices", editingDevice.id);
     const { id, ...updateData } = editingDevice;
-    
     setDoc(deviceRef, updateData, { merge: true })
       .then(() => {
-        createNotification(`Device configuration updated: ${editingDevice.name}`);
+        createNotification(`Emergency protocol updated: ${editingDevice.name}`);
         setIsEditDialogOpen(false);
         setEditingDevice(null);
-        toast({
-          title: "Device Updated",
-          description: "Node configuration saved."
-        });
-      })
-      .catch((error) => {
-        toast({
-          variant: "destructive",
-          title: "Update Error",
-          description: error.message
-        });
+        toast({ title: "Protocol Saved", description: "Safety configuration updated." });
       });
   };
 
   const handleDeleteDevice = (device: any) => {
     if (!user || !db) return;
     const deviceRef = doc(db, "users", user.uid, "devices", device.id);
-    deleteDoc(deviceRef)
-      .then(() => {
-        createNotification(`Device removed from network: ${device.name}`);
-        toast({
-          title: "Device Deleted",
-          description: "Hardware node disconnected and purged."
-        });
-      })
-      .catch((error) => {
-        toast({
-          variant: "destructive",
-          title: "Deletion Error",
-          description: error.message
-        });
-      });
-  };
-
-  const handleDeleteNotification = (notificationId: string) => {
-    if (!user || !db) return;
-    const notificationRef = doc(db, "users", user.uid, "notifications", notificationId);
-    deleteDoc(notificationRef);
+    deleteDoc(deviceRef).then(() => {
+      createNotification(`Protection deactivated for: ${device.name}`);
+      toast({ title: "Node Purged", description: "Safety device removed from network." });
+    });
   };
 
   if (userLoading) return (
     <div className="flex items-center justify-center h-[80vh]">
       <div className="animate-pulse flex flex-col items-center">
-        <div className="h-1 bg-primary w-24 mb-4"></div>
-        <p className="text-[10px] uppercase tracking-widest font-bold">Initializing Hub</p>
+        <ShieldAlert className="h-8 w-8 text-primary mb-4" />
+        <p className="text-[10px] uppercase tracking-widest font-bold">Activating Safety Protocols</p>
       </div>
     </div>
   );
 
   if (!user) return null;
 
-  const currentName = profileData?.displayName || user.displayName || "Operator";
+  const currentName = profileData?.displayName || user.displayName || "Protected User";
 
   const navItems = [
-    { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'register', label: 'Register Device', icon: Plus },
-    { id: 'manage', label: 'Manage Devices', icon: Cpu },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'overview', label: 'Safety Overview', icon: LayoutDashboard },
+    { id: 'register', label: 'Add Buddy Node', icon: Plus },
+    { id: 'manage', label: 'Manage Buddies', icon: Cpu },
+    { id: 'notifications', label: 'Safety Alerts', icon: Bell },
+    { id: 'settings', label: 'Security Settings', icon: Settings },
   ] as const;
 
   return (
     <div className="flex flex-col md:flex-row min-h-[calc(100vh-4rem)] bg-background">
-      {/* Left Side Navigation */}
       <aside className="w-full md:w-80 border-r bg-muted/5 order-1">
         <div className="sticky top-16 p-6 space-y-2">
-          {/* User Identification Section */}
           <div className="px-4 py-6 mb-4 flex items-center gap-4 border-b border-dashed">
             <Avatar className="h-10 w-10 rounded-none border border-primary">
               <AvatarImage src={profileData?.avatarUrl || user.photoURL || ""} alt={currentName} />
@@ -343,7 +281,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="mb-8 px-4 py-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Hub Navigation</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Emergency Buddy</p>
           </div>
           {navItems.map((item) => (
             <button
@@ -366,14 +304,13 @@ export default function DashboardPage() {
 
           <div className="mt-20 px-4">
              <div className="p-6 border border-dashed text-center">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground mb-4">Total Nodes Active</p>
+                <p className="text-[10px] uppercase font-bold text-muted-foreground mb-4">Active Safety Nodes</p>
                 <p className="text-4xl font-headline font-bold">{devices?.length || 0}</p>
              </div>
           </div>
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className="flex-1 p-6 md:p-10 order-2">
         <div className="max-w-4xl">
           <header className="mb-10">
@@ -381,22 +318,21 @@ export default function DashboardPage() {
               {navItems.find(t => t.id === activeTab)?.label}
             </h1>
             <p className="text-muted-foreground text-sm tracking-wide">
-              {activeTab === 'overview' && `Welcome back, ${currentName}. Central hub status and activity.`}
-              {activeTab === 'manage' && "Active monitoring of your monochrome ecosystem."}
-              {activeTab === 'register' && "Onboard new hardware to the central hub."}
-              {activeTab === 'notifications' && "Recent system alerts and heartbeat logs."}
-              {activeTab === 'settings' && "Global hub configuration and security protocols."}
+              {activeTab === 'overview' && `Protection status for ${currentName}. Active heartbeat and alerts.`}
+              {activeTab === 'manage' && "Registry of your emergency buddies and safety nodes."}
+              {activeTab === 'register' && "Pair a new emergency buddy or safety device to your profile."}
+              {activeTab === 'notifications' && "Critical safety logs and heartbeat history."}
+              {activeTab === 'settings' && "Configure security protocols and account privacy."}
             </p>
           </header>
 
           {activeTab === 'overview' && (
             <div className="space-y-10">
-              {/* Demographics Summary Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                  {[
-                   { label: 'Online', count: statusStats.online, color: 'bg-primary' },
-                   { label: 'Offline', count: statusStats.offline, color: 'bg-muted-foreground' },
-                   { label: 'Error', count: statusStats.error, color: 'bg-destructive' },
+                   { label: 'Secured', count: statusStats.online, color: 'bg-primary' },
+                   { label: 'Inactive', count: statusStats.offline, color: 'bg-muted-foreground' },
+                   { label: 'Warning', count: statusStats.error, color: 'bg-destructive' },
                  ].map((stat) => (
                    <Card key={stat.label} className="rounded-none border-none bg-muted/20 shadow-none">
                      <CardContent className="p-6">
@@ -413,38 +349,25 @@ export default function DashboardPage() {
                  ))}
               </div>
 
-              {/* Demographics Chart & Search */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                  <div className="lg:col-span-2 space-y-10">
                     <div className="space-y-4">
                       <div className="relative group">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary" />
                         <Input 
-                          placeholder="SEARCH BY NAME, ID, TYPE, OR STATUS..." 
-                          className="pl-12 h-14 rounded-none border-none bg-muted/30 uppercase text-[10px] font-bold tracking-widest focus:bg-muted/50 transition-all"
+                          placeholder="FILTER SAFETY NODES, IDS, OR PROTOCOLS..." 
+                          className="pl-12 h-14 rounded-none border-none bg-muted/30 uppercase text-[10px] font-bold tracking-widest"
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                         />
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {['Online', 'Offline', 'Error', 'Sensor', 'Actuator'].map(tag => (
-                          <button 
-                            key={tag}
-                            onClick={() => setSearchQuery(tag)}
-                            className="px-3 py-1 bg-muted/20 hover:bg-muted/40 text-[9px] uppercase font-bold tracking-wider transition-colors"
-                          >
-                            {tag}
-                          </button>
-                        ))}
                       </div>
                     </div>
 
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
                         <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                          <Cpu className="h-4 w-4" /> Node Registry Status
+                          <ShieldAlert className="h-4 w-4" /> Buddy Node Registry
                         </h3>
-                        <span className="text-[9px] font-mono text-muted-foreground">{filteredDevices.length} MATCHES</span>
                       </div>
                       
                       <div className="grid grid-cols-1 gap-4">
@@ -459,7 +382,7 @@ export default function DashboardPage() {
                               <div>
                                 <div className="flex items-center gap-2">
                                   <p className="text-xs font-bold uppercase">{device.name}</p>
-                                  <span className="text-[8px] bg-muted px-1.5 py-0.5 font-bold uppercase tracking-tighter opacity-70">{device.type}</span>
+                                  <span className="text-[8px] bg-muted px-1.5 py-0.5 font-bold uppercase opacity-70">{device.type}</span>
                                 </div>
                                 <p className="text-[9px] font-mono text-muted-foreground">ID: {device.id}</p>
                               </div>
@@ -471,39 +394,28 @@ export default function DashboardPage() {
                     </div>
                  </div>
 
-                 {/* Right Sidebar: Visual Demographics & History */}
                  <div className="space-y-10">
                     <div className="space-y-6">
                       <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                        <PieChartIcon className="h-4 w-4" /> Network Demographics
+                        <PieChartIcon className="h-4 w-4" /> Safety Demographics
                       </h3>
                       <div className="aspect-square bg-muted/10 p-4 border border-dashed flex items-center justify-center">
                         {statusStats.total > 0 ? (
                            <ChartContainer config={chartConfig} className="w-full h-full">
                               <PieChart>
-                                <Pie
-                                  data={chartData}
-                                  innerRadius={60}
-                                  outerRadius={80}
-                                  paddingAngle={5}
-                                  dataKey="value"
-                                >
-                                  {chartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.fill} stroke="transparent" />
-                                  ))}
+                                <Pie data={chartData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                                  {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke="transparent" />)}
                                 </Pie>
                                 <ChartTooltip content={<ChartTooltipContent />} />
                               </PieChart>
                            </ChartContainer>
-                        ) : (
-                          <p className="text-[10px] uppercase font-bold text-muted-foreground opacity-50">Insufficient Data</p>
-                        )}
+                        ) : <p className="text-[10px] uppercase font-bold text-muted-foreground opacity-50">Monitoring Inactive</p>}
                       </div>
                     </div>
 
                     <div className="space-y-6">
                       <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                        <History className="h-4 w-4" /> Recent Activity
+                        <History className="h-4 w-4" /> Recent Safety Activity
                       </h3>
                       <div className="space-y-4">
                         {notifications?.slice(0, 3).map((notif: any) => (
@@ -526,14 +438,14 @@ export default function DashboardPage() {
               {devicesLoading ? (
                 <div className="col-span-full py-12 flex flex-col items-center">
                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
-                   <p className="text-xs font-bold uppercase tracking-widest">Scanning Network...</p>
+                   <p className="text-xs font-bold uppercase tracking-widest">Scanning Buddy Network...</p>
                 </div>
               ) : devices.length === 0 ? (
                 <div className="col-span-full py-20 border-2 border-dashed flex flex-col items-center justify-center text-center px-4">
-                  <Smartphone className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
-                  <p className="text-lg font-bold uppercase mb-2">No active nodes</p>
-                  <p className="text-sm text-muted-foreground mb-6">Your device registry is currently empty.</p>
-                  <Button onClick={() => setActiveTab('register')} variant="outline" className="rounded-none uppercase font-bold text-[10px]">Initialize New Device</Button>
+                  <ShieldAlert className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
+                  <p className="text-lg font-bold uppercase mb-2">No emergency buddies</p>
+                  <p className="text-sm text-muted-foreground mb-6">Your safety network is currently unmonitored.</p>
+                  <Button onClick={() => setActiveTab('register')} variant="outline" className="rounded-none uppercase font-bold text-[10px]">Onboard New Buddy</Button>
                 </div>
               ) : (
                 devices.map((device: any) => (
@@ -543,52 +455,17 @@ export default function DashboardPage() {
                         <CardTitle className="text-lg font-bold tracking-tight uppercase">{device.name}</CardTitle>
                         <p className="text-[10px] text-muted-foreground font-mono">ID: {device.id}</p>
                       </div>
-                      <div className="flex items-center gap-1">
-                         <Activity className={cn("h-4 w-4", device.status === 'error' ? 'text-destructive' : 'text-primary')} />
-                      </div>
+                      <ShieldCheck className={cn("h-4 w-4", device.status === 'online' ? 'text-primary' : 'text-muted-foreground')} />
                     </CardHeader>
                     <CardContent>
                       <div className="flex items-center gap-2 mb-4">
-                        <div className={cn(
-                          "h-2 w-2 rounded-full",
-                          device.status === 'online' ? 'bg-primary animate-pulse' : 
-                          device.status === 'offline' ? 'bg-muted-foreground' : 'bg-destructive'
-                        )} />
+                        <div className={cn("h-2 w-2 rounded-full", device.status === 'online' ? 'bg-primary animate-pulse' : 'bg-muted-foreground')} />
                         <span className="text-[10px] font-bold uppercase tracking-wider">Status: {device.status}</span>
                       </div>
-                      
-                      <div className="flex gap-2 mb-4">
-                         <Button 
-                           variant="outline" 
-                           size="sm" 
-                           className="h-8 px-3 rounded-none text-[9px] uppercase font-bold tracking-widest"
-                           onClick={() => { setViewingDevice(device); setIsViewDialogOpen(true); }}
-                         >
-                           <Eye className="h-3 w-3 mr-2" /> View
-                         </Button>
-                         <Button 
-                           variant="outline" 
-                           size="sm" 
-                           className="h-8 px-3 rounded-none text-[9px] uppercase font-bold tracking-widest"
-                           onClick={() => { setEditingDevice({...device}); setIsEditDialogOpen(true); }}
-                         >
-                           <Edit className="h-3 w-3 mr-2" /> Edit
-                         </Button>
-                         <Button 
-                           variant="outline" 
-                           size="sm" 
-                           className="h-8 px-3 rounded-none text-[9px] uppercase font-bold tracking-widest text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                           onClick={() => handleDeleteDevice(device)}
-                         >
-                           <Trash2 className="h-3 w-3" />
-                         </Button>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center text-[10px] uppercase font-bold text-muted-foreground">
-                          <span>Type: {device.type}</span>
-                          <ChevronRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
+                      <div className="flex gap-2">
+                         <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold" onClick={() => { setViewingDevice(device); setIsViewDialogOpen(true); }}>View</Button>
+                         <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold" onClick={() => { setEditingDevice({...device}); setIsEditDialogOpen(true); }}>Edit</Button>
+                         <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold text-destructive hover:bg-destructive" onClick={() => handleDeleteDevice(device)}><Trash2 className="h-3 w-3" /></Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -601,138 +478,78 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
               <Card className="border-none shadow-none bg-muted/30 h-fit">
                 <CardHeader>
-                  <CardTitle className="text-sm uppercase font-bold tracking-widest">Device Details</CardTitle>
-                  <CardDescription className="text-xs">Provide the unique hardware identifiers.</CardDescription>
+                  <CardTitle className="text-sm uppercase font-bold tracking-widest">Buddy Credentials</CardTitle>
+                  <CardDescription className="text-xs">Provide unique identifiers for your emergency equipment.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleRegisterDevice} className="space-y-6">
                     <div className="space-y-2">
-                      <Label htmlFor="name" className="text-[10px] uppercase font-bold tracking-widest">Device Name</Label>
-                      <Input 
-                        id="name" 
-                        placeholder="e.g. Master Terminal" 
-                        className="rounded-none bg-background border-none h-12"
-                        value={formData.name}
-                        onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        required 
-                      />
+                      <Label htmlFor="name" className="text-[10px] uppercase font-bold tracking-widest">Buddy Name</Label>
+                      <Input id="name" placeholder="e.g. Personal SOS" className="rounded-none h-12" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="deviceId" className="text-[10px] uppercase font-bold tracking-widest">Device ID</Label>
-                      <Input 
-                        id="deviceId" 
-                        placeholder="e.g. NODE-X-01" 
-                        className="rounded-none bg-background border-none h-12"
-                        value={formData.deviceId}
-                        onChange={(e) => setFormData({...formData, deviceId: e.target.value})}
-                        required 
-                      />
+                      <Label htmlFor="deviceId" className="text-[10px] uppercase font-bold tracking-widest">Node ID</Label>
+                      <Input id="deviceId" placeholder="e.g. SOS-X1" className="rounded-none h-12" value={formData.deviceId} onChange={(e) => setFormData({...formData, deviceId: e.target.value})} required />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label className="text-[10px] uppercase font-bold tracking-widest">Type</Label>
+                        <Label className="text-[10px] uppercase font-bold tracking-widest">Category</Label>
                         <Select value={formData.type} onValueChange={(v) => setFormData({...formData, type: v})}>
-                          <SelectTrigger className="rounded-none bg-background border-none h-12">
+                          <SelectTrigger className="rounded-none h-12">
                             <SelectValue placeholder="Select type" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Sensor">Sensor</SelectItem>
-                            <SelectItem value="Actuator">Actuator</SelectItem>
-                            <SelectItem value="Gateway">Gateway</SelectItem>
-                            <SelectItem value="Display">Display</SelectItem>
+                            <SelectItem value="SOS Beacon">SOS Beacon</SelectItem>
+                            <SelectItem value="Fall Sensor">Fall Sensor</SelectItem>
+                            <SelectItem value="GPS Tracker">GPS Tracker</SelectItem>
+                            <SelectItem value="Panic Button">Panic Button</SelectItem>
                             <SelectItem value="Other">Other</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-[10px] uppercase font-bold tracking-widest">Initial Status</Label>
+                        <Label className="text-[10px] uppercase font-bold tracking-widest">State</Label>
                         <Select value={formData.status} onValueChange={(v) => setFormData({...formData, status: v})}>
-                          <SelectTrigger className="rounded-none bg-background border-none h-12">
+                          <SelectTrigger className="rounded-none h-12">
                             <SelectValue placeholder="Select status" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="online">Online</SelectItem>
-                            <SelectItem value="offline">Offline</SelectItem>
-                            <SelectItem value="error">Error</SelectItem>
+                            <SelectItem value="online">Armed</SelectItem>
+                            <SelectItem value="offline">Inactive</SelectItem>
+                            <SelectItem value="error">Maintenance</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                     </div>
-
                     {formData.type === 'Other' && (
-                      <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <Label htmlFor="specialData" className="text-[10px] uppercase font-bold tracking-widest">Special Data / Info</Label>
-                        <Textarea 
-                          id="specialData" 
-                          placeholder="Provide specific details about this hardware node..." 
-                          className="rounded-none bg-background border-none min-h-[100px]"
-                          value={formData.specialData}
-                          onChange={(e) => setFormData({...formData, specialData: e.target.value})}
-                        />
+                      <div className="space-y-2">
+                        <Label className="text-[10px] uppercase font-bold tracking-widest">Medical / Safety Data</Label>
+                        <Textarea placeholder="Provide specific safety details..." className="rounded-none min-h-[100px]" value={formData.specialData} onChange={(e) => setFormData({...formData, specialData: e.target.value})} />
                       </div>
                     )}
-
-                    <Button type="submit" className="w-full rounded-none h-14 uppercase font-bold tracking-widest text-sm" disabled={registerLoading}>
-                      {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Authorize Device"}
+                    <Button type="submit" className="w-full rounded-none h-14 uppercase font-bold tracking-widest" disabled={registerLoading}>
+                      {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Arm Safety Buddy"}
                     </Button>
                   </form>
                 </CardContent>
               </Card>
 
-              <div className="space-y-6">
-                <div className="p-8 border-2 border-dashed bg-muted/10">
-                  <h3 className="text-xs font-bold uppercase mb-4 tracking-[0.2em]">Registration Protocol</h3>
-                  <ul className="space-y-4">
-                    {[
-                      { icon: Smartphone, title: "Hardware Handshake", desc: "Ensure device is powered and broadcasting." },
-                      { icon: ShieldCheck, title: "Secure Handshake", desc: "Encryption keys are generated on-the-fly." },
-                    ].map((step, i) => (
-                      <li key={i} className="flex gap-4">
-                        <step.icon className="h-5 w-5 text-muted-foreground shrink-0" />
-                        <div>
-                          <p className="text-[10px] font-bold uppercase">{step.title}</p>
-                          <p className="text-[10px] text-muted-foreground">{step.desc}</p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+              <div className="p-8 border-2 border-dashed bg-muted/10 h-fit">
+                <h3 className="text-xs font-bold uppercase mb-4 tracking-[0.2em]">Protection Protocol</h3>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">By registering a Buddy Node, you activate 24/7 monitoring for this device. Ensure the hardware is within proximity for emergency handshakes.</p>
               </div>
             </div>
           )}
 
           {activeTab === 'notifications' && (
             <div className="space-y-4">
-              {notificationsLoading ? (
-                <div className="py-12 flex flex-col items-center">
-                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
-                   <p className="text-xs font-bold uppercase tracking-widest">Retrieving Logs...</p>
-                </div>
-              ) : notifications.length === 0 ? (
-                <div className="py-20 border-2 border-dashed flex flex-col items-center justify-center text-center">
-                   <Bell className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
-                   <p className="text-sm font-bold uppercase text-muted-foreground">System logs clear</p>
-                </div>
-              ) : (
+              {notificationsLoading ? <Loader2 className="h-8 w-8 animate-spin mx-auto" /> : notifications.length === 0 ? <p className="text-center py-20 text-muted-foreground uppercase text-xs">No active alerts</p> : (
                 notifications.map((notif: any) => (
-                  <div key={notif.id} className="p-4 border-b flex justify-between items-center group cursor-pointer hover:bg-muted/10">
-                    <div className="flex gap-4 items-center">
-                      <div className="h-2 w-2 bg-primary rounded-none" />
-                      <div>
-                        <p className="text-sm font-bold uppercase tracking-tight">{notif.message}</p>
-                        <p className="text-[10px] text-muted-foreground uppercase">
-                          Timestamp: {notif.createdAt?.toDate?.() ? notif.createdAt.toDate().toLocaleString() : "Syncing..."}
-                        </p>
-                      </div>
+                  <div key={notif.id} className="p-4 border-b flex justify-between items-center hover:bg-muted/10">
+                    <div>
+                      <p className="text-sm font-bold uppercase">{notif.message}</p>
+                      <p className="text-[10px] text-muted-foreground font-mono">{notif.createdAt?.toDate?.() ? notif.createdAt.toDate().toLocaleString() : "Syncing..."}</p>
                     </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleDeleteNotification(notif.id)}
-                      className="opacity-0 group-hover:opacity-100 uppercase text-[10px] font-bold"
-                    >
-                      Archive
-                    </Button>
                   </div>
                 ))
               )}
@@ -740,211 +557,57 @@ export default function DashboardPage() {
           )}
 
           {activeTab === 'settings' && (
-            <div className="max-w-xl space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
-              {/* Appearance Section */}
+            <div className="max-w-xl space-y-12">
               <section className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                   <Activity className="h-4 w-4 text-muted-foreground" />
-                   <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Interface Customization</h3>
-                </div>
-                <Card className="border-none shadow-none bg-muted/30 rounded-none">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <p className="text-sm font-bold uppercase">Dark Mode Protocol</p>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Toggle between monochrome themes</p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {theme === 'light' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                        <Switch 
-                          checked={theme === 'dark'} 
-                          onCheckedChange={toggleTheme}
-                        />
-                      </div>
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Interface Customization</h3>
+                <Card className="border-none bg-muted/30 rounded-none">
+                  <CardContent className="p-6 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-bold uppercase">Night Vision Protocol</p>
+                      <p className="text-[10px] text-muted-foreground uppercase">Toggle Dark Mode for low-light emergencies</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {theme === 'light' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                      <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
                     </div>
                   </CardContent>
                 </Card>
               </section>
 
-              {/* Account Section */}
               <section className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                   <Mail className="h-4 w-4 text-muted-foreground" />
-                   <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Personal Credentials</h3>
-                </div>
-                <Card className="border-none shadow-none bg-muted/30 rounded-none">
-                  <CardContent className="p-6">
-                    <form onSubmit={handleUpdateEmail} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="email-update" className="text-[10px] font-bold uppercase tracking-widest">Master Email</Label>
-                        <div className="flex gap-2">
-                          <Input 
-                            id="email-update"
-                            type="email"
-                            value={newEmail}
-                            onChange={(e) => setNewEmail(e.target.value)}
-                            className="bg-background border-none rounded-none h-12"
-                            required
-                          />
-                          <Button 
-                            type="submit" 
-                            disabled={emailLoading || newEmail === user.email}
-                            className="rounded-none h-12 uppercase font-bold text-[10px] px-6"
-                          >
-                            {emailLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update"}
-                          </Button>
-                        </div>
-                        <p className="text-[10px] text-muted-foreground italic">Verification email will be sent for confirmation.</p>
-                      </div>
-                    </form>
-                  </CardContent>
-                </Card>
-              </section>
-
-              {/* Security/Logout Section */}
-              <section className="space-y-4 pt-6 border-t border-dashed">
-                <div className="flex items-center gap-2 mb-2">
-                   <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-                   <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Session Integrity</h3>
-                </div>
-                <div className="flex flex-col gap-4">
-                  <Button 
-                    variant="destructive" 
-                    onClick={handleLogout}
-                    className="w-full h-14 rounded-none uppercase font-bold tracking-[0.2em] text-xs flex items-center justify-center gap-3"
-                  >
-                    <LogOut className="h-4 w-4" /> Terminate Active Session
-                  </Button>
-                  <p className="text-[10px] text-center text-muted-foreground uppercase tracking-wider">Warning: This will disconnect the current browser interface from the hub.</p>
-                </div>
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">System Integrity</h3>
+                <Button variant="destructive" onClick={handleLogout} className="w-full h-14 rounded-none uppercase font-bold tracking-[0.2em] flex items-center justify-center gap-3">
+                  <LogOut className="h-4 w-4" /> Terminate Safety Session
+                </Button>
               </section>
             </div>
           )}
         </div>
       </main>
 
-      {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-md bg-background rounded-none border-none">
-          <DialogHeader>
-            <DialogTitle className="uppercase tracking-widest font-bold">Edit Device</DialogTitle>
-            <DialogDescription className="text-[10px] uppercase font-bold text-muted-foreground">Modify active node configuration</DialogDescription>
-          </DialogHeader>
+        <DialogContent className="rounded-none border-none">
+          <DialogHeader><DialogTitle className="uppercase font-bold">Edit Buddy</DialogTitle></DialogHeader>
           {editingDevice && (
-            <form onSubmit={handleUpdateDevice} className="space-y-6 py-4">
+            <form onSubmit={handleUpdateDevice} className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold tracking-widest">Device Name</Label>
-                <Input 
-                  className="rounded-none bg-muted/30 border-none"
-                  value={editingDevice.name}
-                  onChange={(e) => setEditingDevice({...editingDevice, name: e.target.value})}
-                  required 
-                />
+                <Label className="text-[10px] uppercase font-bold">Buddy Name</Label>
+                <Input className="rounded-none" value={editingDevice.name} onChange={(e) => setEditingDevice({...editingDevice, name: e.target.value})} required />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] uppercase font-bold tracking-widest">Type</Label>
-                  <Select value={editingDevice.type} onValueChange={(v) => setEditingDevice({...editingDevice, type: v})}>
-                    <SelectTrigger className="rounded-none bg-muted/30 border-none">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Sensor">Sensor</SelectItem>
-                      <SelectItem value="Actuator">Actuator</SelectItem>
-                      <SelectItem value="Gateway">Gateway</SelectItem>
-                      <SelectItem value="Display">Display</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] uppercase font-bold tracking-widest">Status</Label>
-                  <Select value={editingDevice.status} onValueChange={(v) => setEditingDevice({...editingDevice, status: v})}>
-                    <SelectTrigger className="rounded-none bg-muted/30 border-none">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="online">Online</SelectItem>
-                      <SelectItem value="offline">Offline</SelectItem>
-                      <SelectItem value="error">Error</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {editingDevice.type === 'Other' && (
-                <div className="space-y-2">
-                  <Label className="text-[10px] uppercase font-bold tracking-widest">Special Data</Label>
-                  <Textarea 
-                    className="rounded-none bg-muted/30 border-none min-h-[80px]"
-                    value={editingDevice.specialData || ''}
-                    onChange={(e) => setEditingDevice({...editingDevice, specialData: e.target.value})}
-                  />
-                </div>
-              )}
-              
-              <DialogFooter className="flex gap-2">
-                <Button type="button" variant="ghost" onClick={() => setIsEditDialogOpen(false)} className="rounded-none uppercase text-[10px] font-bold">Cancel</Button>
-                <Button type="submit" className="rounded-none uppercase text-[10px] font-bold px-8">Update Node</Button>
-              </DialogFooter>
+              <DialogFooter><Button type="submit" className="rounded-none uppercase text-[10px] font-bold">Update Protocol</Button></DialogFooter>
             </form>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* View Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-md bg-background rounded-none border-none">
-          <DialogHeader>
-            <DialogTitle className="uppercase tracking-widest font-bold">Node Details</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="rounded-none border-none">
+          <DialogHeader><DialogTitle className="uppercase font-bold">Buddy Details</DialogTitle></DialogHeader>
           {viewingDevice && (
-            <div className="space-y-6 py-4">
-              <div className="grid grid-cols-2 gap-y-4">
-                <div>
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Device Name</p>
-                  <p className="text-sm font-bold uppercase tracking-tight">{viewingDevice.name}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Status</p>
-                  <div className="flex items-center gap-2">
-                    <div className={cn(
-                      "h-2 w-2 rounded-full",
-                      viewingDevice.status === 'online' ? 'bg-primary' : 
-                      viewingDevice.status === 'offline' ? 'bg-muted-foreground' : 'bg-destructive'
-                    )} />
-                    <p className="text-sm font-bold uppercase tracking-tight">{viewingDevice.status}</p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Identifier</p>
-                  <p className="text-[10px] font-mono">{viewingDevice.id}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Type</p>
-                  <p className="text-sm font-bold uppercase tracking-tight">{viewingDevice.type}</p>
-                </div>
-              </div>
-
-              {viewingDevice.specialData && (
-                <div className="p-4 bg-muted/20 border border-dashed">
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-2 flex items-center gap-2">
-                    <Info className="h-3 w-3" /> Custom Metadata
-                  </p>
-                  <p className="text-xs font-medium leading-relaxed">{viewingDevice.specialData}</p>
-                </div>
-              )}
-
-              <div className="pt-4 border-t border-dashed">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground">Authorized Since</p>
-                <p className="text-[10px] font-mono">
-                  {viewingDevice.registeredAt?.toDate?.() ? viewingDevice.registeredAt.toDate().toLocaleString() : "N/A"}
-                </p>
-              </div>
-
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsViewDialogOpen(false)} className="rounded-none w-full uppercase text-[10px] font-bold">Close Portal</Button>
-              </DialogFooter>
+            <div className="space-y-4">
+              <p className="text-[10px] uppercase font-bold text-muted-foreground">Identifier: <span className="text-foreground font-mono">{viewingDevice.id}</span></p>
+              <p className="text-[10px] uppercase font-bold text-muted-foreground">Protocol: <span className="text-foreground">{viewingDevice.type}</span></p>
+              <Button variant="outline" onClick={() => setIsViewDialogOpen(false)} className="rounded-none w-full uppercase text-[10px] font-bold">Close Hub</Button>
             </div>
           )}
         </DialogContent>

@@ -2,8 +2,8 @@
 {
   "entities": {
     "Device": {
-      "title": "Device",
-      "description": "A registered hardware device.",
+      "title": "Safety Device",
+      "description": "A registered emergency or safety hardware device.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -11,14 +11,14 @@
         "status": { "type": "string", "enum": ["online", "offline", "error"] },
         "ownerId": { "type": "string" },
         "type": { "type": "string" },
-        "specialData": { "type": "string", "description": "Additional custom data for 'Other' type devices." },
+        "specialData": { "type": "string", "description": "Additional custom data for 'Other' type safety equipment." },
         "registeredAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "ownerId", "status"]
     },
     "Notification": {
-      "title": "Notification",
-      "description": "System or device notification.",
+      "title": "Safety Alert",
+      "description": "Emergency or safety system notification.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -31,7 +31,7 @@
     },
     "UserProfile": {
       "title": "User Profile",
-      "description": "Extended user information.",
+      "description": "Personal safety identification and emergency contact details.",
       "type": "object",
       "properties": {
         "displayName": { "type": "string" },
@@ -46,15 +46,15 @@
   "firestore": {
     "/users/{userId}": {
       "schema": "UserProfile",
-      "description": "User profile data."
+      "description": "Emergency responder contact info."
     },
     "/users/{userId}/devices/{deviceId}": {
       "schema": "Device",
-      "description": "Collection of devices owned by a user."
+      "description": "Safety devices registered to a user."
     },
     "/users/{userId}/notifications/{notificationId}": {
       "schema": "Notification",
-      "description": "User notifications."
+      "description": "Personal safety alert history."
     }
   }
 }
