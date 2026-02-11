@@ -400,6 +400,11 @@ export default function DashboardPage() {
     return devices.filter(d => d.category === 'buddy' && alertGroups.includes(d.group));
   };
 
+  const getBuddiesInGroup = (group: string) => {
+    if (!devices) return [];
+    return devices.filter(d => d.category === 'buddy' && d.group === group);
+  };
+
   if (userLoading) return (
     <div className="flex items-center justify-center h-[80vh]">
       <div className="animate-pulse flex flex-col items-center">
@@ -1008,17 +1013,29 @@ export default function DashboardPage() {
                   <Label className="text-[10px] uppercase font-bold flex items-center gap-2">
                     <Radio className="h-3 w-3" /> Target Contact Groups
                   </Label>
-                  <div className="grid grid-cols-2 gap-2 p-4 bg-muted/30 border border-dashed rounded-none max-h-[160px] overflow-y-auto">
-                    {buddyGroups.map((group) => (
-                      <div key={group} className="flex items-center space-x-2">
-                        <Checkbox 
-                          id={`group-${group}`} 
-                          checked={formData.alertGroups.includes(group)}
-                          onCheckedChange={() => toggleAlertGroup(group)}
-                        />
-                        <Label htmlFor={`group-${group}`} className="text-[10px] uppercase font-bold cursor-pointer">{group}</Label>
-                      </div>
-                    ))}
+                  <div className="grid grid-cols-1 gap-2 p-4 bg-muted/30 border border-dashed rounded-none max-h-[200px] overflow-y-auto">
+                    {buddyGroups.map((group) => {
+                      const groupBuddies = getBuddiesInGroup(group);
+                      return (
+                        <div key={group} className="flex flex-col space-y-1 py-1">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id={`group-${group}`} 
+                              checked={formData.alertGroups.includes(group)}
+                              onCheckedChange={() => toggleAlertGroup(group)}
+                            />
+                            <Label htmlFor={`group-${group}`} className="text-[10px] uppercase font-bold cursor-pointer flex flex-wrap items-center gap-2">
+                              {group}
+                              {groupBuddies.length > 0 && (
+                                <span className="text-[8px] font-mono text-muted-foreground normal-case bg-muted px-1.5 py-0.5">
+                                  Includes: {groupBuddies.map(b => b.name).join(', ')}
+                                </span>
+                              )}
+                            </Label>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                   
                   {/* Linked Buddies Preview */}
@@ -1106,17 +1123,29 @@ export default function DashboardPage() {
                       <Label className="text-[10px] uppercase font-bold flex items-center gap-2">
                         <Radio className="h-3 w-3" /> Target Contact Groups
                       </Label>
-                      <div className="grid grid-cols-2 gap-2 p-4 bg-muted/30 border border-dashed rounded-none max-h-[160px] overflow-y-auto">
-                        {buddyGroups.map((group) => (
-                          <div key={group} className="flex items-center space-x-2">
-                            <Checkbox 
-                              id={`edit-group-${group}`} 
-                              checked={(editingDevice.alertGroups || []).includes(group)}
-                              onCheckedChange={() => toggleAlertGroup(group, true)}
-                            />
-                            <Label htmlFor={`edit-group-${group}`} className="text-[10px] uppercase font-bold cursor-pointer">{group}</Label>
-                          </div>
-                        ))}
+                      <div className="grid grid-cols-1 gap-2 p-4 bg-muted/30 border border-dashed rounded-none max-h-[200px] overflow-y-auto">
+                        {buddyGroups.map((group) => {
+                          const groupBuddies = getBuddiesInGroup(group);
+                          return (
+                            <div key={group} className="flex flex-col space-y-1 py-1">
+                              <div className="flex items-center space-x-2">
+                                <Checkbox 
+                                  id={`edit-group-${group}`} 
+                                  checked={(editingDevice.alertGroups || []).includes(group)}
+                                  onCheckedChange={() => toggleAlertGroup(group, true)}
+                                />
+                                <Label htmlFor={`edit-group-${group}`} className="text-[10px] uppercase font-bold cursor-pointer flex flex-wrap items-center gap-2">
+                                  {group}
+                                  {groupBuddies.length > 0 && (
+                                    <span className="text-[8px] font-mono text-muted-foreground normal-case bg-muted px-1.5 py-0.5">
+                                      Includes: {groupBuddies.map(b => b.name).join(', ')}
+                                    </span>
+                                  )}
+                                </Label>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
 
                       <div className="space-y-2">
