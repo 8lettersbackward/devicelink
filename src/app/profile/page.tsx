@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { updatePassword, updateProfile, signOut } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { Loader2, User as UserIcon, Shield, Bell, LogOut, IdCard, Mail, Camera } from "lucide-react";
+import { Loader2, User as UserIcon, Shield, Bell, LogOut, IdCard, Mail, Camera, ArrowLeft } from "lucide-react";
 
 export default function ProfilePage() {
   const { user, loading: userLoading } = useUser();
@@ -120,6 +120,15 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12 sm:px-6 lg:px-8 bg-background min-h-screen">
+      <Button 
+        variant="ghost" 
+        onClick={() => router.push("/dashboard")} 
+        className="mb-8 p-0 h-auto hover:bg-transparent text-[10px] uppercase font-bold tracking-widest flex items-center gap-2 group transition-all"
+      >
+        <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-1" />
+        Back to Hub
+      </Button>
+
       <header className="mb-12">
         <h1 className="text-4xl font-headline font-bold tracking-tighter uppercase mb-2">Account Hub</h1>
         <p className="text-muted-foreground text-sm tracking-wide uppercase">System identification and security protocols.</p>
