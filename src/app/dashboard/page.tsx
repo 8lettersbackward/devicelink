@@ -393,6 +393,11 @@ export default function DashboardPage() {
       .finally(() => setUpdatingLocation(false));
   };
 
+  const getLinkedBuddies = (alertGroups: string[]) => {
+    if (!devices || !alertGroups) return [];
+    return devices.filter(d => d.category === 'buddy' && alertGroups.includes(d.group));
+  };
+
   if (userLoading) return (
     <div className="flex items-center justify-center h-[80vh]">
       <div className="animate-pulse flex flex-col items-center">
@@ -779,11 +784,8 @@ export default function DashboardPage() {
                     <MapIcon className="h-4 w-4" /> Visual Beacon Tracker
                   </h3>
                   <div className="aspect-video bg-muted/10 border-2 border-dashed relative overflow-hidden flex items-center justify-center group">
-                    {/* Mock Map Background */}
                     <div className="absolute inset-0 opacity-10 bg-[url('https://picsum.photos/seed/location-map/800/600')] bg-cover grayscale" />
                     <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-                    
-                    {/* Map Grid Overlay */}
                     <div className="absolute inset-0 pointer-events-none opacity-20" style={{ backgroundImage: 'radial-gradient(circle, var(--primary) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
 
                     <div className="relative z-10 flex flex-col items-center">
@@ -909,7 +911,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold tracking-widest">Group / Relationship</Label>
+                <Label className="text-[10px] uppercase font-bold tracking-widest">Contact Group</Label>
                 <Select value={formData.group} onValueChange={(v) => setFormData({...formData, group: v})}>
                   <SelectTrigger className="rounded-none h-12">
                     <SelectValue placeholder="Select group" />
@@ -920,6 +922,7 @@ export default function DashboardPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-[8px] text-muted-foreground uppercase">Nodes targeting this group will automatically alert this buddy.</p>
               </div>
               {formData.group === 'Others' && (
                 <div className="space-y-2">
@@ -999,7 +1002,7 @@ export default function DashboardPage() {
             
             <div className="space-y-4">
               <Label className="text-[10px] uppercase font-bold flex items-center gap-2">
-                <Radio className="h-3 w-3" /> Alert Contact Groups
+                <Radio className="h-3 w-3" /> Target Contact Groups
               </Label>
               <div className="grid grid-cols-2 gap-2 p-4 bg-muted/30 border border-dashed rounded-none max-h-[160px] overflow-y-auto">
                 {buddyGroups.map((group) => (
@@ -1013,7 +1016,20 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
-              <p className="text-[8px] text-muted-foreground uppercase">Selected groups will be orchestrated upon trigger.</p>
+              
+              {/* Linked Buddies Preview */}
+              <div className="space-y-2">
+                <p className="text-[8px] text-muted-foreground uppercase font-bold">Auto-Linked Recipients ({getLinkedBuddies(formData.alertGroups).length})</p>
+                <div className="flex flex-wrap gap-1">
+                  {getLinkedBuddies(formData.alertGroups).length > 0 ? (
+                    getLinkedBuddies(formData.alertGroups).map(b => (
+                      <span key={b.id} className="text-[8px] bg-primary/10 text-primary px-2 py-0.5 border border-primary/20 font-bold uppercase">{b.name}</span>
+                    ))
+                  ) : (
+                    <span className="text-[8px] text-muted-foreground italic">No buddies currently linked to these groups.</span>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -1062,7 +1078,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] uppercase font-bold">Group</Label>
+                    <Label className="text-[10px] uppercase font-bold">Contact Group</Label>
                     <Select value={editingDevice.group} onValueChange={(v) => setEditingDevice({...editingDevice, group: v})}>
                       <SelectTrigger className="rounded-none">
                         <SelectValue placeholder="Group" />
@@ -1078,7 +1094,7 @@ export default function DashboardPage() {
               ) : (
                 <div className="space-y-4">
                   <Label className="text-[10px] uppercase font-bold flex items-center gap-2">
-                    <Radio className="h-3 w-3" /> Alert Contact Groups
+                    <Radio className="h-3 w-3" /> Target Contact Groups
                   </Label>
                   <div className="grid grid-cols-2 gap-2 p-4 bg-muted/30 border border-dashed rounded-none max-h-[160px] overflow-y-auto">
                     {buddyGroups.map((group) => (
@@ -1091,6 +1107,19 @@ export default function DashboardPage() {
                         <Label htmlFor={`edit-group-${group}`} className="text-[10px] uppercase font-bold cursor-pointer">{group}</Label>
                       </div>
                     ))}
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-[8px] text-muted-foreground uppercase font-bold">Auto-Linked Recipients ({getLinkedBuddies(editingDevice.alertGroups).length})</p>
+                    <div className="flex flex-wrap gap-1">
+                      {getLinkedBuddies(editingDevice.alertGroups).length > 0 ? (
+                        getLinkedBuddies(editingDevice.alertGroups).map(b => (
+                          <span key={b.id} className="text-[8px] bg-primary/10 text-primary px-2 py-0.5 border border-primary/20 font-bold uppercase">{b.name}</span>
+                        ))
+                      ) : (
+                        <span className="text-[8px] text-muted-foreground italic">No buddies currently linked to these groups.</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -1135,12 +1164,21 @@ export default function DashboardPage() {
                   </>
                 )}
                 {viewingDevice.category === 'node' && viewingDevice.alertGroups && viewingDevice.alertGroups.length > 0 && (
-                  <div className="space-y-1 col-span-2">
-                    <p className="text-[8px] uppercase font-bold text-muted-foreground">Alert Contact Groups</p>
-                    <div className="flex flex-wrap gap-1 mt-1">
+                  <div className="space-y-3 col-span-2 border-t border-dashed pt-4">
+                    <p className="text-[8px] uppercase font-bold text-muted-foreground">Alert Orchestration Targets</p>
+                    <div className="flex flex-wrap gap-1">
                       {viewingDevice.alertGroups.map((g: string) => (
-                        <span key={g} className="text-[9px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 font-bold uppercase">{g}</span>
+                        <span key={g} className="text-[9px] bg-muted px-2 py-0.5 font-bold uppercase">{g}</span>
                       ))}
+                    </div>
+                    
+                    <div className="space-y-1">
+                       <p className="text-[8px] uppercase font-bold text-primary">Active Recipients ({getLinkedBuddies(viewingDevice.alertGroups).length})</p>
+                       <div className="flex flex-wrap gap-1">
+                          {getLinkedBuddies(viewingDevice.alertGroups).map(b => (
+                            <span key={b.id} className="text-[9px] border border-primary text-primary px-2 py-0.5 font-bold uppercase">{b.name} ({b.phoneNumber})</span>
+                          ))}
+                       </div>
                     </div>
                   </div>
                 )}
@@ -1183,4 +1221,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
