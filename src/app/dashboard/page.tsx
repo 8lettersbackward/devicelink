@@ -807,7 +807,7 @@ export default function DashboardPage() {
 
                     <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
                        <div className="h-2 w-2 bg-primary animate-ping" />
-                       <p className="text-[8px] font-bold uppercase tracking-widest opacity-50">Signal Synchronized</p>
+                       <p className="text-xs font-bold uppercase tracking-widest opacity-50">Signal Synchronized</p>
                     </div>
                   </div>
                 </div>
