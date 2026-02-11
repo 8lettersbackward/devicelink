@@ -186,7 +186,10 @@ export default function DashboardPage() {
         d.type?.toLowerCase().includes(lowerQuery) ||
         d.status?.toLowerCase().includes(lowerQuery) ||
         d.phoneNumber?.toLowerCase().includes(lowerQuery) ||
-        d.group?.toLowerCase().includes(lowerQuery)
+        d.group?.toLowerCase().includes(lowerQuery) ||
+        d.category?.toLowerCase().includes(lowerQuery) ||
+        d.specialData?.toLowerCase().includes(lowerQuery) ||
+        (d.alertGroups && d.alertGroups.some((g: string) => g.toLowerCase().includes(lowerQuery)))
       );
     }
     if (activeTab === 'manage-buddy') {
@@ -417,7 +420,7 @@ export default function DashboardPage() {
                       <div className="relative group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary" />
                         <Input 
-                          placeholder="FILTER BY NAME, ID, PHONE, OR STATUS..." 
+                          placeholder="SEARCH NETWORK: NAME, ID, PHONE, GROUPS, STATUS..." 
                           className="pl-12 h-14 rounded-none border-none bg-muted/30 uppercase text-[10px] font-bold tracking-widest"
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
