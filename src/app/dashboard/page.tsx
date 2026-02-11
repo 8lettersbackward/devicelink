@@ -18,6 +18,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { 
   Plus, 
@@ -45,7 +46,8 @@ import {
   PlusCircle,
   PlusSquare,
   Phone,
-  Users
+  Users,
+  UserPlus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { doc, setDoc, collection, deleteDoc, serverTimestamp, addDoc, query, orderBy, limit } from "firebase/firestore";
@@ -83,6 +85,8 @@ export default function DashboardPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [viewingDevice, setViewingDevice] = useState<any>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isAddBuddyDialogOpen, setIsAddBuddyDialogOpen] = useState(false);
+  const [isAddNodeDialogOpen, setIsAddNodeDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -190,14 +194,13 @@ export default function DashboardPage() {
     if (!user || !db) return;
     setRegisterLoading(true);
     
-    // For buddies, use a generated ID if not provided
     const finalId = formData.deviceId || `ID-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
     const deviceRef = doc(db, "users", user.uid, "devices", finalId);
     
     const payload = {
       name: formData.name,
       id: finalId,
-      status: formData.status,
+      status: 'online', // Default to online as requested
       category: category,
       ownerId: user.uid,
       registeredAt: serverTimestamp(),
@@ -216,6 +219,8 @@ export default function DashboardPage() {
         const label = category === 'buddy' ? 'Buddy' : 'Node';
         createNotification(`New ${label} registered: ${formData.name}`);
         setFormData({ name: '', deviceId: '', type: 'SOS Beacon', status: 'online', phoneNumber: '', group: 'Friend', specialData: '' });
+        setIsAddBuddyDialogOpen(false);
+        setIsAddNodeDialogOpen(false);
         setActiveTab(category === 'buddy' ? 'manage-buddy' : 'manage-node');
         toast({ title: "Protocol Activated", description: `${label} successfully added to your network.` });
       })
@@ -271,6 +276,64 @@ export default function DashboardPage() {
     { id: 'settings', label: 'Security Settings', icon: Settings },
   ] as const;
 
+  const BuddyRegistrationForm = ({ isModal = false }: { isModal?: boolean }) => (
+    <div className={cn("grid grid-cols-1 gap-10", !isModal && "lg:grid-cols-2")}>
+      <Card className="border-none shadow-none bg-muted/30 h-fit">
+        {!isModal && (
+          <CardHeader>
+            <CardTitle className="text-sm uppercase font-bold tracking-widest">Buddy Credentials</CardTitle>
+            <CardDescription className="text-xs">Enlist a trusted contact for emergency orchestration.</CardDescription>
+          </CardHeader>
+        )}
+        <CardContent className={cn(isModal && "pt-6")}>
+          <form onSubmit={(e) => handleRegisterDevice(e, 'buddy')} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="buddy-name" className="text-[10px] uppercase font-bold tracking-widest">Buddy Name</Label>
+              <Input id="buddy-name" placeholder="e.g. Elvin" className="rounded-none h-12" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="buddy-phone" className="text-[10px] uppercase font-bold tracking-widest">Phone Number</Label>
+              <Input id="buddy-phone" placeholder="+1..." className="rounded-none h-12" value={formData.phoneNumber} onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})} required />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-bold tracking-widest">Group / Relationship</Label>
+              <Select value={formData.group} onValueChange={(v) => setFormData({...formData, group: v})}>
+                <SelectTrigger className="rounded-none h-12">
+                  <SelectValue placeholder="Select group" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Family">Family</SelectItem>
+                  <SelectItem value="Friend">Friend</SelectItem>
+                  <SelectItem value="Close Friend">Close Friend</SelectItem>
+                  <SelectItem value="Segurulo">Segurulo</SelectItem>
+                  <SelectItem value="Others">Others</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {formData.group === 'Others' && (
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase font-bold tracking-widest">Specific Group Details</Label>
+                <Textarea placeholder="Define specific emergency role or group metadata..." className="rounded-none min-h-[80px]" value={formData.specialData} onChange={(e) => setFormData({...formData, specialData: e.target.value})} />
+              </div>
+            )}
+            <Button type="submit" className="w-full rounded-none h-14 uppercase font-bold tracking-widest" disabled={registerLoading}>
+              {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Authorize Buddy"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {!isModal && (
+        <div className="p-8 border-2 border-dashed bg-muted/10 h-fit">
+          <h3 className="text-xs font-bold uppercase mb-4 tracking-[0.2em]">Enlistment Protocol</h3>
+          <p className="text-[10px] text-muted-foreground leading-relaxed">
+            By enlisting a buddy, you authorize 1TAP to share your geolocation and safety status during triggered emergency events. Ensure the contact is aware of their role in your protection network.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="flex flex-col md:flex-row min-h-[calc(100vh-4rem)] bg-background">
       <aside className="w-full md:w-80 border-r bg-muted/5 order-1">
@@ -314,19 +377,69 @@ export default function DashboardPage() {
 
       <main className="flex-1 p-6 md:p-10 order-2 overflow-y-auto">
         <div className="max-w-4xl">
-          <header className="mb-10">
-            <h1 className="text-4xl font-headline font-bold tracking-tighter uppercase mb-2">
-              {navItems.find(t => t.id === activeTab)?.label}
-            </h1>
-            <p className="text-muted-foreground text-sm tracking-wide">
-              {activeTab === 'overview' && `Protection status for ${currentName}. Active heartbeat and alerts.`}
-              {activeTab === 'manage-buddy' && "Manage your trusted emergency contacts and human safety network."}
-              {activeTab === 'manage-node' && "Registry of your active hardware safety nodes and sensors."}
-              {activeTab === 'add-buddy' && "Enlist a new trusted person into your emergency response circle."}
-              {activeTab === 'add-node' && "Pair a new emergency hardware node to your secure profile."}
-              {activeTab === 'notifications' && "Critical safety logs and heartbeat history."}
-              {activeTab === 'settings' && "Configure security protocols and account privacy."}
-            </p>
+          <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <h1 className="text-4xl font-headline font-bold tracking-tighter uppercase mb-2">
+                {navItems.find(t => t.id === activeTab)?.label}
+              </h1>
+              <p className="text-muted-foreground text-sm tracking-wide">
+                {activeTab === 'overview' && `Protection status for ${currentName}. Active heartbeat and alerts.`}
+                {activeTab === 'manage-buddy' && "Manage your trusted emergency contacts and human safety network."}
+                {activeTab === 'manage-node' && "Registry of your active hardware safety nodes and sensors."}
+                {activeTab === 'add-buddy' && "Enlist a new trusted person into your emergency response circle."}
+                {activeTab === 'add-node' && "Pair a new emergency hardware node to your secure profile."}
+                {activeTab === 'notifications' && "Critical safety logs and heartbeat history."}
+                {activeTab === 'settings' && "Configure security protocols and account privacy."}
+              </p>
+            </div>
+            {activeTab === 'manage-buddy' && (
+              <Dialog open={isAddBuddyDialogOpen} onOpenChange={setIsAddBuddyDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="rounded-none uppercase font-bold text-[10px] tracking-widest gap-2">
+                    <UserPlus className="h-4 w-4" /> Add Buddy
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="rounded-none border-none max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="uppercase font-bold">Enlist New Buddy</DialogTitle>
+                    <DialogDescription className="text-xs">Provide credentials for your emergency orchestration contact.</DialogDescription>
+                  </DialogHeader>
+                  <BuddyRegistrationForm isModal />
+                </DialogContent>
+              </Dialog>
+            )}
+            {activeTab === 'manage-node' && (
+              <Dialog open={isAddNodeDialogOpen} onOpenChange={setIsAddNodeDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="rounded-none uppercase font-bold text-[10px] tracking-widest gap-2">
+                    <PlusSquare className="h-4 w-4" /> Add Node
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="rounded-none border-none max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="uppercase font-bold">Arm New Node</DialogTitle>
+                    <DialogDescription className="text-xs">Provide identifiers for your emergency hardware asset.</DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={(e) => handleRegisterDevice(e, 'node')} className="space-y-6 pt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="modal-node-name" className="text-[10px] uppercase font-bold tracking-widest">Node Name</Label>
+                      <Input id="modal-node-name" placeholder="e.g. Primary SOS Beacon" className="rounded-none h-12" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="modal-node-id" className="text-[10px] uppercase font-bold tracking-widest">Hardware ID</Label>
+                      <Input id="modal-node-id" placeholder="e.g. BEACON-01" className="rounded-none h-12" value={formData.deviceId} onChange={(e) => setFormData({...formData, deviceId: e.target.value})} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] uppercase font-bold tracking-widest">Technical Data</Label>
+                      <Textarea placeholder="Provide specific safety details for this node..." className="rounded-none min-h-[100px]" value={formData.specialData} onChange={(e) => setFormData({...formData, specialData: e.target.value})} />
+                    </div>
+                    <Button type="submit" className="w-full rounded-none h-14 uppercase font-bold tracking-widest" disabled={registerLoading}>
+                      {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Arm Node"}
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            )}
           </header>
 
           {activeTab === 'overview' && (
@@ -449,7 +562,7 @@ export default function DashboardPage() {
                   <Smartphone className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
                   <p className="text-lg font-bold uppercase mb-2">No Buddies Enlisted</p>
                   <p className="text-sm text-muted-foreground mb-6">Your human safety network is currently unmonitored.</p>
-                  <Button onClick={() => setActiveTab('add-buddy')} variant="outline" className="rounded-none uppercase font-bold text-[10px]">Enlist Buddy</Button>
+                  <Button onClick={() => setIsAddBuddyDialogOpen(true)} variant="outline" className="rounded-none uppercase font-bold text-[10px]">Enlist Buddy</Button>
                 </div>
               ) : (
                 filteredDevices.map((device: any) => (
@@ -490,7 +603,7 @@ export default function DashboardPage() {
                   <Cpu className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
                   <p className="text-lg font-bold uppercase mb-2">No Nodes Registered</p>
                   <p className="text-sm text-muted-foreground mb-6">No hardware safety nodes currently active.</p>
-                  <Button onClick={() => setActiveTab('add-node')} variant="outline" className="rounded-none uppercase font-bold text-[10px]">Add Node</Button>
+                  <Button onClick={() => setIsAddNodeDialogOpen(true)} variant="outline" className="rounded-none uppercase font-bold text-[10px]">Add Node</Button>
                 </div>
               ) : (
                 filteredDevices.map((device: any) => (
@@ -519,59 +632,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {activeTab === 'add-buddy' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-              <Card className="border-none shadow-none bg-muted/30 h-fit">
-                <CardHeader>
-                  <CardTitle className="text-sm uppercase font-bold tracking-widest">Buddy Credentials</CardTitle>
-                  <CardDescription className="text-xs">Enlist a trusted contact for emergency orchestration.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={(e) => handleRegisterDevice(e, 'buddy')} className="space-y-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="buddy-name" className="text-[10px] uppercase font-bold tracking-widest">Buddy Name</Label>
-                      <Input id="buddy-name" placeholder="e.g. Elvin" className="rounded-none h-12" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="buddy-phone" className="text-[10px] uppercase font-bold tracking-widest">Phone Number</Label>
-                      <Input id="buddy-phone" placeholder="+1..." className="rounded-none h-12" value={formData.phoneNumber} onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})} required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] uppercase font-bold tracking-widest">Group / Relationship</Label>
-                      <Select value={formData.group} onValueChange={(v) => setFormData({...formData, group: v})}>
-                        <SelectTrigger className="rounded-none h-12">
-                          <SelectValue placeholder="Select group" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Family">Family</SelectItem>
-                          <SelectItem value="Friend">Friend</SelectItem>
-                          <SelectItem value="Close Friend">Close Friend</SelectItem>
-                          <SelectItem value="Segurulo">Segurulo</SelectItem>
-                          <SelectItem value="Others">Others</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    {formData.group === 'Others' && (
-                      <div className="space-y-2">
-                        <Label className="text-[10px] uppercase font-bold tracking-widest">Specific Group Details</Label>
-                        <Textarea placeholder="Define specific emergency role or group metadata..." className="rounded-none min-h-[80px]" value={formData.specialData} onChange={(e) => setFormData({...formData, specialData: e.target.value})} />
-                      </div>
-                    )}
-                    <Button type="submit" className="w-full rounded-none h-14 uppercase font-bold tracking-widest" disabled={registerLoading}>
-                      {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Authorize Buddy"}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-
-              <div className="p-8 border-2 border-dashed bg-muted/10 h-fit">
-                <h3 className="text-xs font-bold uppercase mb-4 tracking-[0.2em]">Enlistment Protocol</h3>
-                <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  By enlisting a buddy, you authorize 1TAP to share your geolocation and safety status during triggered emergency events. Ensure the contact is aware of their role in your protection network.
-                </p>
-              </div>
-            </div>
-          )}
+          {activeTab === 'add-buddy' && <BuddyRegistrationForm />}
 
           {activeTab === 'add-node' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
