@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useUser, useFirestore, useCollection } from "@/firebase";
+import { useUser, useFirestore, useCollection, useFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { 
   Dialog,
   DialogContent,
@@ -32,21 +33,29 @@ import {
   Info,
   Edit,
   Eye,
-  CheckCircle2
+  LogOut,
+  Moon,
+  Sun,
+  Mail
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { doc, setDoc, collection, deleteDoc, serverTimestamp, addDoc, query, orderBy, limit } from "firebase/firestore";
+import { signOut, verifyBeforeUpdateEmail } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 
 type TabType = 'register' | 'manage' | 'notifications' | 'settings';
 
 export default function DashboardPage() {
   const { user, loading: userLoading } = useUser();
+  const { auth } = useFirebase();
   const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>('manage');
   
+  // Theme state
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
   // Registration form state
   const [registerLoading, setRegisterLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -62,6 +71,59 @@ export default function DashboardPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [viewingDevice, setViewingDevice] = useState<any>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+
+  // Settings state
+  const [newEmail, setNewEmail] = useState("");
+  const [emailLoading, setEmailLoading] = useState(false);
+
+  // Initializations
+  useEffect(() => {
+    if (!userLoading && !user) {
+      router.push("/login");
+    }
+    if (user) {
+      setNewEmail(user.email || "");
+    }
+    // Set initial theme
+    const isDark = document.documentElement.classList.contains('dark');
+    setTheme(isDark ? 'dark' : 'light');
+  }, [user, userLoading, router]);
+
+  const toggleTheme = (isDark: boolean) => {
+    const newTheme = isDark ? 'dark' : 'light';
+    setTheme(newTheme);
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
+
+  const handleUpdateEmail = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !newEmail || newEmail === user.email) return;
+
+    setEmailLoading(true);
+    verifyBeforeUpdateEmail(user, newEmail)
+      .then(() => {
+        toast({
+          title: "Verification Sent",
+          description: `A verification email has been sent to ${newEmail}. Please confirm to complete the change.`
+        });
+      })
+      .catch((error) => {
+        toast({
+          variant: "destructive",
+          title: "Update Failed",
+          description: error.message
+        });
+      })
+      .finally(() => setEmailLoading(false));
+  };
+
+  const handleLogout = () => {
+    signOut(auth).then(() => router.push("/login"));
+  };
 
   // Fetch devices
   const devicesQuery = useMemo(() => {
@@ -82,12 +144,6 @@ export default function DashboardPage() {
   }, [db, user]);
 
   const { data: notifications, loading: notificationsLoading } = useCollection(notificationsQuery);
-
-  useEffect(() => {
-    if (!userLoading && !user) {
-      router.push("/login");
-    }
-  }, [user, userLoading, router]);
 
   const createNotification = (message: string) => {
     if (!user || !db) return;
@@ -479,21 +535,84 @@ export default function DashboardPage() {
           )}
 
           {activeTab === 'settings' && (
-            <div className="max-w-xl space-y-8">
-              <div className="space-y-2">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Global Security</h3>
-                <div className="p-4 bg-muted/30 flex justify-between items-center">
-                  <span className="text-sm font-medium">Auto-Lock Nodes</span>
-                  <div className="h-4 w-10 bg-primary" />
+            <div className="max-w-xl space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
+              {/* Appearance Section */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                   <Activity className="h-4 w-4 text-muted-foreground" />
+                   <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Interface Customization</h3>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Connectivity</h3>
-                <div className="p-4 bg-muted/30 flex justify-between items-center">
-                  <span className="text-sm font-medium">Broadcast Hub Presence</span>
-                  <div className="h-4 w-10 bg-secondary" />
+                <Card className="border-none shadow-none bg-muted/30 rounded-none">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <p className="text-sm font-bold uppercase">Dark Mode Protocol</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Toggle between monochrome themes</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {theme === 'light' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                        <Switch 
+                          checked={theme === 'dark'} 
+                          onCheckedChange={toggleTheme}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </section>
+
+              {/* Account Section */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                   <Mail className="h-4 w-4 text-muted-foreground" />
+                   <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Personal Credentials</h3>
                 </div>
-              </div>
+                <Card className="border-none shadow-none bg-muted/30 rounded-none">
+                  <CardContent className="p-6">
+                    <form onSubmit={handleUpdateEmail} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="email-update" className="text-[10px] font-bold uppercase tracking-widest">Master Email</Label>
+                        <div className="flex gap-2">
+                          <Input 
+                            id="email-update"
+                            type="email"
+                            value={newEmail}
+                            onChange={(e) => setNewEmail(e.target.value)}
+                            className="bg-background border-none rounded-none h-12"
+                            required
+                          />
+                          <Button 
+                            type="submit" 
+                            disabled={emailLoading || newEmail === user.email}
+                            className="rounded-none h-12 uppercase font-bold text-[10px] px-6"
+                          >
+                            {emailLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update"}
+                          </Button>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground italic">Verification email will be sent for confirmation.</p>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              </section>
+
+              {/* Security/Logout Section */}
+              <section className="space-y-4 pt-6 border-t border-dashed">
+                <div className="flex items-center gap-2 mb-2">
+                   <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                   <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Session Integrity</h3>
+                </div>
+                <div className="flex flex-col gap-4">
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleLogout}
+                    className="w-full h-14 rounded-none uppercase font-bold tracking-[0.2em] text-xs flex items-center justify-center gap-3"
+                  >
+                    <LogOut className="h-4 w-4" /> Terminate Active Session
+                  </Button>
+                  <p className="text-[10px] text-center text-muted-foreground uppercase tracking-wider">Warning: This will disconnect the current browser interface from the hub.</p>
+                </div>
+              </section>
             </div>
           )}
         </div>
