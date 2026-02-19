@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useUser, useDatabase, useRtdb, useFirebase } from "@/firebase";
@@ -64,8 +63,8 @@ import {
   Navigation,
   Star,
   Zap,
-  Pulse,
-  Search
+  Search,
+  PlusCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ref, set, push, remove, serverTimestamp } from "firebase/database";
@@ -117,6 +116,7 @@ export default function DashboardPage() {
   const [isManageGroupsDialogOpen, setIsManageGroupsDialogOpen] = useState(false);
   const [deviceToDelete, setDeviceToDelete] = useState<any>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -126,7 +126,6 @@ export default function DashboardPage() {
     setTheme(isDark ? 'dark' : 'light');
   }, [user, userLoading, router]);
 
-  // Realtime Database Subscriptions using useRtdb (implements onValue pattern)
   const profileRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/profile`) : null, [rtdb, user]);
   const { data: profileData } = useRtdb(profileRef);
 
@@ -189,9 +188,9 @@ export default function DashboardPage() {
   }, [devices]);
 
   const chartData = useMemo(() => [
-    { name: 'Secured', value: statusStats.online, fill: "var(--color-online)" },
-    { name: 'Inactive', value: statusStats.offline, fill: "var(--color-offline)" },
-    { name: 'Alert', value: statusStats.error, fill: "var(--color-error)" },
+    { name: 'Secured', value: statusStats.online, fill: "hsl(var(--primary))" },
+    { name: 'Inactive', value: statusStats.offline, fill: "hsl(var(--muted-foreground))" },
+    { name: 'Alert', value: statusStats.error, fill: "hsl(var(--destructive))" },
   ], [statusStats]);
 
   const chartConfig = {
@@ -266,7 +265,6 @@ export default function DashboardPage() {
         const label = category === 'buddy' ? 'Buddy' : 'Node';
         createNotification(`New ${label} registered: ${formData.name}`);
         
-        // MIRROR TO ESP QUEUE for hardware synchronization
         if (category === 'buddy') {
           set(ref(rtdb, `esp_queue/${user.uid}/${finalId}`), {
             name: formData.name,
@@ -299,7 +297,6 @@ export default function DashboardPage() {
       .then(() => {
         createNotification(`Updated registry for: ${editingDevice.name}`);
         
-        // Mirror update to ESP Queue
         if (editingDevice.category === 'buddy') {
           set(ref(rtdb, `esp_queue/${user.uid}/${editingDevice.id}`), {
             name: editingDevice.name,
@@ -338,27 +335,44 @@ export default function DashboardPage() {
       .finally(() => setUpdatingLocation(false));
   };
 
+  const handleAddGroup = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !rtdb || !newGroupName.trim()) return;
+    
+    const newGroupRef = push(ref(rtdb, `users/${user.uid}/buddyGroups`));
+    set(newGroupRef, { name: newGroupName.trim() })
+      .then(() => {
+        setNewGroupName("");
+        toast({ title: "Group Established", description: "Custom security tier added." });
+      });
+  };
+
+  const handleDeleteGroup = (groupId: string) => {
+    if (!user || !rtdb) return;
+    remove(ref(rtdb, `users/${user.uid}/buddyGroups/${groupId}`))
+      .then(() => toast({ title: "Group Decommissioned" }));
+  };
+
   const triggerNodeAlert = (node: any) => {
     if (!user || !rtdb || !devices) return;
     
     const nodeAlertGroups = node.alertGroups || [];
-    const groupsText = nodeAlertGroups.length > 0 ? nodeAlertGroups.join(", ") : "None assigned";
     const targetBuddies = devices.filter(d => d.category === 'buddy' && nodeAlertGroups.includes(d.group));
 
     if (targetBuddies.length > 0) {
       targetBuddies.forEach(buddy => {
-        createNotification(`SOS TRIGGERED: Node ${node.name} Alerting Groups: [${groupsText}]. Contacting ${buddy.name}...`);
+        createNotification(`SOS TRIGGERED: Node ${node.name} Alerting Groups: [${nodeAlertGroups.join(", ")}]. Contacting ${buddy.name}...`);
       });
       toast({ 
         title: "SOS Signal Dispatched", 
-        description: `Alerts sent to groups: ${groupsText}. ${targetBuddies.length} buddies notified.` 
+        description: `Alerts sent to groups: ${nodeAlertGroups.join(", ")}. ${targetBuddies.length} buddies notified.` 
       });
     } else {
-      createNotification(`SOS WARNING: Node ${node.name} triggered for groups: ${groupsText}, but NO CONTACTS assigned.`);
+      createNotification(`SOS WARNING: Node ${node.name} triggered for groups: ${nodeAlertGroups.join(", ")}, but NO CONTACTS assigned.`);
       toast({ 
         variant: "destructive", 
         title: "Orchestration Failed", 
-        description: `No buddies found in the assigned groups: ${groupsText}.` 
+        description: `No buddies found in the assigned groups: ${nodeAlertGroups.join(", ")}.` 
       });
     }
   };
@@ -583,6 +597,9 @@ export default function DashboardPage() {
               <div className="flex flex-wrap gap-4 items-center mb-6">
                 <Button onClick={() => setIsAddBuddyDialogOpen(true)} variant="outline" className="rounded-none uppercase font-bold text-[10px] flex items-center gap-2">
                   <UserPlus className="h-4 w-4" /> Enlist Buddy
+                </Button>
+                <Button onClick={() => setIsManageGroupsDialogOpen(true)} variant="outline" className="rounded-none uppercase font-bold text-[10px] flex items-center gap-2">
+                  <Layers className="h-4 w-4" /> Manage Groups
                 </Button>
               </div>
 
@@ -850,6 +867,51 @@ export default function DashboardPage() {
               </Button>
             </form>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isManageGroupsDialogOpen} onOpenChange={setIsManageGroupsDialogOpen}>
+        <DialogContent className="rounded-none border-none max-w-md">
+          <DialogHeader>
+            <DialogTitle className="uppercase font-bold tracking-tight">Security Protocol Groups</DialogTitle>
+            <DialogDescription className="text-xs">Define custom tiers for your safety orchestration network.</DialogDescription>
+          </DialogHeader>
+          <div className="py-6 space-y-6">
+            <form onSubmit={handleAddGroup} className="flex gap-2">
+              <Input 
+                placeholder="NEW GROUP NAME" 
+                className="rounded-none h-12 uppercase text-[10px] font-bold" 
+                value={newGroupName}
+                onChange={(e) => setNewGroupName(e.target.value)}
+              />
+              <Button type="submit" variant="outline" className="h-12 rounded-none px-4">
+                <PlusCircle className="h-5 w-5" />
+              </Button>
+            </form>
+
+            <div className="space-y-2">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Core Protocols (Immutable)</p>
+              {DEFAULT_BUDDY_GROUPS.map(group => (
+                <div key={group} className="flex items-center justify-between p-3 bg-muted/20 border border-transparent">
+                   <span className="text-xs font-bold uppercase">{group}</span>
+                   <ShieldCheck className="h-4 w-4 text-primary opacity-50" />
+                </div>
+              ))}
+              
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-6 mb-4">Custom Protocols</p>
+              {customGroupsData ? Object.entries(customGroupsData).map(([id, group]: [string, any]) => (
+                <div key={id} className="flex items-center justify-between p-3 bg-muted/20 border border-primary/10 hover:border-primary/30 transition-all">
+                   <span className="text-xs font-bold uppercase">{group.name}</span>
+                   <Button variant="ghost" size="sm" onClick={() => handleDeleteGroup(id)} className="text-destructive hover:bg-destructive/10">
+                     <Trash2 className="h-4 w-4" />
+                   </Button>
+                </div>
+              )) : <p className="text-[10px] text-muted-foreground italic uppercase">No custom groups defined.</p>}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsManageGroupsDialogOpen(false)} className="rounded-none uppercase font-bold text-[10px] w-full h-12">Close Management Hub</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
