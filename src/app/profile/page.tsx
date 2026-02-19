@@ -61,7 +61,7 @@ export default function ProfilePage() {
 
       toast({ 
         title: "Profile Synchronized", 
-        description: `Identity updated to: ${displayName || 'Default Node'}` 
+        description: `Identity updated to: ${displayName || (user.email ? user.email.split('@')[0] : 'Default Node')}` 
       });
     } catch (error: any) {
       toast({ 
@@ -111,7 +111,7 @@ export default function ProfilePage() {
 
   if (!user) return null;
 
-  const currentDisplayName = profileData?.displayName || user.displayName || "Anonymous Node";
+  const currentDisplayName = profileData?.displayName || user.displayName || (user.email ? user.email.split('@')[0] : "Anonymous Node");
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12 sm:px-6 lg:px-8 bg-background min-h-screen">

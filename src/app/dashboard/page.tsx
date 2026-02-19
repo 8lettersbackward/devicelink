@@ -436,7 +436,7 @@ export default function DashboardPage() {
 
   if (!user) return null;
 
-  const currentName = profileData?.displayName || user.displayName || "Protected User";
+  const currentName = profileData?.displayName || user.displayName || (user.email ? user.email.split('@')[0] : "Protected User");
 
   const navItems = [
     { id: 'overview', label: 'Safety Overview', icon: LayoutDashboard },
