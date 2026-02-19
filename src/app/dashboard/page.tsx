@@ -72,6 +72,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { reverseGeocode } from "@/ai/flows/reverse-geocode-flow";
 
 type TabType = 'overview' | 'manage-buddy' | 'manage-node' | 'location' | 'notifications' | 'settings';
 
@@ -103,6 +104,8 @@ export default function DashboardPage() {
   });
 
   const [locationData, setLocationData] = useState({ lat: '', lng: '' });
+  const [locationName, setLocationName] = useState<string>("");
+  const [resolvingLocation, setResolvingLocation] = useState(false);
   const [updatingLocation, setUpdatingLocation] = useState(false);
 
   const [editingDevice, setEditingDevice] = useState<any>(null);
@@ -138,12 +141,27 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (profileData) {
-      setLocationData({
-        lat: profileData.latitude?.toString() || '',
-        lng: profileData.longitude?.toString() || ''
-      });
+      const lat = profileData.latitude?.toString() || '';
+      const lng = profileData.longitude?.toString() || '';
+      setLocationData({ lat, lng });
+
+      if (lat && lng) {
+        handleResolveLocation(parseFloat(lat), parseFloat(lng));
+      }
     }
   }, [profileData]);
+
+  const handleResolveLocation = async (lat: number, lng: number) => {
+    setResolvingLocation(true);
+    try {
+      const result = await reverseGeocode({ latitude: lat, longitude: lng });
+      setLocationName(result.locationName);
+    } catch (err) {
+      console.error("Geocoding error", err);
+    } finally {
+      setResolvingLocation(false);
+    }
+  };
 
   const buddyGroups = useMemo(() => {
     const customNames = customGroupsData ? Object.values(customGroupsData).map((g: any) => g.name) : [];
@@ -330,6 +348,7 @@ export default function DashboardPage() {
       .then(() => {
         createNotification(`Updated safety beacon coordinates.`);
         toast({ title: "Coordinates Locked", description: "New GPS data synchronized." });
+        handleResolveLocation(parseFloat(locationData.lat), parseFloat(locationData.lng));
       })
       .catch((error) => toast({ variant: "destructive", title: "Sync Failed", description: error.message }))
       .finally(() => setUpdatingLocation(false));
@@ -436,7 +455,8 @@ export default function DashboardPage() {
 
   if (!user) return null;
 
-  const currentName = profileData?.displayName || user.displayName || (user.email ? user.email.split('@')[0] : "Protected User");
+  const currentEmailPrefix = user.email ? user.email.split('@')[0] : "User";
+  const currentName = profileData?.displayName || user.displayName || currentEmailPrefix;
 
   const navItems = [
     { id: 'overview', label: 'Safety Overview', icon: LayoutDashboard },
@@ -793,12 +813,19 @@ export default function DashboardPage() {
                   </h3>
                   <div className="aspect-video bg-muted/10 border-2 border-dashed relative overflow-hidden flex items-center justify-center group">
                     <div className="absolute inset-0 opacity-10 bg-[url('https://picsum.photos/seed/location-map/800/600')] bg-cover grayscale" />
-                    <div className="relative z-10 flex flex-col items-center text-center">
+                    <div className="relative z-10 flex flex-col items-center text-center px-4">
                        <MapPin className="h-10 w-10 text-primary animate-bounce mb-4" />
                        <div className="bg-background/90 backdrop-blur-sm border p-4 shadow-xl">
-                          <p className="text-[10px] font-bold uppercase text-primary mb-2">Live Beacon Active</p>
-                          <p className="text-[10px] font-mono font-bold">LAT: {locationData.lat || 'PENDING'}</p>
-                          <p className="text-[10px] font-mono font-bold">LNG: {locationData.lng || 'PENDING'}</p>
+                          <p className="text-[10px] font-bold uppercase text-primary mb-2 flex items-center gap-2 justify-center">
+                            Live Beacon Active {resolvingLocation && <Loader2 className="h-3 w-3 animate-spin" />}
+                          </p>
+                          <p className="text-[11px] font-bold uppercase mb-3 text-foreground tracking-tight">
+                            {locationName || "Resolving Precise Location..."}
+                          </p>
+                          <div className="flex gap-4 justify-center border-t border-dashed pt-3">
+                            <p className="text-[9px] font-mono font-bold">LAT: {locationData.lat || 'PENDING'}</p>
+                            <p className="text-[9px] font-mono font-bold">LNG: {locationData.lng || 'PENDING'}</p>
+                          </div>
                        </div>
                     </div>
                   </div>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -17,6 +16,9 @@ export function Navbar() {
     await signOut(auth);
   };
 
+  const currentEmailPrefix = user?.email ? user.email.split('@')[0] : "User";
+  const currentName = user?.displayName || currentEmailPrefix;
+
   return (
     <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -31,9 +33,12 @@ export function Navbar() {
           <div className="hidden md:flex items-center space-x-8">
             {user ? (
               <div className="flex items-center space-x-6">
-                <Link href="/dashboard" className="text-[10px] font-bold uppercase tracking-widest hover:text-muted-foreground transition-colors">
-                  Control Hub
-                </Link>
+                <div className="flex flex-col items-end">
+                   <span className="text-[10px] font-bold uppercase tracking-widest text-primary leading-none mb-0.5">{currentName}</span>
+                   <Link href="/dashboard" className="text-[8px] font-bold uppercase tracking-widest hover:text-muted-foreground transition-colors opacity-70">
+                    Control Hub
+                  </Link>
+                </div>
                 <div className="h-4 w-[1px] bg-border" />
                 <Link href="/profile">
                    <Button variant="ghost" size="icon" className="rounded-none">
@@ -68,6 +73,9 @@ export function Navbar() {
         <div className="md:hidden bg-background border-b px-4 pb-6 pt-2 space-y-4">
           {user ? (
             <>
+              <div className="px-2 py-2 border-b border-dashed mb-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary">{currentName}</p>
+              </div>
               <Link href="/dashboard" className="block py-2 text-xs font-bold uppercase tracking-widest">Control Hub</Link>
               <Link href="/profile" className="block py-2 text-xs font-bold uppercase tracking-widest">Profile</Link>
               <button onClick={handleSignOut} className="w-full text-left py-2 text-xs font-bold uppercase tracking-widest text-destructive">Sign Out</button>
