@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useUser, useDatabase, useRtdb, useFirebase } from "@/firebase";
@@ -29,7 +28,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/AlertDialog";
+} from "@/components/ui/alert-dialog";
 import { 
   Plus, 
   Settings, 
