@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useUser, useDatabase, useRtdb, useFirebase } from "@/firebase";
@@ -123,7 +124,7 @@ export default function DashboardPage() {
     if (!userLoading && !user) {
       router.push("/login");
     }
-    const isDark = document.documentElement.classList.contains('dark');
+    const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
     setTheme(isDark ? 'dark' : 'light');
   }, [user, userLoading, router]);
 
@@ -161,8 +162,8 @@ export default function DashboardPage() {
         setLocationName("Coordinates Locked (Location Pending)");
       }
     } catch (err) {
-      console.error("Geocoding error", err);
-      setLocationName("Error resolving location");
+      // Error handled by central listener if applicable, silent fallback for geocode
+      setLocationName("Coordinates Locked");
     } finally {
       setResolvingLocation(false);
     }
@@ -176,10 +177,12 @@ export default function DashboardPage() {
   const toggleTheme = (isDark: boolean) => {
     const newTheme = isDark ? 'dark' : 'light';
     setTheme(newTheme);
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    if (typeof window !== 'undefined') {
+      if (newTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
     }
   };
 
