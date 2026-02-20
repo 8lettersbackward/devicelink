@@ -140,6 +140,29 @@ export default function DashboardPage() {
   const notificationsRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/notifications`) : null, [rtdb, user]);
   const { data: notificationsData } = useRtdb(notificationsRef);
 
+  const currentEmailPrefix = useMemo(() => {
+    if (!user?.email) return "User";
+    return user.email.split('@')[0];
+  }, [user]);
+
+  const currentName = profileData?.displayName || currentEmailPrefix;
+
+  // Exposure of global SOS function
+  useEffect(() => {
+    if (typeof window !== 'undefined' && user && rtdb) {
+      (window as any).triggerSOS = () => {
+        const masterSosRef = ref(rtdb, `sos_system/${user.uid}`);
+        set(masterSosRef, {
+          sosTrigger: true,
+          sender: currentName,
+          timestamp: serverTimestamp()
+        }).then(() => {
+          createNotification("MASTER SOS ACTIVATED - GLOBAL SCRIPT TRIGGER");
+        });
+      };
+    }
+  }, [user, rtdb, currentName]);
+
   useEffect(() => {
     if (profileData) {
       const lat = profileData.latitude?.toString() || '';
@@ -162,7 +185,6 @@ export default function DashboardPage() {
         setLocationName("Coordinates Locked (Location Pending)");
       }
     } catch (err) {
-      // Error handled by central listener if applicable, silent fallback for geocode
       setLocationName("Coordinates Locked");
     } finally {
       setResolvingLocation(false);
@@ -252,6 +274,23 @@ export default function DashboardPage() {
       message,
       read: false,
       createdAt: serverTimestamp()
+    });
+  };
+
+  const handleMasterSOS = () => {
+    if (!user || !rtdb) return;
+    const masterSosRef = ref(rtdb, `sos_system/${user.uid}`);
+    set(masterSosRef, {
+      sosTrigger: true,
+      sender: currentName,
+      timestamp: serverTimestamp()
+    }).then(() => {
+      createNotification("MASTER SOS ACTIVATED - EMERGENCY PROTOCOL BROADCAST");
+      toast({
+        variant: "destructive",
+        title: "MASTER SOS BROADCAST",
+        description: "Emergency signal has been written to the global safety node."
+      });
     });
   };
 
@@ -463,9 +502,6 @@ export default function DashboardPage() {
 
   if (!user) return null;
 
-  const currentEmailPrefix = user.email ? user.email.split('@')[0] : "User";
-  const currentName = profileData?.displayName || user.displayName || currentEmailPrefix;
-
   const navItems = [
     { id: 'overview', label: 'Safety Overview', icon: LayoutDashboard },
     { id: 'manage-buddy', label: 'Manage Buddy', icon: Smartphone },
@@ -536,6 +572,29 @@ export default function DashboardPage() {
 
           {activeTab === 'overview' && (
             <div className="space-y-10">
+              {/* MASTER SOS TRIGGER SECTION */}
+              <Card className="border-2 border-destructive bg-destructive/5 rounded-none shadow-lg mb-10">
+                <CardContent className="p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-none bg-destructive flex items-center justify-center animate-pulse">
+                      <ShieldAlert className="h-8 w-8 text-destructive-foreground" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold uppercase tracking-tighter">Master SOS System</h2>
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold">Broadcast emergency signal to all linked safety nodes</p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="destructive" 
+                    size="lg" 
+                    className="w-full sm:w-auto h-14 px-10 rounded-none uppercase font-bold tracking-[0.2em] shadow-xl hover:scale-105 transition-transform"
+                    onClick={handleMasterSOS}
+                  >
+                    Trigger Master SOS
+                  </Button>
+                </CardContent>
+              </Card>
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                  {[
                    { label: 'Secured', count: statusStats.online, color: 'bg-primary' },

@@ -62,6 +62,16 @@
         "processed": { "type": "boolean" },
         "timestamp": { "type": "number" }
       }
+    },
+    "SOSStatus": {
+      "title": "SOS Status",
+      "description": "Master SOS trigger data.",
+      "type": "object",
+      "properties": {
+        "sosTrigger": { "type": "boolean" },
+        "sender": { "type": "string" },
+        "timestamp": { "type": "number" }
+      }
     }
   },
   "auth": {
@@ -83,6 +93,10 @@
     "esp_queue/{userId}/{buddyId}": {
       "schema": "ESPQueueEntry",
       "description": "Queue for hardware device synchronization in Realtime Database."
+    },
+    "sos_system/{userId}": {
+      "schema": "SOSStatus",
+      "description": "Master SOS trigger status in Realtime Database."
     }
   }
 }
