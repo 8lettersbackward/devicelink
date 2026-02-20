@@ -414,7 +414,7 @@ export default function DashboardPage() {
   const triggerNodeAlert = (node: any) => {
     if (!user || !rtdb || !devices) return;
     
-    // Broadcast to global system node
+    // Broadcast to global system node IMMEDIATELY
     const sosRef = ref(rtdb, "sosSystem");
     set(sosRef, {
       sosTrigger: true,
