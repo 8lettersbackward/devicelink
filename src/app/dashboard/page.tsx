@@ -119,6 +119,15 @@ export default function DashboardPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
 
+  const currentEmailPrefix = useMemo(() => {
+    if (!user?.email) return "User";
+    return user.email.split('@')[0];
+  }, [user]);
+
+  const currentName = useMemo(() => {
+    return currentEmailPrefix;
+  }, [currentEmailPrefix]);
+
   useEffect(() => {
     if (!userLoading && !user) {
       router.push("/login");
@@ -139,16 +148,9 @@ export default function DashboardPage() {
   const notificationsRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/notifications`) : null, [rtdb, user]);
   const { data: notificationsData } = useRtdb(notificationsRef);
 
-  const currentEmailPrefix = useMemo(() => {
-    if (!user?.email) return "User";
-    return user.email.split('@')[0];
-  }, [user]);
-
-  const currentName = profileData?.displayName || currentEmailPrefix;
-
   /**
    * GLOBAL SOS TRIGGER SCRIPT
-   * Exposes triggerSOS() to the window object for hardware/external script simulation.
+   * Exposes triggerSOS() for hardware/external simulation.
    */
   useEffect(() => {
     if (typeof window !== 'undefined' && rtdb) {
@@ -159,11 +161,11 @@ export default function DashboardPage() {
           sender: currentName || "Juan",
           timestamp: Date.now()
         }).then(() => {
-          createNotification("MASTER SOS ACTIVATED via SCRIPT");
+          createNotification("MASTER SOS ACTIVATED via GLOBAL SCRIPT");
           toast({
             variant: "destructive",
             title: "MASTER SOS ACTIVATED",
-            description: "Signal broadcasted to root sosSystem node."
+            description: "Signal broadcasted to global sosSystem node."
           });
         });
       };
@@ -282,12 +284,6 @@ export default function DashboardPage() {
       read: false,
       createdAt: serverTimestamp()
     });
-  };
-
-  const handleMasterSOS = () => {
-    if (typeof (window as any).triggerSOS === 'function') {
-      (window as any).triggerSOS();
-    }
   };
 
   const handleRegisterDevice = (e: React.FormEvent, category: 'buddy' | 'node') => {
@@ -418,6 +414,15 @@ export default function DashboardPage() {
   const triggerNodeAlert = (node: any) => {
     if (!user || !rtdb || !devices) return;
     
+    // Broadcast to global system node
+    const sosRef = ref(rtdb, "sosSystem");
+    set(sosRef, {
+      sosTrigger: true,
+      sender: currentName || "Juan",
+      timestamp: Date.now(),
+      triggeredByNode: node.id
+    });
+
     const nodeAlertGroups = node.alertGroups || [];
     const targetBuddies = devices.filter(d => 
       d.category === 'buddy' && 
@@ -426,7 +431,7 @@ export default function DashboardPage() {
     );
 
     if (targetBuddies.length > 0) {
-      createNotification(`SOS TRIGGERED: Node ${node.name} Alerting Groups: [${nodeAlertGroups.join(", ")}]. Contacting ${targetBuddies.map(b => b.name).join(", ")}...`);
+      createNotification(`SOS TRIGGERED via Node: ${node.name}. Alerting Groups: [${nodeAlertGroups.join(", ")}]. Contacting: ${targetBuddies.map(b => b.name).join(", ")}.`);
       toast({ 
         title: "SOS Signal Dispatched", 
         description: `Alerts sent to groups: ${nodeAlertGroups.join(", ")}. ${targetBuddies.length} buddies notified.` 
@@ -568,37 +573,6 @@ export default function DashboardPage() {
 
           {activeTab === 'overview' && (
             <div className="space-y-10">
-              {/* MASTER SOS TRIGGER SECTION */}
-              <Card className="border-2 border-destructive bg-destructive/5 rounded-none shadow-lg mb-10">
-                <CardContent className="p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-none bg-destructive flex items-center justify-center animate-pulse">
-                      <ShieldAlert className="h-8 w-8 text-destructive-foreground" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold uppercase tracking-tighter">Master SOS System</h2>
-                      <p className="text-[10px] text-muted-foreground uppercase font-bold">Broadcast emergency signal to global safety node</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-4 w-full sm:w-auto">
-                    <Button 
-                      variant="destructive" 
-                      size="lg" 
-                      className="h-14 px-10 rounded-none uppercase font-bold tracking-[0.2em] shadow-xl hover:scale-105 transition-transform"
-                      onClick={handleMasterSOS}
-                    >
-                      Trigger Master SOS
-                    </Button>
-                    <button 
-                      onClick={() => (window as any).triggerSOS()} 
-                      className="text-[9px] uppercase font-bold text-muted-foreground underline hover:text-foreground transition-colors"
-                    >
-                      Simulation: triggerSOS()
-                    </button>
-                  </div>
-                </CardContent>
-              </Card>
-
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                  {[
                    { label: 'Secured', count: statusStats.online, color: 'bg-primary' },
@@ -700,6 +674,12 @@ export default function DashboardPage() {
                             </p>
                           </div>
                         ))}
+                        <button 
+                          onClick={() => (window as any).triggerSOS()} 
+                          className="text-[8px] uppercase font-bold text-muted-foreground/30 hover:text-foreground transition-colors mt-4 block"
+                        >
+                          Simulation: triggerSOS()
+                        </button>
                       </div>
                     </div>
                  </div>
@@ -814,7 +794,7 @@ export default function DashboardPage() {
                            </div>
                         </div>
                         <div className="flex gap-2">
-                           <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold" onClick={() => triggerNodeAlert(device)}>
+                           <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => triggerNodeAlert(device)}>
                              <Zap className="h-3 w-3 mr-1" /> Trigger SOS
                            </Button>
                            <Button variant="outline" size="sm" className="rounded-none text-[9px] uppercase font-bold" onClick={() => { setViewingDevice(device); setIsViewDialogOpen(true); }}>View</Button>
