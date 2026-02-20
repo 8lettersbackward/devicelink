@@ -47,7 +47,6 @@ import {
   Sun,
   LayoutDashboard,
   History,
-  PieChart as PieChartIcon,
   ShieldAlert,
   PlusSquare,
   Users,
@@ -147,21 +146,29 @@ export default function DashboardPage() {
 
   const currentName = profileData?.displayName || currentEmailPrefix;
 
-  // Exposure of global SOS function
+  /**
+   * GLOBAL SOS TRIGGER SCRIPT
+   * Exposes triggerSOS() to the window object for hardware/external script simulation.
+   */
   useEffect(() => {
-    if (typeof window !== 'undefined' && user && rtdb) {
+    if (typeof window !== 'undefined' && rtdb) {
       (window as any).triggerSOS = () => {
-        const masterSosRef = ref(rtdb, `sos_system/${user.uid}`);
-        set(masterSosRef, {
+        const sosRef = ref(rtdb, "sosSystem");
+        set(sosRef, {
           sosTrigger: true,
-          sender: currentName,
-          timestamp: serverTimestamp()
+          sender: currentName || "Juan",
+          timestamp: Date.now()
         }).then(() => {
-          createNotification("MASTER SOS ACTIVATED - GLOBAL SCRIPT TRIGGER");
+          createNotification("MASTER SOS ACTIVATED via SCRIPT");
+          toast({
+            variant: "destructive",
+            title: "MASTER SOS ACTIVATED",
+            description: "Signal broadcasted to root sosSystem node."
+          });
         });
       };
     }
-  }, [user, rtdb, currentName]);
+  }, [rtdb, currentName, toast]);
 
   useEffect(() => {
     if (profileData) {
@@ -278,20 +285,9 @@ export default function DashboardPage() {
   };
 
   const handleMasterSOS = () => {
-    if (!user || !rtdb) return;
-    const masterSosRef = ref(rtdb, `sos_system/${user.uid}`);
-    set(masterSosRef, {
-      sosTrigger: true,
-      sender: currentName,
-      timestamp: serverTimestamp()
-    }).then(() => {
-      createNotification("MASTER SOS ACTIVATED - EMERGENCY PROTOCOL BROADCAST");
-      toast({
-        variant: "destructive",
-        title: "MASTER SOS BROADCAST",
-        description: "Emergency signal has been written to the global safety node."
-      });
-    });
+    if (typeof (window as any).triggerSOS === 'function') {
+      (window as any).triggerSOS();
+    }
   };
 
   const handleRegisterDevice = (e: React.FormEvent, category: 'buddy' | 'node') => {
@@ -581,17 +577,25 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <h2 className="text-xl font-bold uppercase tracking-tighter">Master SOS System</h2>
-                      <p className="text-[10px] text-muted-foreground uppercase font-bold">Broadcast emergency signal to all linked safety nodes</p>
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold">Broadcast emergency signal to global safety node</p>
                     </div>
                   </div>
-                  <Button 
-                    variant="destructive" 
-                    size="lg" 
-                    className="w-full sm:w-auto h-14 px-10 rounded-none uppercase font-bold tracking-[0.2em] shadow-xl hover:scale-105 transition-transform"
-                    onClick={handleMasterSOS}
-                  >
-                    Trigger Master SOS
-                  </Button>
+                  <div className="flex flex-col gap-4 w-full sm:w-auto">
+                    <Button 
+                      variant="destructive" 
+                      size="lg" 
+                      className="h-14 px-10 rounded-none uppercase font-bold tracking-[0.2em] shadow-xl hover:scale-105 transition-transform"
+                      onClick={handleMasterSOS}
+                    >
+                      Trigger Master SOS
+                    </Button>
+                    <button 
+                      onClick={() => (window as any).triggerSOS()} 
+                      className="text-[9px] uppercase font-bold text-muted-foreground underline hover:text-foreground transition-colors"
+                    >
+                      Simulation: triggerSOS()
+                    </button>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -667,7 +671,7 @@ export default function DashboardPage() {
                  <div className="space-y-10">
                     <div className="space-y-6">
                       <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                        <PieChartIcon className="h-4 w-4" /> Status Demographics
+                        <Activity className="h-4 w-4" /> Status Demographics
                       </h3>
                       <div className="aspect-square bg-muted/10 p-4 border border-dashed flex items-center justify-center">
                         {statusStats.total > 0 ? (

@@ -94,9 +94,9 @@
       "schema": "ESPQueueEntry",
       "description": "Queue for hardware device synchronization in Realtime Database."
     },
-    "sos_system/{userId}": {
+    "sosSystem": {
       "schema": "SOSStatus",
-      "description": "Master SOS trigger status in Realtime Database."
+      "description": "Global SOS trigger status for hardware integration."
     }
   }
 }
