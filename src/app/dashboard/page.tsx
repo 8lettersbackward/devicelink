@@ -158,7 +158,7 @@ export default function DashboardPage() {
         const sosRef = ref(rtdb, "sosSystem");
         set(sosRef, {
           sosTrigger: true,
-          sender: currentName || "Juan",
+          sender: currentName,
           timestamp: Date.now()
         }).then(() => {
           createNotification("MASTER SOS ACTIVATED via GLOBAL SCRIPT");
@@ -418,7 +418,7 @@ export default function DashboardPage() {
     const sosRef = ref(rtdb, "sosSystem");
     set(sosRef, {
       sosTrigger: true,
-      sender: currentName || "Juan",
+      sender: currentName,
       timestamp: Date.now(),
       triggeredByNode: node.id
     });
