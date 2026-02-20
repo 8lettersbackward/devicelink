@@ -72,7 +72,9 @@
         "sender": { "type": "string" },
         "nodename": { "type": "string" },
         "timestamp": { "type": "number" },
-        "triggeredByNode": { "type": "string" }
+        "triggeredByNode": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" }
       }
     }
   },

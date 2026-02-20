@@ -411,36 +411,56 @@ export default function DashboardPage() {
   const triggerNodeAlert = (node: any) => {
     if (!user || !rtdb || !devices) return;
     
-    // Broadcast to global system node IMMEDIATELY
-    const sosRef = ref(rtdb, "sosSystem");
-    set(sosRef, {
-      sosTrigger: true,
-      sender: currentName,
-      nodename: node.name,
-      timestamp: Date.now(),
-      triggeredByNode: node.id
-    });
-
-    const nodeAlertGroups = node.alertGroups || [];
-    const targetBuddies = devices.filter(d => 
-      d.category === 'buddy' && 
-      d.groups && 
-      d.groups.some((g: string) => nodeAlertGroups.includes(g))
-    );
-
-    if (targetBuddies.length > 0) {
-      createNotification(`SOS TRIGGERED via Node: ${node.name}. Alerting Groups: [${nodeAlertGroups.join(", ")}]. Contacting: ${targetBuddies.map(b => b.name).join(", ")}.`);
-      toast({ 
-        title: "SOS Signal Dispatched", 
-        description: `Alerts sent to groups: ${nodeAlertGroups.join(", ")}. ${targetBuddies.length} buddies notified.` 
+    const broadcastSOS = (lat?: number, lng?: number) => {
+      // Broadcast to global system node IMMEDIATELY
+      const sosRef = ref(rtdb, "sosSystem");
+      set(sosRef, {
+        sosTrigger: true,
+        sender: currentName,
+        nodename: node.name,
+        timestamp: Date.now(),
+        triggeredByNode: node.id,
+        latitude: lat || profileData?.latitude || null,
+        longitude: lng || profileData?.longitude || null,
       });
+
+      const nodeAlertGroups = node.alertGroups || [];
+      const targetBuddies = devices.filter(d => 
+        d.category === 'buddy' && 
+        d.groups && 
+        d.groups.some((g: string) => nodeAlertGroups.includes(g))
+      );
+
+      if (targetBuddies.length > 0) {
+        createNotification(`SOS TRIGGERED via Node: ${node.name}. Location: ${lat ? `${lat.toFixed(4)}, ${lng.toFixed(4)}` : 'Last Known'}. Alerting Groups: [${nodeAlertGroups.join(", ")}].`);
+        toast({ 
+          title: "SOS Signal Dispatched", 
+          description: `Live location sent to groups: ${nodeAlertGroups.join(", ")}.` 
+        });
+      } else {
+        createNotification(`SOS WARNING: Node ${node.name} triggered for groups: ${nodeAlertGroups.join(", ")}, but NO CONTACTS assigned.`);
+        toast({ 
+          variant: "destructive", 
+          title: "Orchestration Failed", 
+          description: `No buddies found in the assigned groups: ${nodeAlertGroups.join(", ")}.` 
+        });
+      }
+    };
+
+    // Attempt to get live GPS location before broadcasting
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          broadcastSOS(position.coords.latitude, position.coords.longitude);
+        },
+        (error) => {
+          console.warn("Geolocation failed or denied, using profile data", error);
+          broadcastSOS();
+        },
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
     } else {
-      createNotification(`SOS WARNING: Node ${node.name} triggered for groups: ${nodeAlertGroups.join(", ")}, but NO CONTACTS assigned.`);
-      toast({ 
-        variant: "destructive", 
-        title: "Orchestration Failed", 
-        description: `No buddies found in the assigned groups: ${nodeAlertGroups.join(", ")}.` 
-      });
+      broadcastSOS();
     }
   };
 
