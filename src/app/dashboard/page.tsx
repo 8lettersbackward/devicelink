@@ -150,15 +150,15 @@ export default function DashboardPage() {
    */
   useEffect(() => {
     if (typeof window !== 'undefined' && rtdb) {
-      (window as any).triggerSOS = (nodeName?: string) => {
+      (window as any).triggerSOS = (nodename?: string) => {
         const sosRef = ref(rtdb, "sosSystem");
         set(sosRef, {
           sosTrigger: true,
           sender: currentName,
-          nodeName: nodeName || "Global Script Trigger",
+          nodename: nodename || "Global Script Trigger",
           timestamp: Date.now()
         }).then(() => {
-          createNotification(`MASTER SOS ACTIVATED via SCRIPT (${nodeName || 'Global'})`);
+          createNotification(`MASTER SOS ACTIVATED via SCRIPT (${nodename || 'Global'})`);
           toast({
             variant: "destructive",
             title: "MASTER SOS ACTIVATED",
@@ -416,7 +416,7 @@ export default function DashboardPage() {
     set(sosRef, {
       sosTrigger: true,
       sender: currentName,
-      nodeName: node.name,
+      nodename: node.name,
       timestamp: Date.now(),
       triggeredByNode: node.id
     });

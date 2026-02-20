@@ -70,7 +70,7 @@
       "properties": {
         "sosTrigger": { "type": "boolean" },
         "sender": { "type": "string" },
-        "nodeName": { "type": "string" },
+        "nodename": { "type": "string" },
         "timestamp": { "type": "number" },
         "triggeredByNode": { "type": "string" }
       }
