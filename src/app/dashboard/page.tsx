@@ -43,7 +43,8 @@ import {
   Layers,
   MapPin,
   Zap,
-  PlusCircle
+  PlusCircle,
+  AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ref, set, push, remove, serverTimestamp } from "firebase/database";
@@ -108,7 +109,19 @@ export default function DashboardPage() {
     }
     const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
     setTheme(isDark ? 'dark' : 'light');
-  }, [user, userLoading, router]);
+
+    // Expose triggerSOS globally for hardware/script access
+    if (typeof window !== 'undefined') {
+      (window as any).triggerSOS = () => {
+        if (!user || !rtdb) return;
+        set(ref(rtdb, "sosSystem"), {
+          sosTrigger: true,
+          sender: currentName,
+          timestamp: Date.now()
+        });
+      };
+    }
+  }, [user, userLoading, router, currentName, rtdb]);
 
   const profileRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/profile`) : null, [rtdb, user]);
   const { data: profileData } = useRtdb(profileRef);
@@ -334,12 +347,16 @@ export default function DashboardPage() {
                 <div className="space-y-6">
                   <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><History className="h-4 w-4" /> Log Heartbeat</h3>
                   <ScrollArea className="h-[200px] border border-dashed p-4">
-                    {notifications.slice(0, 5).map(n => (
-                      <div key={n.id} className="mb-4 pb-2 border-b border-dashed last:border-0">
-                        <p className="text-[10px] font-bold uppercase">{n.message}</p>
-                        <p className="text-[8px] font-mono text-muted-foreground">{new Date(n.createdAt).toLocaleString()}</p>
-                      </div>
-                    ))}
+                    {notifications.length === 0 ? (
+                      <p className="text-[8px] uppercase font-mono text-muted-foreground">System logs silent.</p>
+                    ) : (
+                      notifications.slice(0, 5).map(n => (
+                        <div key={n.id} className="mb-4 pb-2 border-b border-dashed last:border-0">
+                          <p className="text-[10px] font-bold uppercase">{n.message}</p>
+                          <p className="text-[8px] font-mono text-muted-foreground">{new Date(n.createdAt).toLocaleString()}</p>
+                        </div>
+                      ))
+                    )}
                   </ScrollArea>
                 </div>
               </div>
@@ -356,32 +373,41 @@ export default function DashboardPage() {
                   <Layers className="h-4 w-4" /> Protocols
                 </Button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {buddies.map(buddy => (
-                  <Card key={buddy.id} className="border-none bg-muted/30 rounded-none relative">
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="text-lg font-bold uppercase">{buddy.name}</p>
-                          <p className="text-[10px] font-mono text-muted-foreground">{buddy.phoneNumber}</p>
+
+              {buddies.length === 0 ? (
+                <div className="p-16 border-2 border-dashed bg-muted/5 flex flex-col items-center justify-center text-center">
+                  <Smartphone className="h-10 w-10 text-muted-foreground mb-4 opacity-20" />
+                  <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-1">No Buddy Enlisted</p>
+                  <p className="text-[8px] uppercase text-muted-foreground font-mono">Your safety network is currently empty.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {buddies.map(buddy => (
+                    <Card key={buddy.id} className="border-none bg-muted/30 rounded-none relative">
+                      <CardHeader className="pb-2">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="text-lg font-bold uppercase">{buddy.name}</p>
+                            <p className="text-[10px] font-mono text-muted-foreground">{buddy.phoneNumber}</p>
+                          </div>
+                          <Badge variant="outline" className="rounded-none text-[8px] font-bold uppercase">{buddy.priority}</Badge>
                         </div>
-                        <Badge variant="outline" className="rounded-none text-[8px] font-bold uppercase">{buddy.priority}</Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <p className="text-[10px] uppercase font-bold text-muted-foreground">Role: {buddy.role}</p>
-                      <div className="flex flex-wrap gap-1">
-                        {buddy.groups?.map((g: string) => (
-                          <Badge key={g} className="rounded-none text-[8px] uppercase font-bold">{g}</Badge>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" className="rounded-none text-[8px] uppercase font-bold" onClick={() => { setItemToDelete({ ...buddy, type: 'buddy' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-3 w-3" /></Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground">Role: {buddy.role}</p>
+                        <div className="flex flex-wrap gap-1">
+                          {buddy.groups?.map((g: string) => (
+                            <Badge key={g} className="rounded-none text-[8px] uppercase font-bold">{g}</Badge>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" className="rounded-none text-[8px] uppercase font-bold" onClick={() => { setItemToDelete({ ...buddy, type: 'buddy' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-3 w-3" /></Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -390,33 +416,42 @@ export default function DashboardPage() {
               <Button onClick={() => setIsAddNodeDialogOpen(true)} variant="outline" className="rounded-none uppercase font-bold text-[10px] gap-2">
                 <PlusSquare className="h-4 w-4" /> Arm Node
               </Button>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {nodes.map(node => (
-                  <Card key={node.id} className="border-none bg-muted/30 rounded-none relative">
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-center">
-                        <p className="text-lg font-bold uppercase">{node.nodeName}</p>
-                        <div className={cn("h-2 w-2", node.status === 'online' ? 'bg-primary' : 'bg-destructive')} />
-                      </div>
-                      <p className="text-[10px] font-mono text-muted-foreground">ID: {node.hardwareId}</p>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <p className="text-[8px] uppercase font-bold text-muted-foreground mb-1">Target Groups:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {node.targetGroups?.map((g: string) => (
-                            <Badge key={g} variant="outline" className="rounded-none text-[8px] uppercase font-bold">{g}</Badge>
-                          ))}
+
+              {nodes.length === 0 ? (
+                <div className="p-16 border-2 border-dashed bg-muted/5 flex flex-col items-center justify-center text-center">
+                  <Cpu className="h-10 w-10 text-muted-foreground mb-4 opacity-20" />
+                  <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-1">No Nodes Armed</p>
+                  <p className="text-[8px] uppercase text-muted-foreground font-mono">Initialize hardware to start tracking.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {nodes.map(node => (
+                    <Card key={node.id} className="border-none bg-muted/30 rounded-none relative">
+                      <CardHeader className="pb-2">
+                        <div className="flex justify-between items-center">
+                          <p className="text-lg font-bold uppercase">{node.nodeName}</p>
+                          <div className={cn("h-2 w-2", node.status === 'online' ? 'bg-primary' : 'bg-destructive')} />
                         </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="default" size="sm" className="rounded-none text-[8px] uppercase font-bold gap-2" onClick={() => triggerNodeAlert(node)}><Zap className="h-3 w-3" /> Trigger SOS</Button>
-                        <Button variant="outline" size="sm" className="rounded-none text-[8px] uppercase font-bold" onClick={() => { setItemToDelete({ ...node, type: 'node' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-3 w-3" /></Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                        <p className="text-[10px] font-mono text-muted-foreground">ID: {node.hardwareId}</p>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div>
+                          <p className="text-[8px] uppercase font-bold text-muted-foreground mb-1">Target Groups:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {node.targetGroups?.map((g: string) => (
+                              <Badge key={g} variant="outline" className="rounded-none text-[8px] uppercase font-bold">{g}</Badge>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="default" size="sm" className="rounded-none text-[8px] uppercase font-bold gap-2" onClick={() => triggerNodeAlert(node)}><Zap className="h-3 w-3" /> Trigger SOS</Button>
+                          <Button variant="outline" size="sm" className="rounded-none text-[8px] uppercase font-bold" onClick={() => { setItemToDelete({ ...node, type: 'node' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-3 w-3" /></Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
