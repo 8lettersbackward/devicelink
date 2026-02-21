@@ -262,7 +262,10 @@ export default function DashboardPage() {
   if (userLoading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Synchronizing Safety Hub</p>
+        </div>
       </div>
     );
   }
@@ -315,6 +318,10 @@ export default function DashboardPage() {
         <div className="max-w-4xl mx-auto">
           {activeTab === 'overview' && (
             <div className="space-y-10">
+              <header className="mb-2">
+                <h2 className="text-4xl font-headline font-bold tracking-tighter uppercase">Control Center</h2>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">System Status: Armed & Active</p>
+              </header>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                  {[
                    { label: 'Nodes Online', count: statusStats.online, color: 'bg-primary' },
