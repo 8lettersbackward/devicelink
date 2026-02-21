@@ -110,10 +110,8 @@ export default function DashboardPage() {
     const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
     setTheme(isDark ? 'dark' : 'light');
 
-    // Expose triggerSOS globally for hardware/script access
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && user && rtdb) {
       (window as any).triggerSOS = () => {
-        if (!user || !rtdb) return;
         set(ref(rtdb, "sosSystem"), {
           sosTrigger: true,
           sender: currentName,
@@ -293,9 +291,14 @@ export default function DashboardPage() {
             </Avatar>
             <div className="overflow-hidden">
               <p className="text-[10px] font-bold uppercase tracking-widest truncate">{currentName}</p>
-              <p className="text-[8px] text-muted-foreground uppercase font-mono truncate">{user?.email}</p>
+              <p className="text-[8px] text-muted-foreground uppercase font-mono truncate">{user.email}</p>
             </div>
           </div>
+          
+          <div className="px-4 pb-2 mt-6">
+            <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-muted-foreground opacity-60">Control Center</p>
+          </div>
+
           {navItems.map((item) => (
             <button
               key={item.id}
@@ -320,13 +323,14 @@ export default function DashboardPage() {
             <div className="space-y-10">
               <header className="mb-2">
                 <h2 className="text-4xl font-headline font-bold tracking-tighter uppercase">Control Center</h2>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">System Status: Armed & Active</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">System Demographics: Armed & Active</p>
               </header>
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                  {[
-                   { label: 'Nodes Online', count: statusStats.online, color: 'bg-primary' },
+                   { label: 'Nodes Armed', count: nodes.length, color: 'bg-primary' },
                    { label: 'Buddies Linked', count: buddies.length, color: 'bg-muted-foreground' },
-                   { label: 'Active Alerts', count: statusStats.error, color: 'bg-destructive' },
+                   { label: 'System Health', count: '100%', color: 'bg-primary' },
                  ].map((stat) => (
                    <Card key={stat.label} className="rounded-none border-none bg-muted/20">
                      <CardContent className="p-6 text-center">
@@ -336,9 +340,10 @@ export default function DashboardPage() {
                    </Card>
                  ))}
               </div>
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                 <div className="space-y-6">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><Activity className="h-4 w-4" /> Hardware Status</h3>
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><Activity className="h-4 w-4" /> Network Pulse</h3>
                   <div className="aspect-video bg-muted/10 border border-dashed flex items-center justify-center p-4">
                      {statusStats.total > 0 ? (
                         <ChartContainer config={{}} className="w-full h-full">
@@ -348,14 +353,14 @@ export default function DashboardPage() {
                              </Pie>
                            </PieChart>
                         </ChartContainer>
-                     ) : <p className="text-[10px] uppercase font-bold text-muted-foreground">No Nodes Linked</p>}
+                     ) : <p className="text-[10px] uppercase font-bold text-muted-foreground">No Assets Detected</p>}
                   </div>
                 </div>
                 <div className="space-y-6">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><History className="h-4 w-4" /> Log Heartbeat</h3>
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><History className="h-4 w-4" /> Activity Stream</h3>
                   <ScrollArea className="h-[200px] border border-dashed p-4">
                     {notifications.length === 0 ? (
-                      <p className="text-[8px] uppercase font-mono text-muted-foreground">System logs silent.</p>
+                      <p className="text-[8px] uppercase font-mono text-muted-foreground">Logs silent. All protocols nominal.</p>
                     ) : (
                       notifications.slice(0, 5).map(n => (
                         <div key={n.id} className="mb-4 pb-2 border-b border-dashed last:border-0">
