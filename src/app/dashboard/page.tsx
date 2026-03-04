@@ -264,22 +264,40 @@ export default function DashboardPage() {
   const triggerNodeAlert = (node: any) => {
     if (!user || !rtdb) return;
 
-    const broadcastSOS = (lat?: number, lng?: number) => {
+    if (!window.confirm("Sigurado ka bang i-trigger ang SOS sa GIRLFRIEND group?")) {
+      return;
+    }
+
+    const broadcastSOS = async (lat?: number, lng?: number) => {
       const now = Date.now();
-      update(ref(rtdb, "sosSystem"), {
-        sosTrigger: true,
-        sender: currentName,
-        nodename: node.nodeName,
-        timestamp: now,
-        triggeredByNode: node.id,
-        latitude: lat || profileData?.latitude || null,
-        longitude: lng || profileData?.longitude || null,
-      }).then(() => {
+      
+      try {
+        // 1. Set the trigger flag for ESP32
+        await set(ref(rtdb, 'sosSystem/trigger'), true);
+
+        // 2. Set lastWebTrigger and other metadata
+        await update(ref(rtdb, "sosSystem"), {
+          sosTrigger: true, // legacy flag
+          sender: currentName,
+          nodename: node.nodeName,
+          timestamp: now,
+          triggeredByNode: node.id,
+          latitude: lat || profileData?.latitude || null,
+          longitude: lng || profileData?.longitude || null,
+          lastWebTrigger: {
+            timestamp: now,
+            sender: user.email || "WebApp",
+            note: `Manual trigger from dashboard: ${node.nodeName}`
+          }
+        });
+
         toast({ title: "SOS Triggered", description: "Signal broadcasted to emergency network." });
-      }).catch((err) => {
-        console.error(err);
+        alert("SOS na-trigger mula sa Web App! Ipapadala na sa grupo.");
+      } catch (err: any) {
+        console.error("Error triggering SOS:", err);
         toast({ variant: "destructive", title: "Error triggering SOS" });
-      });
+        alert("May problema — tingnan ang console (F12)");
+      }
     };
 
     if ("geolocation" in navigator) {
@@ -595,6 +613,7 @@ export default function DashboardPage() {
             <div className="max-w-md space-y-6">
               <Card className="border-none bg-muted/30 rounded-none">
                 <CardContent className="p-6 flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-bold">Dark Protocol</span>
                   <span className="text-[10px] uppercase font-bold">Dark Protocol</span>
                   <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
                 </CardContent>
