@@ -503,11 +503,11 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label className="text-[10px] uppercase font-bold">Latitude</Label>
-                      <Input value={locationData.lat} onChange={e => setLocationData({...locationData, lat: e.target.value})} className="rounded-none border-none bg-background font-mono text-xs" />
+                      <input value={locationData.lat} onChange={e => setLocationData({...locationData, lat: e.target.value})} className="h-10 w-full rounded-none border-none bg-background px-3 font-mono text-xs focus:ring-1 focus:ring-primary" />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] uppercase font-bold">Longitude</Label>
-                      <Input value={locationData.lng} onChange={e => setLocationData({...locationData, lng: e.target.value})} className="rounded-none border-none bg-background font-mono text-xs" />
+                      <input value={locationData.lng} onChange={e => setLocationData({...locationData, lng: e.target.value})} className="h-10 w-full rounded-none border-none bg-background px-3 font-mono text-xs focus:ring-1 focus:ring-primary" />
                     </div>
                   </div>
                   <Button onClick={() => {
@@ -532,6 +532,35 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {activeTab === 'notifications' && (
+            <div className="space-y-6">
+               <header className="mb-2">
+                <h2 className="text-4xl font-headline font-bold tracking-tighter uppercase">Safety Alerts</h2>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Protocol Logs & Broadcast History</p>
+              </header>
+              <ScrollArea className="h-[500px] border-2 border-dashed p-6">
+                {notifications.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full opacity-20">
+                    <Bell className="h-12 w-12 mb-4" />
+                    <p className="text-[10px] font-bold uppercase tracking-widest">No Alerts In Queue</p>
+                  </div>
+                ) : (
+                  notifications.map(n => (
+                    <div key={n.id} className="mb-6 pb-4 border-b border-dashed last:border-0">
+                      <div className="flex justify-between items-start mb-1">
+                        <p className="text-sm font-bold uppercase">{n.message}</p>
+                        <Badge variant="outline" className="text-[8px] font-mono">{hasMounted ? new Date(n.createdAt).toLocaleTimeString() : '...'}</Badge>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground uppercase font-mono">
+                        {hasMounted ? new Date(n.createdAt).toLocaleDateString() : 'Loading...'}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </ScrollArea>
+            </div>
+          )}
+
           {activeTab === 'settings' && (
             <div className="max-w-md space-y-6">
               <Card className="border-none bg-muted/30 rounded-none">
@@ -548,6 +577,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
+      {/* DIALOGS */}
       <Dialog open={isAddBuddyDialogOpen} onOpenChange={setIsAddBuddyDialogOpen}>
         <DialogContent className="rounded-none border-none">
           <DialogHeader><DialogTitle className="uppercase font-bold">Enlist Buddy</DialogTitle></DialogHeader>
