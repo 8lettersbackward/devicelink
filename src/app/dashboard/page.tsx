@@ -258,17 +258,26 @@ export default function DashboardPage() {
 
   const triggerNodeAlert = (node: any) => {
     if (!user || !rtdb) return;
+
+    if (!window.confirm("Sigurado ka bang i-trigger ang SOS sa lahat?")) return;
+
     const broadcastSOS = (lat?: number, lng?: number) => {
-      set(ref(rtdb, "sosSystem"), {
+      const now = Date.now();
+      update(ref(rtdb, "sosSystem"), {
         sosTrigger: true,
+        trigger: true,
         sender: currentName,
         nodename: node.nodeName,
-        timestamp: Date.now(),
+        timestamp: now,
+        lastWebTrigger: now,
         triggeredByNode: node.id,
         latitude: lat || profileData?.latitude || null,
         longitude: lng || profileData?.longitude || null,
       }).then(() => {
-        toast({ title: "SOS Dispatched", description: `Signal sent via ${node.nodeName}` });
+        toast({ title: "SOS na-trigger!", description: "Ipapadala na sa grupo." });
+      }).catch((err) => {
+        console.error(err);
+        toast({ variant: "destructive", title: "Error sa pag-trigger" });
       });
     };
 

@@ -45,9 +45,11 @@
       "type": "object",
       "properties": {
         "sosTrigger": { "type": "boolean" },
+        "trigger": { "type": "boolean", "description": "Legacy trigger flag for specific hardware logic." },
         "sender": { "type": "string" },
         "nodename": { "type": "string" },
         "timestamp": { "type": "number" },
+        "lastWebTrigger": { "type": "number", "description": "Timestamp of the last trigger from the web dashboard." },
         "triggeredByNode": { "type": "string" },
         "latitude": { "type": "number" },
         "longitude": { "type": "number" }
