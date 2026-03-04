@@ -614,7 +614,6 @@ export default function DashboardPage() {
               <Card className="border-none bg-muted/30 rounded-none">
                 <CardContent className="p-6 flex items-center justify-between">
                   <span className="text-[10px] uppercase font-bold">Dark Protocol</span>
-                  <span className="text-[10px] uppercase font-bold">Dark Protocol</span>
                   <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
                 </CardContent>
               </Card>
