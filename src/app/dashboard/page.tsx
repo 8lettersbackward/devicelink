@@ -263,6 +263,19 @@ export default function DashboardPage() {
   const triggerNodeAlert = (node: any) => {
     if (!user || !rtdb) return;
 
+    // Toggle logic: If SOS is active and this node was the trigger, reset it.
+    const isCurrentlyActive = sosStatus?.sosTrigger === true;
+    const isThisNodeTheTrigger = sosStatus?.triggeredByNode === node.id;
+
+    if (isCurrentlyActive && isThisNodeTheTrigger) {
+      update(ref(rtdb, "sosSystem"), {
+        sosTrigger: false,
+        timestamp: Date.now(),
+      });
+      toast({ title: "SOS Reset", description: "System deactivated and returned to standby." });
+      return;
+    }
+
     const broadcastSOS = async (lat?: number, lng?: number) => {
       const now = Date.now();
       update(ref(rtdb, "sosSystem"), {
@@ -489,7 +502,15 @@ export default function DashboardPage() {
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="default" size="sm" className="rounded-none text-[8px] uppercase font-bold gap-2" onClick={() => triggerNodeAlert(node)}><Zap className="h-3 w-3" /> Trigger SOS</Button>
+                          <Button 
+                            variant={sosStatus?.sosTrigger && sosStatus?.triggeredByNode === node.id ? "destructive" : "default"} 
+                            size="sm" 
+                            className="rounded-none text-[8px] uppercase font-bold gap-2" 
+                            onClick={() => triggerNodeAlert(node)}
+                          >
+                            <Zap className="h-3 w-3" /> 
+                            {sosStatus?.sosTrigger && sosStatus?.triggeredByNode === node.id ? "Reset SOS" : "Trigger SOS"}
+                          </Button>
                           <Button variant="outline" size="sm" className="rounded-none text-[8px] uppercase font-bold" onClick={() => { setItemToEdit(node); setIsEditNodeDialogOpen(true); }}><Pencil className="h-3 w-3" /></Button>
                           <Button variant="outline" size="sm" className="rounded-none text-[8px] uppercase font-bold" onClick={() => { setItemToDelete({ ...node, type: 'node' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-3 w-3" /></Button>
                         </div>

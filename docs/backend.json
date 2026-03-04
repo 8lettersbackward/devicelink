@@ -44,7 +44,7 @@
       "description": "Global SOS trigger data for hardware synchronization.",
       "type": "object",
       "properties": {
-        "sosTrigger": { "type": "boolean" },
+        "sosTrigger": { "type": "boolean", "description": "Binary flag: true if SOS is active, false otherwise." },
         "trigger": { "type": "boolean", "description": "Legacy trigger flag for specific hardware logic." },
         "sender": { "type": "string" },
         "nodename": { "type": "string" },
