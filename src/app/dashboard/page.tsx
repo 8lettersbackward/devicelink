@@ -44,8 +44,7 @@ import {
   Zap,
   PlusCircle,
   Pencil,
-  Eye,
-  ShieldAlert
+  Eye
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ref, set, push, remove, serverTimestamp, update } from "firebase/database";
