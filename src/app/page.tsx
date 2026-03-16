@@ -55,7 +55,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="py-8 border-t border-indigo-900/50 text-center text-muted-foreground text-[10px] tracking-widest uppercase">
+      <footer className="py-8 border-t border-indigo-900/30 text-center text-muted-foreground text-[10px] tracking-widest uppercase">
         <div className="max-w-7xl mx-auto px-4">
           <p>© 2024 1tap. Clarity in Protection.</p>
         </div>

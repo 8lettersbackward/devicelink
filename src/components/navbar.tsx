@@ -20,7 +20,7 @@ export function Navbar() {
   const currentName = user?.displayName || currentEmailPrefix;
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-card border-b border-indigo-900/50 shadow-2xl">
+    <nav className="fixed top-0 w-full z-50 bg-card border-b border-indigo-900/30 shadow-2xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <div className="flex-shrink-0">
@@ -39,9 +39,9 @@ export function Navbar() {
                     TERMINAL
                   </Link>
                 </div>
-                <div className="h-6 w-[1px] bg-indigo-900/50" />
+                <div className="h-6 w-[1px] bg-indigo-900/30" />
                 <Link href="/profile">
-                   <Button variant="ghost" size="icon" className="hover:bg-background text-accent">
+                   <Button variant="ghost" size="icon" className="hover:bg-background/20 text-accent">
                      <UserIcon className="h-5 w-5" />
                    </Button>
                 </Link>
@@ -55,7 +55,7 @@ export function Navbar() {
                   <Button variant="ghost" size="sm" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-transparent">Sign In</Button>
                 </Link>
                 <Link href="/signup">
-                  <Button className="bg-primary hover:bg-secondary text-[10px] font-bold uppercase px-8 h-11 tracking-widest shadow-lg shadow-indigo-500/20">Get Started</Button>
+                  <Button className="bg-primary hover:bg-secondary text-[10px] font-bold uppercase px-8 h-11 tracking-widest shadow-lg shadow-primary/20">Get Started</Button>
                 </Link>
               </div>
             )}
@@ -70,10 +70,10 @@ export function Navbar() {
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden bg-card border-b border-indigo-900/50 px-6 pb-8 pt-4 space-y-6 shadow-2xl">
+        <div className="md:hidden bg-card border-b border-indigo-900/30 px-6 pb-8 pt-4 space-y-6 shadow-2xl">
           {user ? (
             <>
-              <div className="pb-4 border-b border-indigo-900/30">
+              <div className="pb-4 border-b border-indigo-900/10">
                 <p className="text-[12px] font-bold uppercase tracking-widest text-accent">{currentName}</p>
                 <p className="text-[10px] font-mono text-muted-foreground mt-1">{user.email}</p>
               </div>
