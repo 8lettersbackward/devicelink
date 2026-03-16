@@ -20,7 +20,7 @@ export default function Home() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-accent" />
       </div>
     );
   }
@@ -32,22 +32,22 @@ export default function Home() {
       <section className="flex-1 flex items-center justify-center px-4">
         <div className="max-w-4xl text-center">
           <div className="flex justify-center mb-6">
-            <ShieldAlert className="h-16 w-16 text-primary" />
+            <ShieldAlert className="h-20 w-20 text-accent animate-pulse" />
           </div>
-          <h1 className="text-6xl md:text-8xl font-headline font-bold tracking-tighter mb-8 text-primary">
-            1TAP <br /> <span className="text-secondary uppercase">Emergency Buddy</span>
+          <h1 className="text-6xl md:text-8xl font-headline font-bold tracking-tighter mb-8 text-foreground">
+            1TAP <br /> <span className="text-accent uppercase">Safety Hub</span>
           </h1>
           <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
-            Instant safety orchestration and emergency response. Pure clarity, absolute protection in a single tap.
+            Secure protection in a single tap. Professional safety orchestration for the modern world.
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <Link href="/signup">
-              <Button size="lg" className="px-10 h-14 text-lg font-bold">
+              <Button size="lg" className="px-10 h-14 text-lg font-bold bg-primary hover:bg-secondary">
                 Secure My Life <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             <Link href="/login">
-              <Button size="lg" variant="outline" className="px-10 h-14 text-lg font-bold border-primary text-primary">
+              <Button size="lg" variant="outline" className="px-10 h-14 text-lg font-bold border-accent text-accent hover:bg-accent/10">
                 Sign In
               </Button>
             </Link>
@@ -55,7 +55,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="py-8 border-t text-center text-muted-foreground text-xs tracking-widest uppercase">
+      <footer className="py-8 border-t border-indigo-900/50 text-center text-muted-foreground text-[10px] tracking-widest uppercase">
         <div className="max-w-7xl mx-auto px-4">
           <p>© 2024 1tap. Clarity in Protection.</p>
         </div>

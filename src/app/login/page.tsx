@@ -47,7 +47,7 @@ export default function LoginPage() {
   if (userLoading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-accent" />
       </div>
     );
   }
@@ -55,16 +55,16 @@ export default function LoginPage() {
   if (user) return null;
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] bg-muted/10 px-4">
-      <Card className="w-full max-w-md shadow-2xl border-none rounded-none">
+    <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] bg-background/50 px-4">
+      <Card className="w-full max-w-md bg-card shadow-2xl border-none">
         <CardHeader className="space-y-2 text-center">
-          <CardTitle className="text-3xl font-headline tracking-tighter uppercase font-bold">Welcome Back</CardTitle>
-          <CardDescription className="text-[10px] uppercase font-bold tracking-widest">Enter credentials to access hub</CardDescription>
+          <CardTitle className="text-3xl font-headline tracking-tighter uppercase font-bold text-foreground">Welcome Back</CardTitle>
+          <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Enter credentials to access hub</CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-[10px] font-bold uppercase">Email</Label>
+              <Label htmlFor="email" className="text-[10px] font-bold uppercase text-muted-foreground">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -72,13 +72,13 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="h-12 rounded-none bg-background"
+                className="h-12 bg-input border-border focus:border-secondary text-foreground placeholder:text-muted-foreground/30"
               />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" title="Password" className="text-[10px] font-bold uppercase">Password</Label>
-                <Link href="#" className="text-[8px] text-muted-foreground uppercase hover:underline">Forgot password?</Link>
+                <Label htmlFor="password" title="Password" className="text-[10px] font-bold uppercase text-muted-foreground">Password</Label>
+                <Link href="#" className="text-[8px] text-muted-foreground uppercase hover:text-accent">Forgot password?</Link>
               </div>
               <Input
                 id="password"
@@ -86,17 +86,17 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="h-12 rounded-none bg-background"
+                className="h-12 bg-input border-border focus:border-secondary text-foreground"
               />
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4 pt-4">
-            <Button type="submit" className="w-full h-14 text-sm font-bold uppercase rounded-none tracking-widest" disabled={loading}>
+            <Button type="submit" className="w-full h-14 text-sm font-bold uppercase bg-primary hover:bg-secondary tracking-widest" disabled={loading}>
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Sign In"}
             </Button>
             <p className="text-[10px] text-center text-muted-foreground uppercase font-bold">
               No account?{" "}
-              <Link href="/signup" className="text-primary font-bold hover:underline">
+              <Link href="/signup" className="text-accent font-bold hover:underline">
                 Sign up
               </Link>
             </p>

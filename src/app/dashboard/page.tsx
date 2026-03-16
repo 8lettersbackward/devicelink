@@ -47,7 +47,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 
 type TabType = 'buddies' | 'nodes' | 'notifications' | 'settings';
 
@@ -62,7 +61,6 @@ export default function DashboardPage() {
   
   const [activeTab, setActiveTab] = useState<TabType>('buddies');
   const [hasMounted, setHasMounted] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   const [registerLoading, setRegisterLoading] = useState(false);
   const [buddyForm, setBuddyForm] = useState({
@@ -99,8 +97,6 @@ export default function DashboardPage() {
     if (!userLoading && !user) {
       router.push("/login");
     }
-    const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
-    setTheme(isDark ? 'dark' : 'light');
   }, [user, userLoading, router]);
 
   const profileRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/profile`) : null, [rtdb, user]);
@@ -125,15 +121,6 @@ export default function DashboardPage() {
     const customNames = customGroupsData ? Object.values(customGroupsData).map((g: any) => g.name) : [];
     return Array.from(new Set([...DEFAULT_BUDDY_GROUPS, ...customNames]));
   }, [customGroupsData]);
-
-  const toggleTheme = (isDark: boolean) => {
-    const newTheme = isDark ? 'dark' : 'light';
-    setTheme(newTheme);
-    if (typeof window !== 'undefined') {
-      if (newTheme === 'dark') document.documentElement.classList.add('dark');
-      else document.documentElement.classList.remove('dark');
-    }
-  };
 
   const buddies = useMemo(() => {
     if (!buddiesData) return [];
@@ -245,10 +232,8 @@ export default function DashboardPage() {
 
   if (userLoading || !hasMounted) {
     return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-accent" />
       </div>
     );
   }
@@ -264,17 +249,17 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col md:flex-row min-h-[calc(100vh-4rem)] bg-background">
-      <aside className="w-full md:w-80 border-r bg-muted/5 order-1">
+      <aside className="w-full md:w-80 border-r border-border bg-background order-1">
         <div className="sticky top-16 p-6 space-y-2">
-          <div className="px-4 py-6 mb-4 flex items-center gap-4 border-b border-dashed">
-            <Avatar className="h-10 w-10 rounded-full border border-primary">
-              <AvatarFallback className="rounded-full bg-primary text-primary-foreground font-bold text-xs">
+          <div className="px-4 py-6 mb-4 flex items-center gap-4 border-b border-border">
+            <Avatar className="h-12 w-12 rounded-full border-2 border-accent">
+              <AvatarFallback className="rounded-full bg-accent text-accent-foreground font-bold text-lg">
                 {currentName[0].toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="overflow-hidden">
-              <p className="text-[10px] font-bold uppercase tracking-widest truncate">{currentName}</p>
-              <p className="text-[8px] text-muted-foreground uppercase font-mono truncate">{user.email}</p>
+              <p className="text-[12px] font-bold uppercase tracking-widest truncate text-foreground">{currentName}</p>
+              <p className="text-[10px] text-muted-foreground uppercase font-mono truncate">{user.email}</p>
             </div>
           </div>
 
@@ -284,11 +269,13 @@ export default function DashboardPage() {
               onClick={() => setActiveTab(item.id as TabType)}
               className={cn(
                 "w-full flex items-center justify-between px-4 py-3 transition-all rounded-md",
-                activeTab === item.id ? "bg-primary text-primary-foreground font-bold" : "hover:bg-muted text-muted-foreground"
+                activeTab === item.id 
+                  ? "bg-secondary text-foreground font-bold shadow-lg" 
+                  : "hover:bg-card text-muted-foreground"
               )}
             >
               <div className="flex items-center gap-4">
-                <item.icon className="h-4 w-4" />
+                <item.icon className={cn("h-4 w-4", activeTab === item.id ? "text-accent" : "text-muted-foreground")} />
                 <span className="text-[10px] uppercase tracking-widest font-bold">{item.label}</span>
               </div>
             </button>
@@ -296,46 +283,47 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      <main className="flex-1 p-6 md:p-10 order-2">
+      <main className="flex-1 p-6 md:p-10 order-2 bg-background/50">
         <div className="max-w-4xl mx-auto">
           {activeTab === 'buddies' && (
             <div className="space-y-6">
               <div className="flex gap-4">
-                <Button onClick={() => setIsAddBuddyDialogOpen(true)} variant="outline" className="uppercase font-bold text-[10px] gap-2">
+                <Button onClick={() => setIsAddBuddyDialogOpen(true)} className="bg-primary hover:bg-secondary uppercase font-bold text-[10px] gap-2 h-12">
                   <UserPlus className="h-4 w-4" /> Enlist Buddy
                 </Button>
-                <Button onClick={() => setIsManageGroupsDialogOpen(true)} variant="outline" className="uppercase font-bold text-[10px] gap-2">
+                <Button onClick={() => setIsManageGroupsDialogOpen(true)} variant="outline" className="border-border hover:bg-card uppercase font-bold text-[10px] gap-2 h-12">
                   <Layers className="h-4 w-4" /> Protocols
                 </Button>
               </div>
 
               {buddies.length === 0 ? (
-                <div className="p-16 border-2 border-dashed bg-muted/5 flex flex-col items-center justify-center text-center">
-                  <Smartphone className="h-10 w-10 text-muted-foreground mb-4 opacity-20" />
+                <div className="p-20 border-2 border-dashed border-border bg-card/10 flex flex-col items-center justify-center text-center rounded-xl">
+                  <Smartphone className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
                   <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-1">No Buddy Enlisted</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {buddies.map(buddy => (
-                    <Card key={buddy.id} className="border bg-card shadow-sm relative">
+                    <Card key={buddy.id} className="bg-card border-border shadow-xl">
                       <CardHeader className="pb-2">
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="text-lg font-bold uppercase">{buddy.name}</p>
-                            <p className="text-[10px] font-mono text-muted-foreground">{buddy.phoneNumber}</p>
+                            <p className="text-xl font-bold uppercase text-foreground">{buddy.name}</p>
+                            <p className="text-[10px] font-mono text-accent">{buddy.phoneNumber}</p>
                           </div>
+                          <Badge className="bg-accent text-accent-foreground text-[8px] uppercase font-bold">ACTIVE</Badge>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="flex flex-wrap gap-1">
                           {buddy.groups?.map((g: string) => (
-                            <Badge key={g} className="text-[8px] uppercase font-bold">{g}</Badge>
+                            <Badge key={g} variant="outline" className="border-accent/30 text-[8px] uppercase font-bold text-accent">{g}</Badge>
                           ))}
                         </div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" className="text-[8px] uppercase font-bold" onClick={() => { setItemToView(buddy); setIsViewItemDialogOpen(true); }}><Eye className="h-3 w-3 mr-1" /> View</Button>
-                          <Button variant="outline" size="sm" className="text-[8px] uppercase font-bold" onClick={() => { setItemToEdit(buddy); setIsEditBuddyDialogOpen(true); }}><Pencil className="h-3 w-3 mr-1" /> Edit</Button>
-                          <Button variant="outline" size="sm" className="text-[8px] uppercase font-bold" onClick={() => { setItemToDelete({ ...buddy, type: 'buddy' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-3 w-3" /></Button>
+                        <div className="flex gap-2 pt-2 border-t border-border/50">
+                          <Button variant="ghost" size="sm" className="text-[8px] uppercase font-bold hover:bg-background" onClick={() => { setItemToView(buddy); setIsViewItemDialogOpen(true); }}><Eye className="h-3 w-3 mr-1" /> View</Button>
+                          <Button variant="ghost" size="sm" className="text-[8px] uppercase font-bold hover:bg-background" onClick={() => { setItemToEdit(buddy); setIsEditBuddyDialogOpen(true); }}><Pencil className="h-3 w-3 mr-1" /> Edit</Button>
+                          <Button variant="ghost" size="sm" className="text-[8px] uppercase font-bold hover:text-destructive" onClick={() => { setItemToDelete({ ...buddy, type: 'buddy' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-3 w-3" /></Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -347,47 +335,50 @@ export default function DashboardPage() {
 
           {activeTab === 'nodes' && (
             <div className="space-y-6">
-              <Button onClick={() => setIsAddNodeDialogOpen(true)} variant="outline" className="uppercase font-bold text-[10px] gap-2">
+              <Button onClick={() => setIsAddNodeDialogOpen(true)} className="bg-primary hover:bg-secondary uppercase font-bold text-[10px] gap-2 h-12">
                 <PlusSquare className="h-4 w-4" /> Arm Node
               </Button>
 
               {nodes.length === 0 ? (
-                <div className="p-16 border-2 border-dashed bg-muted/5 flex flex-col items-center justify-center text-center">
-                  <Cpu className="h-10 w-10 text-muted-foreground mb-4 opacity-20" />
+                <div className="p-20 border-2 border-dashed border-border bg-card/10 flex flex-col items-center justify-center text-center rounded-xl">
+                  <Cpu className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
                   <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-1">No Nodes Armed</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {nodes.map(node => (
-                    <Card key={node.id} className="border bg-card shadow-sm relative">
+                    <Card key={node.id} className="bg-card border-border shadow-xl">
                       <CardHeader className="pb-2">
                         <div className="flex justify-between items-center">
-                          <p className="text-lg font-bold uppercase">{node.nodeName}</p>
-                          <div className={cn("h-2 w-2 rounded-full", node.status === 'online' ? 'bg-green-500' : 'bg-destructive')} />
+                          <p className="text-xl font-bold uppercase text-foreground">{node.nodeName}</p>
+                          <div className={cn("h-3 w-3 rounded-full animate-pulse shadow-[0_0_10px_rgba(76,201,240,0.5)]", node.status === 'online' ? 'bg-accent' : 'bg-destructive')} />
                         </div>
                         <p className="text-[10px] font-mono text-muted-foreground">ID: {node.hardwareId}</p>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div>
-                          <p className="text-[8px] uppercase font-bold text-muted-foreground mb-1">Target Groups:</p>
+                          <p className="text-[8px] uppercase font-bold text-muted-foreground mb-1">Target groups:</p>
                           <div className="flex flex-wrap gap-1">
                             {node.targetGroups?.map((g: string) => (
-                              <Badge key={g} variant="outline" className="text-[8px] uppercase font-bold">{g}</Badge>
+                              <Badge key={g} className="bg-muted text-muted-foreground text-[8px] uppercase font-bold">{g}</Badge>
                             ))}
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 pt-2 border-t border-border/50">
                           <Button 
                             variant={sosStatus?.sosTrigger && sosStatus?.triggeredByNode === node.id ? "destructive" : "default"} 
                             size="sm" 
-                            className="text-[8px] uppercase font-bold gap-2" 
+                            className={cn(
+                              "text-[8px] uppercase font-bold gap-2 flex-1",
+                              !(sosStatus?.sosTrigger && sosStatus?.triggeredByNode === node.id) && "bg-accent text-accent-foreground hover:bg-accent/80"
+                            )} 
                             onClick={() => triggerNodeAlert(node)}
                           >
                             <Zap className="h-3 w-3" /> 
                             {sosStatus?.sosTrigger && sosStatus?.triggeredByNode === node.id ? "Reset SOS" : "Trigger SOS"}
                           </Button>
-                          <Button variant="outline" size="sm" className="text-[8px] uppercase font-bold" onClick={() => { setItemToEdit(node); setIsEditNodeDialogOpen(true); }}><Pencil className="h-3 w-3" /></Button>
-                          <Button variant="outline" size="sm" className="text-[8px] uppercase font-bold" onClick={() => { setItemToDelete({ ...node, type: 'node' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-3 w-3" /></Button>
+                          <Button variant="ghost" size="sm" className="text-[8px] uppercase font-bold hover:bg-background" onClick={() => { setItemToEdit(node); setIsEditNodeDialogOpen(true); }}><Pencil className="h-3 w-3" /></Button>
+                          <Button variant="ghost" size="sm" className="text-[8px] uppercase font-bold hover:text-destructive" onClick={() => { setItemToDelete({ ...node, type: 'node' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-3 w-3" /></Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -400,20 +391,20 @@ export default function DashboardPage() {
           {activeTab === 'notifications' && (
             <div className="space-y-6">
                <header className="mb-2">
-                <h2 className="text-4xl font-headline font-bold tracking-tighter uppercase">Safety Alerts</h2>
+                <h2 className="text-4xl font-headline font-bold tracking-tighter uppercase text-foreground">Safety Alerts</h2>
               </header>
-              <ScrollArea className="h-[500px] border p-6 rounded-md bg-muted/5">
+              <ScrollArea className="h-[550px] border border-border p-6 rounded-xl bg-card shadow-inner">
                 {notifications.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full opacity-20">
-                    <Bell className="h-12 w-12 mb-4" />
-                    <p className="text-[10px] font-bold uppercase tracking-widest">No Alerts In Queue</p>
+                  <div className="flex flex-col items-center justify-center h-full opacity-20 text-muted-foreground">
+                    <Bell className="h-16 w-16 mb-4" />
+                    <p className="text-[12px] font-bold uppercase tracking-widest">No Alerts In Queue</p>
                   </div>
                 ) : (
                   notifications.map(n => (
-                    <div key={n.id} className="mb-6 pb-4 border-b last:border-0">
-                      <div className="flex justify-between items-start mb-1">
-                        <p className="text-sm font-bold uppercase">{n.message}</p>
-                        <Badge variant="outline" className="text-[8px] font-mono">{hasMounted ? new Date(n.createdAt).toLocaleTimeString() : '...'}</Badge>
+                    <div key={n.id} className="mb-6 pb-6 border-b border-border/50 last:border-0 last:mb-0">
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="text-sm font-bold uppercase text-foreground">{n.message}</p>
+                        <Badge variant="outline" className="border-accent/30 text-accent text-[8px] font-mono">{hasMounted ? new Date(n.createdAt).toLocaleTimeString() : '...'}</Badge>
                       </div>
                       <p className="text-[10px] text-muted-foreground uppercase font-mono">
                         {hasMounted ? new Date(n.createdAt).toLocaleDateString() : 'Loading...'}
@@ -427,13 +418,18 @@ export default function DashboardPage() {
 
           {activeTab === 'settings' && (
             <div className="max-w-md space-y-6">
-              <Card className="border bg-card shadow-sm">
-                <CardContent className="p-6 flex items-center justify-between">
-                  <span className="text-[10px] uppercase font-bold">Dark Protocol</span>
-                  <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
+              <Card className="bg-card border-border shadow-xl">
+                <CardHeader>
+                  <CardTitle className="text-[10px] uppercase font-bold text-muted-foreground">User Terminal</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-4 bg-background/50 border border-border rounded-md">
+                    <p className="text-[8px] uppercase font-bold text-muted-foreground mb-1">Assigned ID</p>
+                    <p className="text-[10px] font-mono text-accent truncate">{user.uid}</p>
+                  </div>
                 </CardContent>
               </Card>
-              <Button variant="destructive" onClick={() => signOut(auth).then(() => router.push("/login"))} className="w-full uppercase font-bold h-14 tracking-widest gap-2">
+              <Button variant="destructive" onClick={() => signOut(auth).then(() => router.push("/login"))} className="w-full uppercase font-bold h-16 tracking-[0.2em] gap-2 shadow-2xl">
                 <LogOut className="h-4 w-4" /> Terminate Session
               </Button>
             </div>
@@ -442,32 +438,32 @@ export default function DashboardPage() {
       </main>
 
       <Dialog open={isAddBuddyDialogOpen} onOpenChange={setIsAddBuddyDialogOpen}>
-        <DialogContent className="border bg-background">
-          <DialogHeader><DialogTitle className="uppercase font-bold">Enlist Buddy</DialogTitle></DialogHeader>
+        <DialogContent className="bg-background border-border">
+          <DialogHeader><DialogTitle className="uppercase font-bold text-foreground">Enlist Buddy</DialogTitle></DialogHeader>
           <form onSubmit={handleRegisterBuddy} className="space-y-4 pt-4">
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-bold">Full Name</Label>
-              <Input value={buddyForm.name} onChange={e => setBuddyForm({...buddyForm, name: e.target.value})} required />
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Full Name</Label>
+              <Input value={buddyForm.name} onChange={e => setBuddyForm({...buddyForm, name: e.target.value})} className="bg-input border-border focus:border-secondary h-12" required />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-bold">Phone Number</Label>
-              <Input value={buddyForm.phoneNumber} onChange={e => setBuddyForm({...buddyForm, phoneNumber: e.target.value})} required />
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Phone Number</Label>
+              <Input value={buddyForm.phoneNumber} onChange={e => setBuddyForm({...buddyForm, phoneNumber: e.target.value})} className="bg-input border-border focus:border-secondary h-12" required />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-bold">Protocol Groups</Label>
-              <div className="grid grid-cols-2 gap-2 p-2 border rounded-md">
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Protocol Groups</Label>
+              <div className="grid grid-cols-2 gap-2 p-3 border border-border rounded-md bg-input/30">
                 {buddyGroups.map(g => (
-                  <div key={g} className="flex items-center gap-2">
+                  <div key={g} className="flex items-center gap-3">
                     <Checkbox checked={buddyForm.groups.includes(g)} onCheckedChange={() => {
                       const updated = buddyForm.groups.includes(g) ? buddyForm.groups.filter(x => x !== g) : [...buddyForm.groups, g];
                       setBuddyForm({...buddyForm, groups: updated});
-                    }} />
-                    <span className="text-[10px] uppercase font-bold">{g}</span>
+                    }} className="border-accent data-[state=checked]:bg-accent" />
+                    <span className="text-[10px] uppercase font-bold text-foreground">{g}</span>
                   </div>
                 ))}
               </div>
             </div>
-            <Button type="submit" className="w-full h-12 uppercase font-bold" disabled={registerLoading}>
+            <Button type="submit" className="w-full h-14 bg-primary hover:bg-secondary uppercase font-bold tracking-widest" disabled={registerLoading}>
               {registerLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Buddy"}
             </Button>
           </form>
@@ -475,34 +471,34 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={isEditBuddyDialogOpen} onOpenChange={setIsEditBuddyDialogOpen}>
-        <DialogContent className="border bg-background">
-          <DialogHeader><DialogTitle className="uppercase font-bold">Edit Buddy</DialogTitle></DialogHeader>
+        <DialogContent className="bg-background border-border">
+          <DialogHeader><DialogTitle className="uppercase font-bold text-foreground">Edit Buddy</DialogTitle></DialogHeader>
           {itemToEdit && (
             <form onSubmit={handleUpdateBuddy} className="space-y-4 pt-4">
               <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold">Full Name</Label>
-                <Input value={itemToEdit.name} onChange={e => setItemToEdit({...itemToEdit, name: e.target.value})} required />
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Full Name</Label>
+                <Input value={itemToEdit.name} onChange={e => setItemToEdit({...itemToEdit, name: e.target.value})} className="bg-input border-border focus:border-secondary h-12" required />
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold">Phone Number</Label>
-                <Input value={itemToEdit.phoneNumber} onChange={e => setItemToEdit({...itemToEdit, phoneNumber: e.target.value})} required />
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Phone Number</Label>
+                <Input value={itemToEdit.phoneNumber} onChange={e => setItemToEdit({...itemToEdit, phoneNumber: e.target.value})} className="bg-input border-border focus:border-secondary h-12" required />
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold">Protocol Groups</Label>
-                <div className="grid grid-cols-2 gap-2 p-2 border rounded-md">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Protocol Groups</Label>
+                <div className="grid grid-cols-2 gap-2 p-3 border border-border rounded-md bg-input/30">
                   {buddyGroups.map(g => (
-                    <div key={g} className="flex items-center gap-2">
+                    <div key={g} className="flex items-center gap-3">
                       <Checkbox checked={itemToEdit.groups?.includes(g)} onCheckedChange={() => {
                         const groups = itemToEdit.groups || [];
                         const updated = groups.includes(g) ? groups.filter((x: string) => x !== g) : [...groups, g];
                         setItemToEdit({...itemToEdit, groups: updated});
-                      }} />
-                      <span className="text-[10px] uppercase font-bold">{g}</span>
+                      }} className="border-accent data-[state=checked]:bg-accent" />
+                      <span className="text-[10px] uppercase font-bold text-foreground">{g}</span>
                     </div>
                   ))}
                 </div>
               </div>
-              <Button type="submit" className="w-full h-12 uppercase font-bold" disabled={registerLoading}>
+              <Button type="submit" className="w-full h-14 bg-primary hover:bg-secondary uppercase font-bold tracking-widest" disabled={registerLoading}>
                 {registerLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update Buddy"}
               </Button>
             </form>
@@ -511,32 +507,32 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={isAddNodeDialogOpen} onOpenChange={setIsAddNodeDialogOpen}>
-        <DialogContent className="border bg-background">
-          <DialogHeader><DialogTitle className="uppercase font-bold">Arm Node</DialogTitle></DialogHeader>
+        <DialogContent className="bg-background border-border">
+          <DialogHeader><DialogTitle className="uppercase font-bold text-foreground">Arm Node</DialogTitle></DialogHeader>
           <form onSubmit={handleRegisterNode} className="space-y-4 pt-4">
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-bold">Node Name</Label>
-              <Input value={nodeForm.nodeName} onChange={e => setNodeForm({...nodeForm, nodeName: e.target.value})} required />
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Node Name</Label>
+              <Input value={nodeForm.nodeName} onChange={e => setNodeForm({...nodeForm, nodeName: e.target.value})} className="bg-input border-border focus:border-secondary h-12" required />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-bold">Hardware ID</Label>
-              <Input value={nodeForm.hardwareId} onChange={e => setNodeForm({...nodeForm, hardwareId: e.target.value})} required />
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Hardware ID</Label>
+              <Input value={nodeForm.hardwareId} onChange={e => setNodeForm({...nodeForm, hardwareId: e.target.value})} className="bg-input border-border focus:border-secondary h-12" required />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-bold">Target Alert Groups</Label>
-              <div className="grid grid-cols-2 gap-2 p-2 border rounded-md">
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Target Alert Groups</Label>
+              <div className="grid grid-cols-2 gap-2 p-3 border border-border rounded-md bg-input/30">
                 {buddyGroups.map(g => (
-                  <div key={g} className="flex items-center gap-2">
+                  <div key={g} className="flex items-center gap-3">
                     <Checkbox checked={nodeForm.targetGroups.includes(g)} onCheckedChange={() => {
                       const updated = nodeForm.targetGroups.includes(g) ? nodeForm.targetGroups.filter(x => x !== g) : [...nodeForm.targetGroups, g];
                       setNodeForm({...nodeForm, targetGroups: updated});
-                    }} />
-                    <span className="text-[10px] uppercase font-bold">{g}</span>
+                    }} className="border-accent data-[state=checked]:bg-accent" />
+                    <span className="text-[10px] uppercase font-bold text-foreground">{g}</span>
                   </div>
                 ))}
               </div>
             </div>
-            <Button type="submit" className="w-full h-12 uppercase font-bold" disabled={registerLoading}>
+            <Button type="submit" className="w-full h-14 bg-primary hover:bg-secondary uppercase font-bold tracking-widest" disabled={registerLoading}>
               {registerLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Arm Hardware"}
             </Button>
           </form>
@@ -544,34 +540,34 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={isEditNodeDialogOpen} onOpenChange={setIsEditNodeDialogOpen}>
-        <DialogContent className="border bg-background">
-          <DialogHeader><DialogTitle className="uppercase font-bold">Edit Node</DialogTitle></DialogHeader>
+        <DialogContent className="bg-background border-border">
+          <DialogHeader><DialogTitle className="uppercase font-bold text-foreground">Edit Node</DialogTitle></DialogHeader>
           {itemToEdit && (
             <form onSubmit={handleUpdateNode} className="space-y-4 pt-4">
               <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold">Node Name</Label>
-                <Input value={itemToEdit.nodeName} onChange={e => setItemToEdit({...itemToEdit, nodeName: e.target.value})} required />
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Node Name</Label>
+                <Input value={itemToEdit.nodeName} onChange={e => setItemToEdit({...itemToEdit, nodeName: e.target.value})} className="bg-input border-border focus:border-secondary h-12" required />
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold">Hardware ID</Label>
-                <Input value={itemToEdit.hardwareId} disabled className="bg-muted/50" />
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Hardware ID</Label>
+                <Input value={itemToEdit.hardwareId} disabled className="bg-muted opacity-50 h-12" />
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold">Target Alert Groups</Label>
-                <div className="grid grid-cols-2 gap-2 p-2 border rounded-md">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Target Alert Groups</Label>
+                <div className="grid grid-cols-2 gap-2 p-3 border border-border rounded-md bg-input/30">
                   {buddyGroups.map(g => (
-                    <div key={g} className="flex items-center gap-2">
+                    <div key={g} className="flex items-center gap-3">
                       <Checkbox checked={itemToEdit.targetGroups?.includes(g)} onCheckedChange={() => {
                         const groups = itemToEdit.targetGroups || [];
                         const updated = groups.includes(g) ? groups.filter((x: string) => x !== g) : [...groups, g];
                         setItemToEdit({...itemToEdit, targetGroups: updated});
-                      }} />
-                      <span className="text-[10px] uppercase font-bold">{g}</span>
+                      }} className="border-accent data-[state=checked]:bg-accent" />
+                      <span className="text-[10px] uppercase font-bold text-foreground">{g}</span>
                     </div>
                   ))}
                 </div>
               </div>
-              <Button type="submit" className="w-full h-12 uppercase font-bold" disabled={registerLoading}>
+              <Button type="submit" className="w-full h-14 bg-primary hover:bg-secondary uppercase font-bold tracking-widest" disabled={registerLoading}>
                 {registerLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update Node"}
               </Button>
             </form>
@@ -580,20 +576,20 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={isViewItemDialogOpen} onOpenChange={setIsViewItemDialogOpen}>
-        <DialogContent className="border bg-background">
-          <DialogHeader><DialogTitle className="uppercase font-bold">Asset Overview</DialogTitle></DialogHeader>
+        <DialogContent className="bg-background border-border">
+          <DialogHeader><DialogTitle className="uppercase font-bold text-foreground">Asset Overview</DialogTitle></DialogHeader>
           {itemToView && (
             <div className="space-y-4 pt-4">
-               <div className="p-4 bg-muted/20 border rounded-md">
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Asset Identity</p>
-                  <p className="text-xl font-bold uppercase">{itemToView.name || itemToView.nodeName}</p>
-                  <p className="text-xs font-mono mt-1">{itemToView.phoneNumber || itemToView.hardwareId}</p>
+               <div className="p-6 bg-card border border-border rounded-xl shadow-xl">
+                  <p className="text-[10px] uppercase font-bold text-accent mb-2">Asset Identity</p>
+                  <p className="text-2xl font-bold uppercase text-foreground">{itemToView.name || itemToView.nodeName}</p>
+                  <p className="text-xs font-mono mt-2 text-muted-foreground">{itemToView.phoneNumber || itemToView.hardwareId}</p>
                </div>
-               <div className="p-4 bg-muted/20 border rounded-md">
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Assigned Protocols</p>
+               <div className="p-6 bg-card border border-border rounded-xl shadow-xl">
+                  <p className="text-[10px] uppercase font-bold text-accent mb-2">Assigned Protocols</p>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {(itemToView.groups || itemToView.targetGroups || []).map((g: string) => (
-                      <Badge key={g} className="text-[8px] uppercase font-bold">{g}</Badge>
+                      <Badge key={g} className="bg-secondary text-foreground text-[10px] uppercase font-bold py-1 px-3">{g}</Badge>
                     ))}
                   </div>
                </div>
@@ -603,39 +599,41 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={isManageGroupsDialogOpen} onOpenChange={setIsManageGroupsDialogOpen}>
-        <DialogContent className="border bg-background">
-          <DialogHeader><DialogTitle className="uppercase font-bold">Manage Protocols</DialogTitle></DialogHeader>
+        <DialogContent className="bg-background border-border">
+          <DialogHeader><DialogTitle className="uppercase font-bold text-foreground">Manage Protocols</DialogTitle></DialogHeader>
           <div className="space-y-6 pt-4">
             <div className="flex gap-2">
-              <Input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} placeholder="NEW GROUP" className="uppercase text-[10px] font-bold" />
+              <Input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} placeholder="NEW PROTOCOL GROUP" className="bg-input border-border focus:border-secondary h-12 uppercase text-[10px] font-bold tracking-widest" />
               <Button onClick={() => {
                 if (!user || !newGroupName) return;
                 push(ref(rtdb, `users/${user.uid}/buddyGroups`), { name: newGroupName });
                 setNewGroupName("");
-              }} variant="outline"><PlusCircle className="h-4 w-4" /></Button>
+              }} className="bg-primary hover:bg-secondary h-12 w-12 p-0"><PlusCircle className="h-5 w-5" /></Button>
             </div>
-            <div className="space-y-2">
-              {buddyGroups.map(g => (
-                <div key={g} className="p-3 bg-muted/20 border flex justify-between items-center rounded-md">
-                  <span className="text-[10px] uppercase font-bold">{g}</span>
-                  {!DEFAULT_BUDDY_GROUPS.includes(g) && (
-                    <Button variant="ghost" size="sm" onClick={() => {
-                      const gId = Object.entries(customGroupsData || {}).find(([k, v]: any) => v.name === g)?.[0];
-                      if (gId) remove(ref(rtdb, `users/${user.uid}/buddyGroups/${gId}`));
-                    }}><Trash2 className="h-3 w-3 text-destructive" /></Button>
-                  )}
-                </div>
-              ))}
-            </div>
+            <ScrollArea className="h-64 border border-border p-4 rounded-md bg-input/20">
+              <div className="space-y-2">
+                {buddyGroups.map(g => (
+                  <div key={g} className="p-4 bg-card border border-border flex justify-between items-center rounded-lg shadow-sm">
+                    <span className="text-[10px] uppercase font-bold text-foreground">{g}</span>
+                    {!DEFAULT_BUDDY_GROUPS.includes(g) && (
+                      <Button variant="ghost" size="sm" className="hover:text-destructive" onClick={() => {
+                        const gId = Object.entries(customGroupsData || {}).find(([k, v]: any) => v.name === g)?.[0];
+                        if (gId) remove(ref(rtdb, `users/${user.uid}/buddyGroups/${gId}`));
+                      }}><Trash2 className="h-4 w-4" /></Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
           </div>
         </DialogContent>
       </Dialog>
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="border bg-background">
+        <AlertDialogContent className="bg-background border-border">
           <AlertDialogHeader>
-            <AlertDialogTitle className="uppercase font-bold">Purge Asset?</AlertDialogTitle>
-            <AlertDialogDescription className="text-xs uppercase">This action is final.</AlertDialogDescription>
+            <AlertDialogTitle className="uppercase font-bold text-foreground">Purge Asset?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs uppercase text-muted-foreground">This action is permanent and final.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction onClick={() => {
@@ -645,8 +643,8 @@ export default function DashboardPage() {
                 setIsDeleteDialogOpen(false);
                 setItemToDelete(null);
               });
-            }} className="text-[10px] font-bold uppercase bg-destructive text-destructive-foreground">Purge</AlertDialogAction>
-            <AlertDialogCancel className="text-[10px] font-bold uppercase">Abort</AlertDialogCancel>
+            }} className="text-[10px] font-bold uppercase bg-destructive text-destructive-foreground hover:bg-destructive/90 px-8 h-12">Purge</AlertDialogAction>
+            <AlertDialogCancel className="text-[10px] font-bold uppercase border-border h-12 px-8">Abort</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

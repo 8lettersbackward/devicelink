@@ -101,10 +101,10 @@ export default function ProfilePage() {
   };
 
   if (userLoading || profileLoading) return (
-     <div className="flex items-center justify-center h-[80vh]">
-      <div className="animate-pulse flex flex-col items-center">
-        <div className="h-1 bg-primary w-24 mb-4"></div>
-        <p className="text-[10px] uppercase tracking-widest font-bold">Accessing Vault</p>
+     <div className="flex items-center justify-center h-[80vh] bg-background">
+      <div className="flex flex-col items-center">
+        <Loader2 className="h-10 w-10 animate-spin text-accent mb-4" />
+        <p className="text-[10px] uppercase tracking-widest font-bold text-accent">Accessing Vault</p>
       </div>
     </div>
   );
@@ -118,123 +118,121 @@ export default function ProfilePage() {
       <Button 
         variant="ghost" 
         onClick={() => router.push("/dashboard")} 
-        className="mb-8 p-0 h-auto hover:bg-transparent text-[10px] uppercase font-bold tracking-widest flex items-center gap-2 group transition-all"
+        className="mb-8 p-0 h-auto hover:bg-transparent text-[10px] uppercase font-bold tracking-widest flex items-center gap-2 group transition-all text-accent"
       >
         <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-1" />
         Back to Hub
       </Button>
 
       <header className="mb-12">
-        <h1 className="text-4xl font-headline font-bold tracking-tighter uppercase mb-2">Account Hub</h1>
+        <h1 className="text-4xl font-headline font-bold tracking-tighter uppercase mb-2 text-foreground">Account Hub</h1>
         <p className="text-muted-foreground text-sm tracking-wide uppercase">System identification and security protocols.</p>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
         <aside className="space-y-4">
-          <div className="p-8 border-2 border-dashed bg-muted/5 flex flex-col items-center text-center mb-6">
-            <Avatar className="h-24 w-24 rounded-none border-2 border-primary mb-4">
+          <div className="p-8 border-2 border-dashed border-indigo-900/50 bg-card flex flex-col items-center text-center mb-6 rounded-xl shadow-xl">
+            <Avatar className="h-28 w-28 rounded-none border-2 border-accent mb-4 shadow-[0_0_20px_rgba(76,201,240,0.3)]">
               <AvatarImage src={avatarUrl} alt={currentDisplayName} />
-              <AvatarFallback className="rounded-none bg-primary text-primary-foreground text-2xl font-bold">
+              <AvatarFallback className="rounded-none bg-primary text-primary-foreground text-3xl font-bold">
                 {currentDisplayName[0].toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <p className="text-xs font-bold uppercase tracking-widest truncate w-full">{currentDisplayName}</p>
-            <p className="text-[10px] text-muted-foreground font-mono mt-1 truncate w-full">{user.email}</p>
+            <p className="text-sm font-bold uppercase tracking-widest truncate w-full text-foreground">{currentDisplayName}</p>
+            <p className="text-[10px] text-muted-foreground font-mono mt-2 truncate w-full">{user.email}</p>
           </div>
 
-          <nav className="space-y-1">
-            <Button variant="ghost" className="w-full justify-start gap-3 rounded-none bg-primary text-primary-foreground hover:bg-primary/90 font-bold uppercase text-[10px] tracking-widest">
-              <UserIcon className="h-4 w-4" /> Identification
+          <nav className="space-y-2">
+            <Button variant="ghost" className="w-full justify-start gap-3 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 font-bold uppercase text-[10px] tracking-widest shadow-lg">
+              <UserIcon className="h-4 w-4 text-accent" /> Identification
             </Button>
-            <Button variant="ghost" className="w-full justify-start gap-3 rounded-none hover:bg-muted font-bold uppercase text-[10px] tracking-widest text-muted-foreground">
+            <Button variant="ghost" className="w-full justify-start gap-3 rounded-md hover:bg-card font-bold uppercase text-[10px] tracking-widest text-muted-foreground">
               <Shield className="h-4 w-4" /> Security
             </Button>
-            <Separator className="my-4 border-dashed" />
-            <Button variant="ghost" className="w-full justify-start gap-3 rounded-none text-destructive hover:bg-destructive/10 font-bold uppercase text-[10px] tracking-widest" onClick={handleSignOut}>
+            <Separator className="my-6 border-indigo-900/50" />
+            <Button variant="ghost" className="w-full justify-start gap-3 rounded-md text-destructive hover:bg-destructive/10 font-bold uppercase text-[10px] tracking-widest" onClick={handleSignOut}>
               <LogOut className="h-4 w-4" /> Terminate Session
             </Button>
           </nav>
         </aside>
 
         <div className="md:col-span-2 space-y-10">
-          <Card className="border-none shadow-none bg-muted/20 rounded-none">
-            <CardHeader>
-              <CardTitle className="text-sm uppercase font-bold tracking-[0.2em]">Identification Profile</CardTitle>
-              <CardDescription className="text-xs uppercase">Core system identity settings.</CardDescription>
+          <Card className="border-none shadow-2xl bg-card rounded-xl">
+            <CardHeader className="border-b border-indigo-900/50">
+              <CardTitle className="text-sm uppercase font-bold tracking-[0.2em] text-accent">Identification Profile</CardTitle>
+              <CardDescription className="text-[10px] uppercase text-muted-foreground">Core system identity settings.</CardDescription>
             </CardHeader>
             <form onSubmit={handleUpdateProfile}>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-6 pt-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 text-muted-foreground">
                       <IdCard className="h-3 w-3" /> Unique ID
                     </Label>
-                    <Input value={user.uid} disabled className="bg-muted/40 border-none rounded-none h-11 font-mono text-[10px]" />
-                    <p className="text-[8px] text-muted-foreground uppercase">Permanent system identifier.</p>
+                    <Input value={user.uid} disabled className="bg-background border-none rounded-md h-12 font-mono text-[10px] text-accent opacity-70" />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 text-muted-foreground">
                       <Mail className="h-3 w-3" /> Master Email
                     </Label>
-                    <Input value={user.email || ""} disabled className="bg-muted/40 border-none rounded-none h-11 font-mono text-[10px]" />
+                    <Input value={user.email || ""} disabled className="bg-background border-none rounded-md h-12 font-mono text-[10px] text-accent opacity-70" />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="display-name" className="text-[10px] font-bold uppercase tracking-widest">Display Name / Identity</Label>
+                  <Label htmlFor="display-name" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Display Name / Identity</Label>
                   <Input 
                     id="display-name" 
-                    placeholder="e.g. Elvin" 
+                    placeholder="e.g. ALPHA-1" 
                     value={displayName} 
                     onChange={(e) => setDisplayName(e.target.value)} 
-                    className="bg-background border-none rounded-none h-12 uppercase text-[10px] font-bold tracking-widest"
+                    className="bg-background border-border focus:border-secondary h-14 uppercase text-sm font-bold tracking-widest"
                   />
-                  <p className="text-[8px] text-muted-foreground uppercase">This name will be displayed across your control hub.</p>
+                  <p className="text-[8px] text-muted-foreground uppercase">This name will be displayed across your terminal hub.</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="avatar-url" className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                    <Camera className="h-3 w-3" /> Avatar Resource URL
+                  <Label htmlFor="avatar-url" className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 text-muted-foreground">
+                    <Camera className="h-3 w-3" /> Avatar resource URL
                   </Label>
                   <Input 
                     id="avatar-url" 
                     placeholder="https://..." 
                     value={avatarUrl} 
                     onChange={(e) => setAvatarUrl(e.target.value)} 
-                    className="bg-background border-none rounded-none h-12 text-[10px] font-mono"
+                    className="bg-background border-border focus:border-secondary h-14 text-[10px] font-mono"
                   />
-                  <p className="text-[9px] text-muted-foreground uppercase italic tracking-wider">Provide a remote link to your identification image.</p>
                 </div>
               </CardContent>
-              <CardFooter className="pt-4 border-t border-dashed">
-                <Button type="submit" disabled={updating} className="w-full rounded-none h-14 uppercase font-bold tracking-[0.2em] text-xs">
+              <CardFooter className="pt-6 border-t border-indigo-900/50">
+                <Button type="submit" disabled={updating} className="w-full h-16 bg-primary hover:bg-secondary uppercase font-bold tracking-[0.3em] text-xs shadow-2xl">
                   {updating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Synchronize Profile"}
                 </Button>
               </CardFooter>
             </form>
           </Card>
 
-          <Card className="border-none shadow-none bg-muted/20 rounded-none">
-            <CardHeader>
-              <CardTitle className="text-sm uppercase font-bold tracking-[0.2em]">Security Protocol</CardTitle>
-              <CardDescription className="text-xs uppercase">Rotate your access credentials.</CardDescription>
+          <Card className="border-none shadow-2xl bg-card rounded-xl">
+            <CardHeader className="border-b border-indigo-900/50">
+              <CardTitle className="text-sm uppercase font-bold tracking-[0.2em] text-accent">Security Protocol</CardTitle>
+              <CardDescription className="text-[10px] uppercase text-muted-foreground">Rotate your access credentials.</CardDescription>
             </CardHeader>
             <form onSubmit={handleUpdatePassword}>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 pt-6">
                 <div className="space-y-2">
-                  <Label htmlFor="new-password" className="text-[10px] font-bold uppercase tracking-widest">New System Password</Label>
+                  <Label htmlFor="new-password" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">New System Password</Label>
                   <Input 
                     id="new-password" 
                     type="password" 
                     placeholder="••••••••"
                     value={newPassword} 
                     onChange={(e) => setNewPassword(e.target.value)} 
-                    className="bg-background border-none rounded-none h-12"
+                    className="bg-background border-border focus:border-secondary h-14"
                   />
                 </div>
               </CardContent>
-              <CardFooter className="pt-4 border-t border-dashed">
-                <Button type="submit" variant="outline" disabled={updating || !newPassword} className="w-full rounded-none h-12 uppercase font-bold tracking-[0.2em] text-[10px]">
+              <CardFooter className="pt-6 border-t border-indigo-900/50">
+                <Button type="submit" variant="outline" disabled={updating || !newPassword} className="w-full h-14 border-secondary text-secondary hover:bg-secondary/10 uppercase font-bold tracking-[0.2em] text-[10px]">
                   Rotate Access Keys
                 </Button>
               </CardFooter>
