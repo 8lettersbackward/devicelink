@@ -65,14 +65,14 @@ export default function LoginPage() {
             </div>
           </div>
           <div>
-            <CardTitle className="text-3xl font-bold tracking-tight uppercase">Access Hub</CardTitle>
+            <CardTitle className="text-3xl font-bold tracking-tight uppercase">Sign In</CardTitle>
             <CardDescription className="text-xs font-bold text-muted-foreground tracking-[0.2em] uppercase mt-2">Verified Personnel Only</CardDescription>
           </div>
         </CardHeader>
         <form onSubmit={handleLogin} className="space-y-6">
           <CardContent className="space-y-6 p-0">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Terminal Email</Label>
+              <Label htmlFor="email" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Email Address</Label>
               <Input
                 id="email"
                 type="email"
@@ -85,7 +85,7 @@ export default function LoginPage() {
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between ml-1">
-                <Label htmlFor="password" title="Password" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Access Key</Label>
+                <Label htmlFor="password" title="Password" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Password</Label>
                 <Link href="#" className="text-[10px] text-secondary font-bold uppercase hover:opacity-80">Reset</Link>
               </div>
               <Input
@@ -100,12 +100,12 @@ export default function LoginPage() {
           </CardContent>
           <CardFooter className="flex flex-col space-y-6 p-0">
             <Button type="submit" className="w-full h-16 rounded-2xl text-sm font-bold uppercase bg-primary hover:bg-secondary tracking-[0.2em] shadow-lg" disabled={loading}>
-              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Initiate Access"}
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign In"}
             </Button>
-            <p className="text-xs text-center text-muted-foreground font-bold">
-              UNARMED?{" "}
+            <p className="text-xs text-center text-muted-foreground font-bold uppercase tracking-widest">
+              No Account?{" "}
               <Link href="/signup" className="text-secondary hover:underline">
-                ENLIST NOW
+                Sign Up
               </Link>
             </p>
           </CardFooter>
