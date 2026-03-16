@@ -146,7 +146,7 @@ export default function DashboardPage() {
       .then(() => {
         setIsAddBuddyDialogOpen(false);
         setBuddyForm({ name: '', phoneNumber: '', groups: [] });
-        toast({ title: "Asset Deployed" });
+        toast({ title: "Buddy Registered" });
       })
       .finally(() => setRegisterLoading(false));
   };
@@ -159,7 +159,7 @@ export default function DashboardPage() {
       .then(() => {
         setIsEditBuddyDialogOpen(false);
         setItemToEdit(null);
-        toast({ title: "Asset Synchronized" });
+        toast({ title: "Buddy Updated" });
       })
       .finally(() => setRegisterLoading(false));
   };
@@ -174,7 +174,7 @@ export default function DashboardPage() {
       .then(() => {
         setIsAddNodeDialogOpen(false);
         setNodeForm({ nodeName: '', hardwareId: '', targetGroups: [] });
-        toast({ title: "Hardware Node Linked" });
+        toast({ title: "Node Linked" });
       })
       .finally(() => setRegisterLoading(false));
   };
@@ -187,7 +187,7 @@ export default function DashboardPage() {
       .then(() => {
         setIsEditNodeDialogOpen(false);
         setItemToEdit(null);
-        toast({ title: "System Config Updated" });
+        toast({ title: "Node Updated" });
       })
       .finally(() => setRegisterLoading(false));
   };
@@ -297,7 +297,7 @@ export default function DashboardPage() {
               {buddies.length === 0 ? (
                 <Card className="glass-card p-24 text-center border-dashed border-primary/20">
                   <Smartphone className="h-12 w-12 text-primary/20 mx-auto mb-6" />
-                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground">Standby Mode: No Registered Assets</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground">Standby Mode: No Registered Buddies</p>
                 </Card>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -334,7 +334,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <h1 className="text-4xl font-bold tracking-tighter">MANAGE NODE</h1>
                 <Button onClick={() => setIsAddNodeDialogOpen(true)} className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 bg-primary hover:bg-secondary">
-                  <PlusSquare className="h-4 w-4 mr-2" /> Arm Node
+                  <PlusSquare className="h-4 w-4 mr-2" /> Link Node
                 </Button>
               </div>
 
@@ -388,7 +388,7 @@ export default function DashboardPage() {
                   {notifications.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-[400px] opacity-10">
                       <Bell className="h-16 w-16 mb-6" />
-                      <p className="text-[10px] font-bold uppercase tracking-[0.4em]">Vault Clear</p>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.4em]">Notification Vault Clear</p>
                     </div>
                   ) : (
                     notifications.map(n => (
@@ -425,14 +425,14 @@ export default function DashboardPage() {
 
       <Dialog open={isAddBuddyDialogOpen} onOpenChange={setIsAddBuddyDialogOpen}>
         <DialogContent className="glass-card border-none rounded-[2rem] max-w-md p-10">
-          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Enlist Asset</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Enlist Buddy</DialogTitle></DialogHeader>
           <form onSubmit={handleRegisterBuddy} className="space-y-6">
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Identity Name</Label>
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Full Name</Label>
               <Input value={buddyForm.name} onChange={e => setBuddyForm({...buddyForm, name: e.target.value})} className="bg-white/5 border-white/10 rounded-2xl h-14 text-sm font-bold" required />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Comms Path</Label>
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Phone Number</Label>
               <Input value={buddyForm.phoneNumber} onChange={e => setBuddyForm({...buddyForm, phoneNumber: e.target.value})} className="bg-white/5 border-white/10 rounded-2xl h-14 text-sm font-bold" required />
             </div>
             <div className="space-y-2">
@@ -450,7 +450,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary" disabled={registerLoading}>
-              {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Deploy Asset"}
+              {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save Buddy"}
             </Button>
           </form>
         </DialogContent>
@@ -458,15 +458,15 @@ export default function DashboardPage() {
 
       <Dialog open={isEditBuddyDialogOpen} onOpenChange={setIsEditBuddyDialogOpen}>
         <DialogContent className="glass-card border-none rounded-[2rem] max-w-md p-10">
-          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Modify Asset</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Edit Buddy</DialogTitle></DialogHeader>
           {itemToEdit && (
             <form onSubmit={handleUpdateBuddy} className="space-y-6">
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Identity Name</Label>
+                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Full Name</Label>
                 <Input value={itemToEdit.name} onChange={e => setItemToEdit({...itemToEdit, name: e.target.value})} className="bg-white/5 border-white/10 rounded-2xl h-14 text-sm font-bold" required />
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Comms Path</Label>
+                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Phone Number</Label>
                 <Input value={itemToEdit.phoneNumber} onChange={e => setItemToEdit({...itemToEdit, phoneNumber: e.target.value})} className="bg-white/5 border-white/10 rounded-2xl h-14 text-sm font-bold" required />
               </div>
               <div className="space-y-2">
@@ -485,7 +485,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary" disabled={registerLoading}>
-                {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sync Asset"}
+                {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save Buddy"}
               </Button>
             </form>
           )}
@@ -494,10 +494,10 @@ export default function DashboardPage() {
 
       <Dialog open={isAddNodeDialogOpen} onOpenChange={setIsAddNodeDialogOpen}>
         <DialogContent className="glass-card border-none rounded-[2rem] max-w-md p-10">
-          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Arm System</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Link Node</DialogTitle></DialogHeader>
           <form onSubmit={handleRegisterNode} className="space-y-6">
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Node Alias</Label>
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Node Name</Label>
               <Input value={nodeForm.nodeName} onChange={e => setNodeForm({...nodeForm, nodeName: e.target.value})} className="bg-white/5 border-white/10 rounded-2xl h-14 text-sm font-bold" required />
             </div>
             <div className="space-y-2">
@@ -519,7 +519,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary" disabled={registerLoading}>
-              {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Initiate Link"}
+              {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Link Node"}
             </Button>
           </form>
         </DialogContent>
@@ -527,11 +527,11 @@ export default function DashboardPage() {
 
       <Dialog open={isEditNodeDialogOpen} onOpenChange={setIsEditNodeDialogOpen}>
         <DialogContent className="glass-card border-none rounded-[2rem] max-w-md p-10">
-          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Sync Node</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Edit Node</DialogTitle></DialogHeader>
           {itemToEdit && (
             <form onSubmit={handleUpdateNode} className="space-y-6">
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Node Alias</Label>
+                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Node Name</Label>
                 <Input value={itemToEdit.nodeName} onChange={e => setItemToEdit({...itemToEdit, nodeName: e.target.value})} className="bg-white/5 border-white/10 rounded-2xl h-14 text-sm font-bold" required />
               </div>
               <div className="space-y-2">
@@ -554,7 +554,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary" disabled={registerLoading}>
-                {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Verify Sync"}
+                {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save Node"}
               </Button>
             </form>
           )}
