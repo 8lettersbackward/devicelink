@@ -28,20 +28,20 @@ export default function Home() {
   if (user) return null;
 
   return (
-    <div className="flex flex-col min-h-screen bg-background overflow-hidden">
-      <section className="flex-1 flex items-center justify-center px-6 relative">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-white/20 rounded-full blur-[120px] pointer-events-none" />
-        
-        <div className="max-w-4xl text-center relative z-10 space-y-12">
+    <div className="flex flex-col min-h-screen bg-background overflow-hidden relative">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/20 rounded-full blur-[150px] pointer-events-none" />
+      
+      <section className="flex-1 flex items-center justify-center px-6 relative z-10">
+        <div className="max-w-4xl text-center space-y-12">
           <div className="flex justify-center">
-            <div className="h-24 w-24 glass-card rounded-[32px] flex items-center justify-center shadow-lg bg-white/80">
-              <ShieldAlert className="h-12 w-12 text-primary" />
+            <div className="h-24 w-24 glass-card rounded-[32px] flex items-center justify-center shadow-lg border-white/30">
+              <ShieldAlert className="h-12 w-12 text-secondary" />
             </div>
           </div>
           
           <div className="space-y-6">
-            <h1 className="text-6xl md:text-9xl font-bold tracking-tighter text-foreground leading-none">
-              1TAP <br /> <span className="text-primary uppercase tracking-[0.1em]">HUB</span>
+            <h1 className="text-6xl md:text-9xl font-bold tracking-tighter text-white leading-none">
+              1TAP <br /> <span className="text-secondary uppercase tracking-[0.1em]">HUB</span>
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto font-medium leading-relaxed">
               Professional safety orchestration. <br className="hidden md:block" /> Secure protection in a single tap.
@@ -55,7 +55,7 @@ export default function Home() {
               </Button>
             </Link>
             <Link href="/login">
-              <Button size="lg" variant="ghost" className="glass-card px-12 h-16 text-sm font-bold uppercase rounded-2xl border-white/40 text-foreground tracking-[0.2em] hover:bg-white/90">
+              <Button size="lg" variant="ghost" className="glass-card px-12 h-16 text-sm font-bold uppercase rounded-2xl border-white/20 text-white tracking-[0.2em] hover:bg-white/10">
                 Access Hub
               </Button>
             </Link>
@@ -63,7 +63,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="py-12 border-t border-black/5 text-center text-muted-foreground/30 text-[10px] tracking-[0.3em] uppercase">
+      <footer className="py-12 border-t border-white/5 text-center text-muted-foreground/40 text-[10px] tracking-[0.3em] uppercase relative z-10">
         <div className="max-w-7xl mx-auto px-6">
           <p>© 2024 1TAP SECURE. PRECISION IN PROTECTION.</p>
         </div>

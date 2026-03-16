@@ -55,16 +55,17 @@ export default function LoginPage() {
   if (user) return null;
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background p-6">
-      <Card className="glass-card w-full max-w-md border-none rounded-[32px] p-8 space-y-8 bg-white/60">
+    <div className="flex items-center justify-center min-h-screen bg-background p-6 relative">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
+      <Card className="glass-card w-full max-w-md border-none rounded-[32px] p-8 space-y-8 relative z-10">
         <CardHeader className="space-y-4 text-center p-0">
           <div className="flex justify-center">
-            <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20">
-              <ShieldCheck className="h-8 w-8 text-primary" />
+            <div className="h-16 w-16 bg-primary/20 rounded-2xl flex items-center justify-center border border-white/20">
+              <ShieldCheck className="h-8 w-8 text-secondary" />
             </div>
           </div>
           <div>
-            <CardTitle className="text-3xl font-bold tracking-tight text-foreground uppercase">Access Hub</CardTitle>
+            <CardTitle className="text-3xl font-bold tracking-tight uppercase">Access Hub</CardTitle>
             <CardDescription className="text-xs font-bold text-muted-foreground tracking-[0.2em] uppercase mt-2">Verified Personnel Only</CardDescription>
           </div>
         </CardHeader>
@@ -79,13 +80,13 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="h-14 bg-black/5 border-black/10 rounded-2xl text-foreground placeholder:text-black/20"
+                className="h-14 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-white/20"
               />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between ml-1">
                 <Label htmlFor="password" title="Password" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Access Key</Label>
-                <Link href="#" className="text-[10px] text-primary font-bold uppercase hover:opacity-80">Reset</Link>
+                <Link href="#" className="text-[10px] text-secondary font-bold uppercase hover:opacity-80">Reset</Link>
               </div>
               <Input
                 id="password"
@@ -93,7 +94,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="h-14 bg-black/5 border-black/10 rounded-2xl text-foreground"
+                className="h-14 bg-white/5 border-white/10 rounded-2xl text-white"
               />
             </div>
           </CardContent>
@@ -103,7 +104,7 @@ export default function LoginPage() {
             </Button>
             <p className="text-xs text-center text-muted-foreground font-bold">
               UNARMED?{" "}
-              <Link href="/signup" className="text-primary hover:underline">
+              <Link href="/signup" className="text-secondary hover:underline">
                 ENLIST NOW
               </Link>
             </p>

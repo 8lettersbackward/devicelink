@@ -4,25 +4,25 @@
 
 @layer base {
   :root {
-    --background: 194 86% 62%;
-    --foreground: 230 84% 5%;
-    --card: 0 0% 100%;
-    --card-foreground: 230 84% 5%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 230 84% 5%;
-    --primary: 230 84% 60%;
+    --background: 235 61% 43%;
+    --foreground: 0 0% 100%;
+    --card: 235 61% 35%;
+    --card-foreground: 0 0% 100%;
+    --popover: 235 61% 35%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 229 85% 60%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 212 85% 61%;
+    --secondary: 213 85% 61%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 194 86% 90%;
-    --muted-foreground: 194 20% 30%;
-    --accent: 212 85% 61%;
-    --accent-foreground: 230 84% 5%;
+    --muted: 235 40% 50%;
+    --muted-foreground: 235 20% 85%;
+    --accent: 213 85% 61%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 194 86% 55%;
-    --input: 194 86% 55%;
-    --ring: 230 84% 60%;
+    --border: 235 61% 55%;
+    --input: 235 61% 55%;
+    --ring: 229 85% 60%;
     --radius: 1.5rem;
   }
 }
@@ -38,9 +38,9 @@
 }
 
 .glass-card {
-  @apply backdrop-blur-xl bg-white/80 border border-white/20 shadow-xl;
+  @apply backdrop-blur-xl bg-white/10 border border-white/20 shadow-xl;
 }
 
 .neo-blur {
-  @apply backdrop-blur-2xl bg-white/90;
+  @apply backdrop-blur-2xl bg-black/20;
 }
