@@ -34,7 +34,7 @@ export default function SignupPage() {
       toast({
         variant: "destructive",
         title: "Validation Error",
-        description: "Access keys do not match.",
+        description: "Passwords do not match.",
       });
       return;
     }
@@ -93,7 +93,7 @@ export default function SignupPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" title="Password" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Access Key</Label>
+              <Label htmlFor="password" title="Password" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">PASSWORD</Label>
               <Input
                 id="password"
                 type="password"
@@ -104,7 +104,7 @@ export default function SignupPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirm-password" title="Confirm" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Confirm Key</Label>
+              <Label htmlFor="confirm-password" title="Confirm" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">CONFIRM PASSWORD</Label>
               <Input
                 id="confirm-password"
                 type="password"
@@ -117,12 +117,12 @@ export default function SignupPage() {
           </CardContent>
           <CardFooter className="flex flex-col space-y-6 p-0">
             <Button type="submit" className="w-full h-16 rounded-2xl text-sm font-bold uppercase bg-primary hover:bg-secondary tracking-[0.2em] shadow-lg" disabled={loading}>
-              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Verify Identity"}
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "SIGN UP"}
             </Button>
-            <p className="text-xs text-center text-muted-foreground font-bold">
-              ACTIVE HUB?{" "}
+            <p className="text-xs text-center text-muted-foreground font-bold uppercase tracking-widest">
+              Active identity?{" "}
               <Link href="/login" className="text-secondary hover:underline">
-                ACCESS NOW
+                Log in
               </Link>
             </p>
           </CardFooter>
