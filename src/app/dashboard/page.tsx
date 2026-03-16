@@ -192,10 +192,10 @@ export default function DashboardPage() {
     const payload = { ...nodeForm, id: nodeId, status: 'online', registeredAt: Date.now() };
     set(ref(rtdb, `users/${user.uid}/nodes/${nodeId}`), payload)
       .then(() => {
-        logAction(`Linked new hardware node: ${nodeForm.nodeName}`);
+        logAction(`Armed new hardware node: ${nodeForm.nodeName}`);
         setIsAddNodeDialogOpen(false);
         setNodeForm({ nodeName: '', hardwareId: '', targetGroups: [] });
-        toast({ title: "Node Linked" });
+        toast({ title: "Node Armed" });
       })
       .finally(() => setRegisterLoading(false));
   };
@@ -359,7 +359,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <h1 className="text-4xl font-bold tracking-tighter">MANAGE NODE</h1>
                 <Button onClick={() => setIsAddNodeDialogOpen(true)} className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 bg-primary hover:bg-secondary">
-                  <PlusSquare className="h-4 w-4 mr-2" /> Link Node
+                  <PlusSquare className="h-4 w-4 mr-2" /> Arm Node
                 </Button>
               </div>
 
@@ -530,7 +530,7 @@ export default function DashboardPage() {
 
       <Dialog open={isAddNodeDialogOpen} onOpenChange={setIsAddNodeDialogOpen}>
         <DialogContent className="glass-card border-none rounded-[2rem] max-w-md p-10">
-          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Link Node</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Arm Node</DialogTitle></DialogHeader>
           <form onSubmit={handleRegisterNode} className="space-y-6">
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Node Name</Label>
@@ -555,7 +555,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary" disabled={registerLoading}>
-              {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Link Node"}
+              {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Arm Node"}
             </Button>
           </form>
         </DialogContent>
