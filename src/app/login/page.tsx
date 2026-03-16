@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -36,8 +36,8 @@ export default function LoginPage() {
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Login Failed",
-        description: error.message || "Invalid credentials. Please try again.",
+        title: "Access Denied",
+        description: error.message || "Credential verification failed.",
       });
     } finally {
       setLoading(false);
@@ -46,8 +46,8 @@ export default function LoginPage() {
 
   if (userLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#12086F] to-[#2B35AF]">
+        <Loader2 className="h-10 w-10 animate-spin text-accent" />
       </div>
     );
   }
@@ -55,30 +55,37 @@ export default function LoginPage() {
   if (user) return null;
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] bg-background/50 px-4">
-      <Card className="w-full max-w-md bg-card shadow-2xl border-none">
-        <CardHeader className="space-y-2 text-center">
-          <CardTitle className="text-3xl font-headline tracking-tighter uppercase font-bold text-foreground">Welcome Back</CardTitle>
-          <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Enter credentials to access hub</CardDescription>
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#12086F] to-[#2B35AF] p-6">
+      <Card className="glass-card w-full max-w-md border-none rounded-[32px] p-8 space-y-8">
+        <CardHeader className="space-y-4 text-center p-0">
+          <div className="flex justify-center">
+            <div className="h-16 w-16 bg-primary/20 rounded-2xl flex items-center justify-center border border-white/10">
+              <ShieldCheck className="h-8 w-8 text-accent" />
+            </div>
+          </div>
+          <div>
+            <CardTitle className="text-3xl font-bold tracking-tight text-white uppercase">Access Hub</CardTitle>
+            <CardDescription className="text-xs font-bold text-muted-foreground tracking-[0.2em] uppercase mt-2">Verified Personnel Only</CardDescription>
+          </div>
         </CardHeader>
-        <form onSubmit={handleLogin}>
-          <CardContent className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-6">
+          <CardContent className="space-y-6 p-0">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-[10px] font-bold uppercase text-muted-foreground">Email</Label>
+              <Label htmlFor="email" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Terminal Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="name@example.com"
+                placeholder="name@agency.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="h-12 bg-input border-border focus:border-secondary text-foreground placeholder:text-muted-foreground/30"
+                className="h-14 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-white/20"
               />
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" title="Password" className="text-[10px] font-bold uppercase text-muted-foreground">Password</Label>
-                <Link href="#" className="text-[8px] text-muted-foreground uppercase hover:text-accent">Forgot password?</Link>
+              <div className="flex items-center justify-between ml-1">
+                <Label htmlFor="password" title="Password" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Access Key</Label>
+                <Link href="#" className="text-[10px] text-accent font-bold uppercase hover:opacity-80">Reset</Link>
               </div>
               <Input
                 id="password"
@@ -86,18 +93,18 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="h-12 bg-input border-border focus:border-secondary text-foreground"
+                className="h-14 bg-white/5 border-white/10 rounded-2xl text-white"
               />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4 pt-4">
-            <Button type="submit" className="w-full h-14 text-sm font-bold uppercase bg-primary hover:bg-secondary tracking-widest" disabled={loading}>
-              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Sign In"}
+          <CardFooter className="flex flex-col space-y-6 p-0">
+            <Button type="submit" className="w-full h-16 rounded-2xl text-sm font-bold uppercase bg-primary hover:bg-secondary tracking-[0.2em] shadow-xl shadow-primary/20" disabled={loading}>
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Initiate Access"}
             </Button>
-            <p className="text-[10px] text-center text-muted-foreground uppercase font-bold">
-              No account?{" "}
-              <Link href="/signup" className="text-accent font-bold hover:underline">
-                Sign up
+            <p className="text-xs text-center text-muted-foreground font-bold">
+              UNARMED?{" "}
+              <Link href="/signup" className="text-accent hover:underline">
+                ENLIST NOW
               </Link>
             </p>
           </CardFooter>

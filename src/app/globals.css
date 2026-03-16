@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 246 81% 23%;
+    --background: 246 87% 23%;
     --foreground: 210 40% 98%;
     --card: 235 61% 43%;
     --card-foreground: 210 40% 98%;
@@ -14,16 +14,16 @@
     --primary-foreground: 210 40% 98%;
     --secondary: 212 85% 61%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 246 81% 30%;
+    --muted: 246 87% 30%;
     --muted-foreground: 230 80% 95%;
     --accent: 194 86% 62%;
-    --accent-foreground: 246 81% 23%;
+    --accent-foreground: 246 87% 23%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 235 61% 50%;
-    --input: 235 48% 20%;
+    --input: 246 87% 15%;
     --ring: 230 84% 60%;
-    --radius: 0.5rem;
+    --radius: 1.5rem;
   }
 }
 
@@ -35,4 +35,12 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+}
+
+.glass-card {
+  @apply backdrop-blur-xl bg-card/20 border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_8px_32px_rgba(0,0,0,0.3)];
+}
+
+.neo-blur {
+  @apply backdrop-blur-2xl bg-background/80;
 }
