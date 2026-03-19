@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useUser, useDatabase, useRtdb, useFirebase } from "@/firebase";
@@ -226,42 +225,6 @@ export default function DashboardPage() {
       });
   };
 
-  const triggerNodeAlert = (node: any) => {
-    if (!user || !rtdb) return;
-    const isCurrentlyActive = sosStatus?.sosTrigger === true && sosStatus?.triggeredByNode === node.id;
-    
-    if (isCurrentlyActive) {
-      update(ref(rtdb, "sosSystem"), { 
-        sosTrigger: false, 
-        timestamp: Date.now(),
-        triggeredByNode: null 
-      });
-      logAction(`SOS Protocol Deactivated for node: ${node.nodeName}`);
-      return;
-    }
-
-    const broadcastSOS = async (lat?: number, lng?: number) => {
-      update(ref(rtdb, "sosSystem"), {
-        sosTrigger: true,
-        sender: user.email || "Unknown",
-        nodename: node.nodeName,
-        timestamp: Date.now(),
-        triggeredByNode: node.id,
-        latitude: lat || null,
-        longitude: lng || null,
-      });
-      logAction(`SOS Protocol INITIATED from node: ${node.nodeName}`);
-    };
-
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => broadcastSOS(pos.coords.latitude, pos.coords.longitude),
-        () => broadcastSOS(),
-        { timeout: 5000 }
-      );
-    } else broadcastSOS();
-  };
-
   if (userLoading || !hasMounted) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -411,13 +374,6 @@ export default function DashboardPage() {
                             <Badge key={g} className="bg-primary/20 border-none text-white text-[9px] uppercase font-bold px-3">{g}</Badge>
                           ))}
                         </div>
-                        <Button 
-                          className={cn("w-full h-14 rounded-2xl text-[10px] font-bold tracking-[0.2em] uppercase transition-all shadow-lg", sosStatus?.sosTrigger && sosStatus?.triggeredByNode === node.id ? "bg-destructive hover:bg-destructive/90" : "bg-primary hover:bg-secondary")}
-                          onClick={() => triggerNodeAlert(node)}
-                        >
-                          <Zap className="h-4 w-4 mr-3" /> 
-                          {sosStatus?.sosTrigger && sosStatus?.triggeredByNode === node.id ? "Reset Protocol" : "Initiate SOS"}
-                        </Button>
                         <div className="flex gap-4 pt-6 border-t border-white/5 opacity-0 group-hover:opacity-100 transition-all">
                           <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-white/5 hover:bg-white/10" onClick={() => { setItemToView(node); setIsViewItemDialogOpen(true); }}><Eye className="h-3.5 w-3.5 mr-2" /> View</Button>
                           <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-white/5 hover:bg-white/10" onClick={() => { setItemToEdit(node); setIsEditNodeDialogOpen(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
