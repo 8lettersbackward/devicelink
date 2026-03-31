@@ -22,7 +22,7 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
   }, []);
 
   if (!instances) {
-    return null; // Or a loading spinner
+    return null;
   }
 
   return (

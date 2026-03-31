@@ -1,11 +1,4 @@
 'use server';
-/**
- * @fileOverview A geocoding AI agent for the Visual Beacon Tracker.
- *
- * - reverseGeocode - A function that converts coordinates to a structured location object.
- * - GeocodeInput - The input type for the reverseGeocode function.
- * - GeocodeOutput - The return type for the reverseGeocode function.
- */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';

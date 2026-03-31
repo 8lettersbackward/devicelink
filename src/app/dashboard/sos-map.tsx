@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useRef } from 'react';
@@ -17,14 +16,12 @@ export default function SOSMap({ latitude, longitude, label }: SOSMapProps) {
   useEffect(() => {
     if (!mapRef.current) return;
 
-    // Initialize map
     mapInstance.current = L.map(mapRef.current).setView([latitude, longitude], 15);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(mapInstance.current);
 
-    // Custom tactical marker icon
     const tacticalIcon = L.divIcon({
       className: 'tactical-marker',
       html: `

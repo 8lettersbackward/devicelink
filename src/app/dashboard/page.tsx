@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useUser, useDatabase, useRtdb, useFirebase } from "@/firebase";
@@ -54,7 +53,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 
-// Dynamic import for Leaflet components to avoid SSR issues
 const SOSMap = dynamic(() => import("./sos-map"), { 
   ssr: false,
   loading: () => <div className="h-[420px] w-full bg-muted animate-pulse rounded-lg flex items-center justify-center text-[10px] font-bold uppercase tracking-widest opacity-40">Initializing Tactical Map...</div>
@@ -100,7 +98,6 @@ export default function DashboardPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
 
-  // SOS States
   const [activeSosAlert, setActiveSosAlert] = useState<any>(null);
   const [isSosMapOpen, setIsSosMapOpen] = useState(false);
   const lastProcessedSosRef = useRef<string | null>(null);
@@ -129,20 +126,17 @@ export default function DashboardPage() {
   const notificationsRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/notifications`) : null, [rtdb, user]);
   const { data: notificationsData } = useRtdb(notificationsRef);
 
-  // Real-time SOS listener for automated popups
   useEffect(() => {
     if (!user || !rtdb) return;
 
     const queryRef = ref(rtdb, `users/${user.uid}/notifications`);
     
-    // Use onChildAdded to catch new alerts as they arrive
     const unsubscribe = onChildAdded(queryRef, (snapshot) => {
       const alert = snapshot.val();
       const alertId = snapshot.key;
 
       if (alert && alert.type === "sos" && alertId !== lastProcessedSosRef.current) {
         lastProcessedSosRef.current = alertId;
-        // Only trigger popup if alert is recent (within last 30 seconds)
         if (Date.now() - (alert.createdAt || 0) < 30000) {
           setActiveSosAlert({ ...alert, id: alertId });
           setIsSosMapOpen(true);
@@ -490,7 +484,6 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* SOS Map Modal */}
       <Dialog open={isSosMapOpen} onOpenChange={setIsSosMapOpen}>
         <DialogContent className="bg-white border-2 border-destructive/20 shadow-2xl rounded-[2rem] max-w-2xl p-0 overflow-hidden">
           <div className="p-10 border-b border-destructive/5 bg-destructive/5">
