@@ -43,10 +43,11 @@ import {
   Pencil,
   PlusCircle,
   MapPin,
-  AlertTriangle
+  AlertTriangle,
+  Radar
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ref, set, push, remove, update, onChildAdded, off } from "firebase/database";
+import { ref, set, push, remove, update, onChildAdded, off, onValue } from "firebase/database";
 import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -85,6 +86,11 @@ export default function DashboardPage() {
     temperature: 24,
     targetGroups: [] as string[]
   });
+
+  const [isTrackDialogOpen, setIsTrackDialogOpen] = useState(false);
+  const [trackSecretId, setTrackSecretId] = useState("");
+  const [trackingLocation, setTrackingLocation] = useState<any>(null);
+  const [isLiveMapOpen, setIsLiveMapOpen] = useState(false);
 
   const [isAddBuddyDialogOpen, setIsAddBuddyDialogOpen] = useState(false);
   const [isAddNodeDialogOpen, setIsAddNodeDialogOpen] = useState(false);
@@ -256,6 +262,30 @@ export default function DashboardPage() {
       });
   };
 
+  const handleStartTracking = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rtdb || !trackSecretId) return;
+    
+    setRegisterLoading(true);
+    const trackRef = ref(rtdb, `devices/${trackSecretId}`);
+    
+    update(trackRef, { trackRequest: true }).then(() => {
+      logAction(`Initiated hardware tracking protocol for ID: ${trackSecretId}`);
+      
+      const locationRef = ref(rtdb, `devices/${trackSecretId}/location`);
+      onValue(locationRef, (snapshot) => {
+        const loc = snapshot.val();
+        if (loc) {
+          setTrackingLocation(loc);
+          setIsLiveMapOpen(true);
+          setIsTrackDialogOpen(false);
+        }
+      });
+      
+      toast({ title: "Tracking Protocol Active", description: "Awaiting signal from hardware node." });
+    }).finally(() => setRegisterLoading(false));
+  };
+
   if (userLoading || !hasMounted) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -315,7 +345,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <h1 className="text-4xl font-bold tracking-tighter">MANAGE BUDDY</h1>
                 <div className="flex gap-4">
-                  <Button onClick={() => setIsAddBuddyDialogOpen(true)} className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 bg-primary hover:bg-secondary">
+                  <Button onClick={() => setIsAddBuddyDialogOpen(true)} className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 bg-primary hover:bg-secondary text-white">
                     <UserPlus className="h-4 w-4 mr-2" /> Enlist
                   </Button>
                   <Button onClick={() => setIsManageGroupsDialogOpen(true)} variant="outline" className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 border-primary/20 hover:bg-primary/5">
@@ -348,9 +378,9 @@ export default function DashboardPage() {
                       </CardHeader>
                       <CardContent className="p-8 pt-0">
                         <div className="flex gap-4 pt-6 border-t border-primary/10 transition-all">
-                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary/5" onClick={() => { setItemToView(buddy); setIsViewItemDialogOpen(true); }}><Eye className="h-3.5 w-3.5 mr-2" /> View</Button>
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary/5 hover:bg-primary/5" onClick={() => { setItemToView(buddy); setIsViewItemDialogOpen(true); }}><Eye className="h-3.5 w-3.5 mr-2" /> View</Button>
                           <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary text-white hover:bg-primary" onClick={() => { setItemToEdit(buddy); setIsEditBuddyDialogOpen(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
-                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-destructive" onClick={() => { setItemToDelete({ ...buddy, type: 'buddy' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-destructive hover:bg-transparent" onClick={() => { setItemToDelete({ ...buddy, type: 'buddy' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -364,7 +394,7 @@ export default function DashboardPage() {
             <div className="space-y-10">
               <div className="flex items-center justify-between">
                 <h1 className="text-4xl font-bold tracking-tighter">MANAGE NODE</h1>
-                <Button onClick={() => setIsAddNodeDialogOpen(true)} className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 bg-primary hover:bg-secondary">
+                <Button onClick={() => setIsAddNodeDialogOpen(true)} className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 bg-primary hover:bg-secondary text-white">
                   <PlusSquare className="h-4 w-4 mr-2" /> Arm Node
                 </Button>
               </div>
@@ -405,9 +435,10 @@ export default function DashboardPage() {
                             <Badge key={g} className="bg-primary/10 border-none text-primary text-[9px] uppercase font-bold px-3">{g}</Badge>
                           ))}
                         </div>
-                        <div className="flex gap-4 pt-6 border-t border-primary/10 transition-all">
+                        <div className="flex flex-wrap gap-4 pt-6 border-t border-primary/10 transition-all">
                           <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary/5 hover:bg-primary/5" onClick={() => { setItemToView(node); setIsViewItemDialogOpen(true); }}><Eye className="h-3.5 w-3.5 mr-2" /> View</Button>
                           <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary text-white hover:bg-primary" onClick={() => { setItemToEdit(node); setIsEditNodeDialogOpen(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-secondary text-white hover:bg-secondary" onClick={() => { setTrackSecretId(node.hardwareId || ""); setIsTrackDialogOpen(true); }}><Radar className="h-3.5 w-3.5 mr-2" /> Track</Button>
                           <Button variant="ghost" size="sm" className="h-10 rounded-xl text-destructive hover:bg-transparent" onClick={() => { setItemToDelete({ ...node, type: 'node' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
                         </div>
                       </CardContent>
@@ -507,7 +538,7 @@ export default function DashboardPage() {
                   <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-2">Auth Identification</p>
                   <p className="text-[10px] font-mono opacity-60 truncate">{user.uid}</p>
                 </div>
-                <Button variant="destructive" onClick={() => signOut(auth).then(() => router.push("/login"))} className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] shadow-lg shadow-destructive/20">
+                <Button variant="destructive" onClick={() => signOut(auth).then(() => router.push("/login"))} className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] shadow-lg shadow-destructive/20 text-white">
                   <LogOut className="h-4 w-4 mr-3" /> Terminate Session
                 </Button>
               </Card>
@@ -515,6 +546,64 @@ export default function DashboardPage() {
           )}
         </div>
       </main>
+
+      <Dialog open={isTrackDialogOpen} onOpenChange={setIsTrackDialogOpen}>
+        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] max-w-md p-10">
+          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Track Hardware Node</DialogTitle></DialogHeader>
+          <form onSubmit={handleStartTracking} className="space-y-6">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Secret ID / Hardware ID</Label>
+              <Input 
+                value={trackSecretId} 
+                onChange={e => setTrackSecretId(e.target.value)} 
+                className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-mono" 
+                placeholder="e.g. ESP32-TACTICAL-01"
+                required 
+              />
+            </div>
+            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary text-white" disabled={registerLoading}>
+              {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Initiate Tracking"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isLiveMapOpen} onOpenChange={setIsLiveMapOpen}>
+        <DialogContent className="bg-white border-2 border-secondary/20 shadow-2xl rounded-[2rem] max-w-2xl p-0 overflow-hidden">
+          <div className="p-10 border-b border-secondary/5 bg-secondary/5">
+             <div className="flex justify-between items-center">
+               <div className="flex items-center gap-4">
+                  <Radar className="h-8 w-8 text-secondary animate-pulse" />
+                  <div>
+                    <h2 className="text-2xl font-bold text-secondary uppercase tracking-tighter">Live Asset Tracking</h2>
+                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">ID: {trackSecretId}</p>
+                  </div>
+               </div>
+               <Badge className="bg-secondary text-white border-none text-[10px] font-bold uppercase px-4 py-2 rounded-xl">Signal Locked</Badge>
+             </div>
+          </div>
+          <div className="p-10 space-y-8">
+            <div className="relative rounded-2xl overflow-hidden border border-secondary/10 shadow-inner">
+               <SOSMap 
+                  latitude={trackingLocation?.latitude || 0} 
+                  longitude={trackingLocation?.longitude || 0}
+                  label={`ACTIVE SIGNAL: ${trackSecretId}`}
+               />
+               <div className="absolute bottom-6 left-6 right-6 z-[1000] glass-card p-4 rounded-xl flex items-center gap-3">
+                  <MapPin className="h-5 w-5 text-secondary" />
+                  <p className="text-[10px] font-bold uppercase tracking-widest flex-1">Lat: {trackingLocation?.latitude?.toFixed(6)} | Lng: {trackingLocation?.longitude?.toFixed(6)}</p>
+               </div>
+            </div>
+
+            <Button 
+              onClick={() => setIsLiveMapOpen(false)} 
+              className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] bg-secondary hover:bg-secondary/90 shadow-xl shadow-secondary/20 text-white"
+            >
+              Terminate Signal Monitoring
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isMapModalOpen} onOpenChange={setIsMapModalOpen}>
         <DialogContent className="bg-white border-none shadow-2xl rounded-[2rem] max-w-3xl p-0 overflow-hidden">
@@ -535,7 +624,7 @@ export default function DashboardPage() {
             )}
           </div>
           <div className="p-8">
-             <Button onClick={() => setIsMapModalOpen(false)} className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary">
+             <Button onClick={() => setIsMapModalOpen(false)} className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary text-white">
                Acknowledge Signal
              </Button>
           </div>
@@ -616,7 +705,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             </div>
-            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary" disabled={registerLoading}>
+            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary text-white" disabled={registerLoading}>
               {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save Buddy"}
             </Button>
           </form>
@@ -651,7 +740,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               </div>
-              <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary" disabled={registerLoading}>
+              <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary text-white" disabled={registerLoading}>
                 {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save Buddy"}
               </Button>
             </form>
@@ -689,7 +778,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             </div>
-            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary" disabled={registerLoading}>
+            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary text-white" disabled={registerLoading}>
               {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Arm Node"}
             </Button>
           </form>
@@ -728,7 +817,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               </div>
-              <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary" disabled={registerLoading}>
+              <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-secondary text-white" disabled={registerLoading}>
                 {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save Node"}
               </Button>
             </form>
@@ -796,7 +885,7 @@ export default function DashboardPage() {
                 push(ref(rtdb, `users/${user.uid}/buddyGroups`), { name: newGroupName });
                 logAction(`Created new protocol group: ${newGroupName}`);
                 setNewGroupName("");
-              }} className="h-14 w-14 rounded-2xl p-0 shadow-lg bg-primary hover:bg-secondary"><PlusCircle className="h-6 w-6" /></Button>
+              }} className="h-14 w-14 rounded-2xl p-0 shadow-lg bg-primary hover:bg-secondary text-white"><PlusCircle className="h-6 w-6" /></Button>
             </div>
             <ScrollArea className="h-64 pr-4">
               <div className="space-y-3">
@@ -838,7 +927,7 @@ export default function DashboardPage() {
                 setItemToDelete(null);
                 toast({ title: "Asset Purged" });
               });
-            }} className="rounded-2xl h-12 font-bold text-[10px] uppercase tracking-widest flex-1 bg-destructive hover:bg-destructive/90">Confirm Purge</AlertDialogAction>
+            }} className="rounded-2xl h-12 font-bold text-[10px] uppercase tracking-widest flex-1 bg-destructive hover:bg-destructive/90 text-white">Confirm Purge</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
