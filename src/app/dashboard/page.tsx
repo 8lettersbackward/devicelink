@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useUser, useDatabase, useFirebase } from "@/firebase";
@@ -85,6 +84,7 @@ export default function DashboardPage() {
   const [nodeForm, setNodeForm] = useState({
     nodeName: '',
     hardwareId: '',
+    phoneNumber: '',
     temperature: 24,
     targetGroups: [] as string[]
   });
@@ -236,7 +236,7 @@ export default function DashboardPage() {
       .then(() => {
         logAction(`Armed new hardware node: ${nodeForm.nodeName}`);
         setIsAddNodeDialogOpen(false);
-        setNodeForm({ nodeName: '', hardwareId: '', temperature: 24, targetGroups: [] });
+        setNodeForm({ nodeName: '', hardwareId: '', phoneNumber: '', temperature: 24, targetGroups: [] });
         toast({ title: "Node Armed" });
       })
       .finally(() => setRegisterLoading(false));
@@ -296,7 +296,7 @@ export default function DashboardPage() {
 
   if (userLoading || !hasMounted) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
+      <div className="flex items-center justify-center min-h-screen bg-[#e1f1fd]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -312,7 +312,7 @@ export default function DashboardPage() {
   ] as const;
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-background text-foreground">
+    <div className="flex flex-col md:flex-row min-h-screen bg-[#e1f1fd] text-[#12086F]">
       <aside className="w-full md:w-64 bg-white/50 border-r border-primary/10 p-6 md:h-screen sticky top-0 backdrop-blur-md">
         <div className="space-y-12">
           <div className="flex items-center gap-4">
@@ -385,10 +385,10 @@ export default function DashboardPage() {
                         </div>
                       </CardHeader>
                       <CardContent className="p-8 pt-0">
-                        <div className="flex gap-4 pt-6 border-t border-primary/10 transition-all">
-                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary/5 hover:bg-primary/5" onClick={() => { setItemToView(buddy); setIsViewItemDialogOpen(true); }}><Eye className="h-3.5 w-3.5 mr-2" /> View</Button>
+                        <div className="flex gap-4 pt-6 border-t border-primary/10">
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary/5" onClick={() => { setItemToView(buddy); setIsViewItemDialogOpen(true); }}><Eye className="h-3.5 w-3.5 mr-2" /> View</Button>
                           <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary text-white hover:bg-primary" onClick={() => { setItemToEdit(buddy); setIsEditBuddyDialogOpen(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
-                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-destructive hover:bg-transparent" onClick={() => { setItemToDelete({ ...buddy, type: 'buddy' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-destructive" onClick={() => { setItemToDelete({ ...buddy, type: 'buddy' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -418,7 +418,10 @@ export default function DashboardPage() {
                     <Card key={node.id} className="glass-card border-none group transition-all">
                       <CardHeader className="p-8">
                         <div className="flex justify-between items-center mb-4">
-                          <p className="text-xl font-bold text-[#12086F]">{node.nodeName}</p>
+                          <div>
+                            <p className="text-xl font-bold text-[#12086F]">{node.nodeName}</p>
+                            {node.phoneNumber && <p className="text-[9px] font-mono text-secondary mt-1 uppercase tracking-widest">{node.phoneNumber}</p>}
+                          </div>
                           <div className={cn("h-3 w-3 rounded-full", node.status === 'online' ? 'bg-secondary shadow-[0_0_15px_rgba(72,149,239,0.4)]' : 'bg-muted')} />
                         </div>
                         <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-[0.2em]">ID: {node.hardwareId}</p>
@@ -443,11 +446,11 @@ export default function DashboardPage() {
                             <Badge key={g} className="bg-primary/10 border-none text-primary text-[9px] uppercase font-bold px-3">{g}</Badge>
                           ))}
                         </div>
-                        <div className="flex flex-wrap gap-4 pt-6 border-t border-primary/10 transition-all">
-                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary/5 hover:bg-primary/5" onClick={() => { setItemToView(node); setIsViewItemDialogOpen(true); }}><Eye className="h-3.5 w-3.5 mr-2" /> View</Button>
+                        <div className="flex flex-wrap gap-4 pt-6 border-t border-primary/10">
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary/5" onClick={() => { setItemToView(node); setIsViewItemDialogOpen(true); }}><Eye className="h-3.5 w-3.5 mr-2" /> View</Button>
                           <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary text-white hover:bg-primary" onClick={() => { setItemToEdit(node); setIsEditNodeDialogOpen(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
                           <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-secondary text-white hover:bg-secondary" onClick={() => { setTrackSecretId(node.hardwareId || ""); setIsTrackDialogOpen(true); }}><Radar className="h-3.5 w-3.5 mr-2" /> Track</Button>
-                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-destructive hover:bg-transparent" onClick={() => { setItemToDelete({ ...node, type: 'node' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-destructive" onClick={() => { setItemToDelete({ ...node, type: 'node' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -769,6 +772,10 @@ export default function DashboardPage() {
               <Input value={nodeForm.hardwareId} onChange={e => setNodeForm({...nodeForm, hardwareId: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-mono" required />
             </div>
             <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number</Label>
+              <Input value={nodeForm.phoneNumber} onChange={e => setNodeForm({...nodeForm, phoneNumber: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" />
+            </div>
+            <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Initial Thermal Threshold (°C)</Label>
               <Input type="number" value={nodeForm.temperature} onChange={e => setNodeForm({...nodeForm, temperature: parseInt(e.target.value)})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" />
             </div>
@@ -805,6 +812,10 @@ export default function DashboardPage() {
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Hardware ID</Label>
                 <Input value={itemToEdit.hardwareId} onChange={e => setItemToEdit({...itemToEdit, hardwareId: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-mono" required />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number</Label>
+                <Input value={itemToEdit.phoneNumber || ""} onChange={e => setItemToEdit({...itemToEdit, phoneNumber: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" />
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Thermal Threshold (°C)</Label>
@@ -898,10 +909,10 @@ export default function DashboardPage() {
             <ScrollArea className="h-64 pr-4">
               <div className="space-y-3">
                 {buddyGroups.map(g => (
-                  <div key={g} className="p-5 bg-primary/5 rounded-2xl flex justify-between items-center group/item hover:bg-primary/10 transition-all border border-transparent">
+                  <div key={g} className="p-5 bg-primary/5 rounded-2xl flex justify-between items-center group/item transition-all border border-transparent">
                     <span className="text-[10px] font-bold uppercase tracking-widest">{g}</span>
                     {!DEFAULT_BUDDY_GROUPS.includes(g) && (
-                      <Button variant="ghost" size="sm" className="h-10 w-10 rounded-xl text-destructive opacity-0 group-hover/item:opacity-100" onClick={() => {
+                      <Button variant="ghost" size="sm" className="h-10 w-10 rounded-xl text-destructive" onClick={() => {
                         const gId = Object.entries(customGroupsData || {}).find(([k, v]: any) => v.name === g)?.[0];
                         if (gId) {
                           remove(ref(rtdb, `users/${user.uid}/buddyGroups/${gId}`));
