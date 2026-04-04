@@ -391,8 +391,8 @@ export default function DashboardPage() {
         { id: 'settings', label: 'PROFILE', icon: Settings },
       ]
     : [
-        { id: 'buddies', label: 'BUDDIES', icon: Smartphone },
-        { id: 'nodes', label: 'NODES', icon: Cpu },
+        { id: 'buddies', label: 'MANAGE BUDDIES', icon: Smartphone },
+        { id: 'nodes', label: 'MANAGE NODES', icon: Cpu },
         { id: 'notifications', label: 'LOGS', icon: Bell },
         { id: 'settings', label: 'PROFILE', icon: Settings },
       ];
@@ -437,7 +437,7 @@ export default function DashboardPage() {
           {activeTab === 'guardian' && (
              <div className="space-y-10">
                <div className="flex items-center justify-between">
-                  <h1 className="text-4xl font-bold tracking-tighter text-[#12086F]">GUARDIAN TRACK</h1>
+                  <h1 className="text-4xl font-bold tracking-tighter text-[#12086F]">TRACK</h1>
                   <Button onClick={() => setIsTrackDialogOpen(true)} className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 bg-secondary hover:bg-secondary text-white shadow-lg shadow-secondary/20">
                     <Radar className="h-4 w-4 mr-2" /> TRACK ASSET
                   </Button>
