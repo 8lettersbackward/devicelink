@@ -46,7 +46,9 @@ import {
   MapPin,
   AlertTriangle,
   Radar,
-  ShieldAlert
+  ShieldAlert,
+  Search,
+  Activity
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ref, set, push, remove, update, onChildAdded, off, onValue, get } from "firebase/database";
@@ -71,7 +73,6 @@ export default function DashboardPage() {
   const { auth } = useFirebase();
   const rtdb = useDatabase();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { toast } = useToast();
   
   const [activeTab, setActiveTab] = useState<TabType>('buddies');
@@ -94,11 +95,10 @@ export default function DashboardPage() {
     targetGroups: [] as string[]
   });
 
-  const [isTrackDialogOpen, setIsTrackDialogOpen] = useState(false);
-  const [trackSecretId, setTrackSecretId] = useState("");
-  const [trackResult, setTrackResult] = useState<any>(null);
+  const [allDiscoveredNodes, setAllDiscoveredNodes] = useState<any[]>([]);
   const [trackingLocation, setTrackingLocation] = useState<any>(null);
   const [isLiveMapOpen, setIsLiveMapOpen] = useState(false);
+  const [activeTrackedNode, setActiveTrackedNode] = useState<any>(null);
 
   const [isAddBuddyDialogOpen, setIsAddBuddyDialogOpen] = useState(false);
   const [isAddNodeDialogOpen, setIsAddNodeDialogOpen] = useState(false);
@@ -144,6 +144,32 @@ export default function DashboardPage() {
       });
     }
   }, [user, userLoading, router, rtdb]);
+
+  useEffect(() => {
+    if (userRole === 'guardian' && rtdb) {
+      const usersRef = ref(rtdb, 'users');
+      const unsubscribe = onValue(usersRef, (snapshot) => {
+        const allUsers = snapshot.val();
+        const nodesList: any[] = [];
+        if (allUsers) {
+          for (const uid in allUsers) {
+            const userNodes = allUsers[uid].nodes;
+            if (userNodes) {
+              for (const nKey in userNodes) {
+                nodesList.push({
+                  ...userNodes[nKey],
+                  ownerUid: uid,
+                  nodeKey: nKey
+                });
+              }
+            }
+          }
+        }
+        setAllDiscoveredNodes(nodesList);
+      });
+      return () => off(usersRef, 'value', unsubscribe);
+    }
+  }, [userRole, rtdb]);
 
   const groupsRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/buddyGroups`) : null, [rtdb, user]);
   const { data: customGroupsData } = useRtdb(groupsRef);
@@ -222,153 +248,37 @@ export default function DashboardPage() {
     toast({ title: "Terminal Purged", description: "Interface logs cleared locally." });
   };
 
-  const handleRegisterBuddy = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleInitiateTracking = (targetNode: any) => {
     if (!user || !rtdb) return;
-    setRegisterLoading(true);
-    const buddyId = `BUDDY-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-    const payload = { ...buddyForm, id: buddyId, registeredAt: Date.now() };
-    set(ref(rtdb, `users/${user.uid}/buddies/${buddyId}`), payload)
-      .then(() => {
-        logAction(`Enlisted new buddy: ${buddyForm.name}`);
-        setIsAddBuddyDialogOpen(false);
-        setBuddyForm({ name: '', phoneNumber: '', groups: [] });
-        toast({ title: "Buddy Enlisted" });
-      })
-      .finally(() => setRegisterLoading(false));
-  };
-
-  const handleUpdateBuddy = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !rtdb || !itemToEdit) return;
-    setRegisterLoading(true);
-    update(ref(rtdb, `users/${user.uid}/buddies/${itemToEdit.id}`), itemToEdit)
-      .then(() => {
-        logAction(`Updated buddy profile: ${itemToEdit.name}`);
-        setIsEditBuddyDialogOpen(false);
-        setItemToEdit(null);
-        toast({ title: "Buddy Updated" });
-      })
-      .finally(() => setRegisterLoading(false));
-  };
-
-  const handleRegisterNode = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !rtdb) return;
-    setRegisterLoading(true);
-    const nodeId = nodeForm.hardwareId || `NODE-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-    const payload = { ...nodeForm, id: nodeId, status: 'online', registeredAt: Date.now() };
-    set(ref(rtdb, `users/${user.uid}/nodes/${nodeId}`), payload)
-      .then(() => {
-        logAction(`Armed new hardware node: ${nodeForm.nodeName}`);
-        setIsAddNodeDialogOpen(false);
-        setNodeForm({ nodeName: '', hardwareId: '', phoneNumber: '', temperature: 24, targetGroups: [] });
-        toast({ title: "Node Armed" });
-      })
-      .finally(() => setRegisterLoading(false));
-  };
-
-  const handleUpdateNode = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !rtdb || !itemToEdit) return;
-    setRegisterLoading(true);
-    update(ref(rtdb, `users/${user.uid}/nodes/${itemToEdit.id}`), itemToEdit)
-      .then(() => {
-        logAction(`Updated node parameters: ${itemToEdit.nodeName}`);
-        setIsEditNodeDialogOpen(false);
-        setItemToEdit(null);
-        toast({ title: "Node Updated" });
-      })
-      .finally(() => setRegisterLoading(false));
-  };
-
-  const handleNodeTempAdjust = (node: any, newTemp: number) => {
-    if (!user || !rtdb) return;
-    update(ref(rtdb, `users/${user.uid}/nodes/${node.id}`), { temperature: newTemp })
-      .then(() => {
-        logAction(`Adjusted thermal threshold for ${node.nodeName} to ${newTemp}°C`);
-      });
-  };
-
-  const handleStartTracking = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !rtdb || !trackSecretId) return;
     
     setRegisterLoading(true);
+    const nodeRef = ref(rtdb, `users/${targetNode.ownerUid}/nodes/${targetNode.nodeKey}`);
     
-    try {
-      const usersRef = ref(rtdb, 'users');
-      const snapshot = await get(usersRef);
-      const allUsers = snapshot.val();
+    update(nodeRef, { 
+      trackRequest: true,
+      trackRequester: user.uid 
+    }).then(() => {
+      setActiveTrackedNode(targetNode);
+      logAction(`Signal Lock Initiated for Hardware: ${targetNode.hardwareId}`);
       
-      let foundNode = null;
-      let foundUserId = null;
-      let foundNodeKey = null;
+      // Cleanup signal after 10s
+      setTimeout(() => {
+        update(nodeRef, { trackRequest: false, trackRequester: null });
+      }, 10000);
 
-      if (allUsers) {
-        for (const uid in allUsers) {
-          const userNodes = allUsers[uid].nodes;
-          if (userNodes) {
-            for (const nKey in userNodes) {
-              const n = userNodes[nKey];
-              if (n.hardwareId === trackSecretId || n.id === trackSecretId || nKey === trackSecretId) {
-                foundNode = n;
-                foundUserId = uid;
-                foundNodeKey = nKey;
-                break;
-              }
-            }
-          }
-          if (foundNode) break;
-        }
-      }
-
-      if (foundNode && foundUserId && foundNodeKey) {
-        const nodeRef = ref(rtdb, `users/${foundUserId}/nodes/${foundNodeKey}`);
-        
-        // SECURE INTERCEPT: Write trackRequest and trackRequester
-        await update(nodeRef, { 
-          trackRequest: true,
-          trackRequester: user.uid 
-        });
-        
-        setTrackResult({
-          id: trackSecretId,
-          phone: foundNode.phoneNumber || 'N/A',
-          nodeName: foundNode.nodeName
-        });
-
-        logAction(`Guardian Signal Intercept initiated for ID: ${trackSecretId}`);
-        
-        // Signal cleanup after 10s
-        setTimeout(() => {
-          update(nodeRef, { 
-            trackRequest: false, 
-            trackRequester: null 
+      const statusUnsubscribe = onValue(nodeRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.latitude && data.longitude) {
+          setTrackingLocation({
+            latitude: data.latitude,
+            longitude: data.longitude
           });
-        }, 10000);
-
-        onValue(nodeRef, (snapshot) => {
-          const nodeData = snapshot.val();
-          if (nodeData && nodeData.latitude && nodeData.longitude) {
-            setTrackingLocation({
-              latitude: nodeData.latitude,
-              longitude: nodeData.longitude
-            });
-            setIsLiveMapOpen(true);
-            setIsTrackDialogOpen(false);
-          }
-        });
-
-        toast({ title: "Signal Locked", description: `Intercepted communication: ${foundNode.phoneNumber || 'N/A'}` });
-      } else {
-        toast({ variant: "destructive", title: "Target Missing", description: "No matching hardware signature found across the network." });
-      }
-    } catch (err: any) {
-      toast({ variant: "destructive", title: "Intercept Failed", description: err.message });
-    } finally {
-      setRegisterLoading(false);
-    }
+          setIsLiveMapOpen(true);
+          toast({ title: "Signal Locked", description: `Communicating with: ${data.phoneNumber || 'N/A'}` });
+          statusUnsubscribe();
+        }
+      });
+    }).finally(() => setRegisterLoading(false));
   };
 
   const safeFormatTime = (ts: any) => {
@@ -395,7 +305,7 @@ export default function DashboardPage() {
 
   const navItems = userRole === 'guardian' 
     ? [
-        { id: 'guardian', label: 'TRACK', icon: ShieldAlert },
+        { id: 'guardian', label: 'TRACK', icon: Radar },
         { id: 'notifications', label: 'NOTIFICATION', icon: Bell },
         { id: 'settings', label: 'PROFILE', icon: Settings },
       ]
@@ -446,49 +356,51 @@ export default function DashboardPage() {
           {activeTab === 'guardian' && (
              <div className="space-y-10">
                <div className="flex items-center justify-between">
-                  <h1 className="text-4xl font-bold tracking-tighter text-[#12086F]">TRACK</h1>
-                  <Button onClick={() => setIsTrackDialogOpen(true)} className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 bg-secondary hover:bg-secondary text-white shadow-lg shadow-secondary/20">
-                    <Radar className="h-4 w-4 mr-2" /> TRACK ASSET
-                  </Button>
+                  <div>
+                    <h1 className="text-4xl font-bold tracking-tighter text-[#12086F]">TRACK</h1>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-60 mt-2">Tactical Asset Discovery</p>
+                  </div>
+                  <Badge className="bg-secondary/20 text-secondary border-none px-4 py-1.5 text-[9px] uppercase font-bold rounded-full flex items-center gap-2">
+                    <Activity className="h-3 w-3 animate-pulse" /> Network Scan Active
+                  </Badge>
                </div>
                
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                 <Card className="glass-card p-10 flex flex-col items-center justify-center text-center space-y-6">
-                    <ShieldAlert className="h-12 w-12 text-secondary" />
-                    <div>
-                      <h3 className="text-xl font-bold text-[#12086F] mb-2">Tactical Intercept</h3>
-                      <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Authorize high-level tracking protocols using secret hardware signatures.</p>
-                    </div>
-                    <Button variant="outline" onClick={() => setIsTrackDialogOpen(true)} className="rounded-xl font-bold text-[10px] uppercase tracking-widest h-12 px-10 border-secondary/20 text-secondary hover:bg-secondary/5">Initialize Signal Search</Button>
-                 </Card>
-
-                 <Card className="glass-card p-10 flex flex-col items-center justify-center text-center space-y-6">
-                    <MapPin className="h-12 w-12 text-primary" />
-                    <div>
-                      <h3 className="text-xl font-bold text-[#12086F] mb-2">Cross-Network Scan</h3>
-                      <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Locate any hardware node registered within the 1TAP security ecosystem.</p>
-                    </div>
-                    <Badge className="bg-primary/10 text-primary border-none text-[9px] uppercase font-bold px-4 py-1.5 rounded-full">Monitoring Protocol Active</Badge>
-                 </Card>
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                 {allDiscoveredNodes.length === 0 ? (
+                   <Card className="glass-card col-span-full p-24 text-center border-dashed border-primary/20 bg-white/20">
+                     <Search className="h-12 w-12 text-primary/20 mx-auto mb-6" />
+                     <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground">Scanning Network... No Hardware Signatures Found</p>
+                   </Card>
+                 ) : (
+                   allDiscoveredNodes.map((target, idx) => (
+                     <Card key={idx} className="glass-card border-none hover:shadow-2xl transition-all group">
+                       <CardHeader className="p-8">
+                         <div className="flex justify-between items-start mb-6">
+                            <div className="h-10 w-10 bg-secondary/10 rounded-xl flex items-center justify-center border border-secondary/20">
+                              <Cpu className="h-5 w-5 text-secondary" />
+                            </div>
+                            <Badge className={cn("text-[8px] uppercase font-bold", target.status === 'online' ? "bg-secondary/10 text-secondary" : "bg-muted text-muted-foreground")}>{target.status || 'Active'}</Badge>
+                         </div>
+                         <div>
+                            <p className="text-lg font-bold text-[#12086F]">{target.nodeName}</p>
+                            <p className="text-[9px] font-mono text-secondary uppercase tracking-widest mt-1">ID: {target.hardwareId}</p>
+                         </div>
+                       </CardHeader>
+                       <CardContent className="p-8 pt-0">
+                          <div className="pt-6 border-t border-primary/10 flex gap-4">
+                            <Button 
+                              onClick={() => handleInitiateTracking(target)} 
+                              disabled={registerLoading}
+                              className="w-full rounded-xl bg-secondary hover:bg-secondary/90 text-white font-bold text-[9px] uppercase tracking-widest h-10 shadow-lg shadow-secondary/10"
+                            >
+                              {registerLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Radar className="h-3.5 w-3.5 mr-2" /> Track Asset</>}
+                            </Button>
+                          </div>
+                       </CardContent>
+                     </Card>
+                   ))
+                 )}
                </div>
-
-               {trackResult && (
-                 <Card className="glass-card p-8 border-secondary/20 animate-in fade-in slide-in-from-top-4 duration-500">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-6">
-                        <div className="h-12 w-12 bg-secondary/20 rounded-2xl flex items-center justify-center border border-secondary/20">
-                          <Radar className="h-6 w-6 text-secondary animate-pulse" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Active Intercept Result</p>
-                          <p className="text-lg font-bold text-[#12086F]">Signal locked for hardware ID: <span className="text-secondary">{trackResult.id}</span></p>
-                          <p className="text-[10px] font-mono font-bold text-secondary uppercase tracking-widest mt-1">COMM LINK: {trackResult.phone}</p>
-                        </div>
-                      </div>
-                      <Button size="sm" onClick={() => setIsLiveMapOpen(true)} className="bg-secondary hover:bg-secondary text-white text-[9px] font-bold uppercase px-6 h-10 rounded-xl">View Tactical Map</Button>
-                    </div>
-                 </Card>
-               )}
              </div>
           )}
 
@@ -581,7 +493,11 @@ export default function DashboardPage() {
                             max={60} 
                             min={0}
                             step={1} 
-                            onValueCommit={(val) => handleNodeTempAdjust(node, val[0])}
+                            onValueCommit={(val) => {
+                              if (!user || !rtdb) return;
+                              update(ref(rtdb, `users/${user.uid}/nodes/${node.id}`), { temperature: val[0] });
+                              logAction(`Adjusted thermal threshold for ${node.nodeName} to ${val[0]}°C`);
+                            }}
                             className="py-2"
                           />
                         </div>
@@ -606,7 +522,7 @@ export default function DashboardPage() {
           {activeTab === 'notifications' && (
             <div className="space-y-10">
               <div className="flex items-center justify-between">
-                <h1 className="text-4xl font-bold tracking-tighter text-[#12086F]">NOTIFICATIONS</h1>
+                <h1 className="text-4xl font-bold tracking-tighter text-[#12086F]">NOTIFICATION</h1>
                 {notifications.length > 0 && (
                   <Button 
                     variant="ghost" 
@@ -703,27 +619,6 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      <Dialog open={isTrackDialogOpen} onOpenChange={setIsTrackDialogOpen}>
-        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] max-w-md p-10">
-          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Track Hardware Node</DialogTitle></DialogHeader>
-          <form onSubmit={handleStartTracking} className="space-y-6">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">SECRET ID / HARDWARE ID / ID</Label>
-              <Input 
-                value={trackSecretId} 
-                onChange={e => setTrackSecretId(e.target.value)} 
-                className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-mono" 
-                placeholder="e.g. 1Tap or ESP32-TACTICAL"
-                required 
-              />
-            </div>
-            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-secondary hover:bg-secondary text-white" disabled={registerLoading}>
-              {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Initiate Tracking"}
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={isLiveMapOpen} onOpenChange={setIsLiveMapOpen}>
         <DialogContent className="bg-white border-2 border-secondary/20 shadow-2xl rounded-[2rem] max-w-2xl p-0 overflow-hidden">
           <DialogHeader className="p-10 border-b border-secondary/5 bg-secondary/5">
@@ -732,7 +627,7 @@ export default function DashboardPage() {
                   <Radar className="h-8 w-8 text-secondary animate-pulse" />
                   <div>
                     <DialogTitle className="text-2xl font-bold text-secondary uppercase tracking-tighter">Live Asset Tracking</DialogTitle>
-                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">ID: {trackSecretId}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Asset: {activeTrackedNode?.nodeName} | ID: {activeTrackedNode?.hardwareId}</p>
                   </div>
                </div>
                <Badge className="bg-secondary text-white border-none text-[10px] font-bold uppercase px-4 py-2 rounded-xl">Signal Locked</Badge>
@@ -743,7 +638,7 @@ export default function DashboardPage() {
                <SOSMap 
                   latitude={trackingLocation?.latitude || 0} 
                   longitude={trackingLocation?.longitude || 0}
-                  label={`ACTIVE SIGNAL: ${trackSecretId}`}
+                  label={`ACTIVE SIGNAL: ${activeTrackedNode?.nodeName}`}
                />
                <div className="absolute bottom-6 left-6 right-6 z-[1000] glass-card p-4 rounded-xl flex items-center gap-3">
                   <MapPin className="h-5 w-5 text-secondary" />
@@ -838,7 +733,20 @@ export default function DashboardPage() {
       <Dialog open={isAddBuddyDialogOpen} onOpenChange={setIsAddBuddyDialogOpen}>
         <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] max-w-md p-10">
           <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Enlist Buddy</DialogTitle></DialogHeader>
-          <form onSubmit={handleRegisterBuddy} className="space-y-6">
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (!user || !rtdb) return;
+            setRegisterLoading(true);
+            const buddyId = `BUDDY-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+            set(ref(rtdb, `users/${user.uid}/buddies/${buddyId}`), { ...buddyForm, id: buddyId, registeredAt: Date.now() })
+              .then(() => {
+                logAction(`Enlisted new buddy: ${buddyForm.name}`);
+                setIsAddBuddyDialogOpen(false);
+                setBuddyForm({ name: '', phoneNumber: '', groups: [] });
+                toast({ title: "Buddy Enlisted" });
+              })
+              .finally(() => setRegisterLoading(false));
+          }} className="space-y-6">
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Full Name</Label>
               <Input value={buddyForm.name} onChange={e => setBuddyForm({...buddyForm, name: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
@@ -868,46 +776,23 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isEditBuddyDialogOpen} onOpenChange={setIsEditBuddyDialogOpen}>
-        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] max-w-md p-10">
-          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Edit Buddy</DialogTitle></DialogHeader>
-          {itemToEdit && (
-            <form onSubmit={handleUpdateBuddy} className="space-y-6">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Full Name</Label>
-                <Input value={itemToEdit.name} onChange={e => setItemToEdit({...itemToEdit, name: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number</Label>
-                <Input value={itemToEdit.phoneNumber} onChange={e => setItemToEdit({...itemToEdit, phoneNumber: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Protocol Groups</Label>
-                <div className="grid grid-cols-2 gap-4 p-6 bg-primary/5 rounded-2xl border border-primary/10">
-                  {buddyGroups.map(g => (
-                    <div key={g} className="flex items-center gap-3">
-                      <Checkbox checked={itemToEdit.groups?.includes(g)} onCheckedChange={() => {
-                        const groups = itemToEdit.groups || [];
-                        const updated = groups.includes(g) ? groups.filter((x: string) => x !== g) : [...groups, g];
-                        setItemToEdit({...itemToEdit, groups: updated});
-                      }} className="rounded-md border-primary/20 data-[state=checked]:bg-primary" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">{g}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
-                {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save Buddy"}
-              </Button>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={isAddNodeDialogOpen} onOpenChange={setIsAddNodeDialogOpen}>
         <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] max-w-md p-10">
           <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Arm Node</DialogTitle></DialogHeader>
-          <form onSubmit={handleRegisterNode} className="space-y-6">
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (!user || !rtdb) return;
+            setRegisterLoading(true);
+            const nodeId = nodeForm.hardwareId || `NODE-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+            set(ref(rtdb, `users/${user.uid}/nodes/${nodeId}`), { ...nodeForm, id: nodeId, status: 'online', registeredAt: Date.now() })
+              .then(() => {
+                logAction(`Armed new hardware node: ${nodeForm.nodeName}`);
+                setIsAddNodeDialogOpen(false);
+                setNodeForm({ nodeName: '', hardwareId: '', phoneNumber: '', temperature: 24, targetGroups: [] });
+                toast({ title: "Node Armed" });
+              })
+              .finally(() => setRegisterLoading(false));
+          }} className="space-y-6">
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Node Name</Label>
               <Input value={nodeForm.nodeName} onChange={e => setNodeForm({...nodeForm, nodeName: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
@@ -942,50 +827,6 @@ export default function DashboardPage() {
               {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Arm Node"}
             </Button>
           </form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isEditNodeDialogOpen} onOpenChange={setIsEditNodeDialogOpen}>
-        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] max-w-md p-10">
-          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Edit Node</DialogTitle></DialogHeader>
-          {itemToEdit && (
-            <form onSubmit={handleUpdateNode} className="space-y-6">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Node Name</Label>
-                <Input value={itemToEdit.nodeName} onChange={e => setItemToEdit({...itemToEdit, nodeName: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Hardware ID</Label>
-                <Input value={itemToEdit.hardwareId} onChange={e => setItemToEdit({...itemToEdit, hardwareId: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-mono" required />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number</Label>
-                <Input value={itemToEdit.phoneNumber || ""} onChange={e => setItemToEdit({...itemToEdit, phoneNumber: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Thermal Threshold (°C)</Label>
-                <Input type="number" value={itemToEdit.temperature} onChange={e => setItemToEdit({...itemToEdit, temperature: parseInt(e.target.value)})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Broadcast Targets</Label>
-                <div className="grid grid-cols-2 gap-4 p-6 bg-primary/5 rounded-2xl border border-primary/10">
-                  {buddyGroups.map(g => (
-                    <div key={g} className="flex items-center gap-3">
-                      <Checkbox checked={itemToEdit.targetGroups?.includes(g)} onCheckedChange={() => {
-                        const targets = itemToEdit.targetGroups || [];
-                        const updated = targets.includes(g) ? targets.filter((x: string) => x !== g) : [...targets, g];
-                        setItemToEdit({...itemToEdit, targetGroups: updated});
-                      }} className="rounded-md border-primary/20 data-[state=checked]:bg-primary" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">{g}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
-                {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save Node"}
-              </Button>
-            </form>
-          )}
         </DialogContent>
       </Dialog>
 
@@ -1030,7 +871,6 @@ export default function DashboardPage() {
                   {(itemToView.targetGroups || itemToView.groups || []).map((g: string) => (
                     <Badge key={g} variant="outline" className="bg-white/50 border-primary/10 text-[9px] px-4 py-1.5 opacity-80 uppercase font-bold text-primary">{g}</Badge>
                   ))}
-                  {(itemToView.targetGroups || itemToView.groups || []).length === 0 && <p className="text-[10px] opacity-20 uppercase font-bold tracking-widest">Zero active protocols</p>}
                 </div>
               </div>
             </div>
