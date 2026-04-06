@@ -107,7 +107,7 @@ export default function DashboardPage() {
 
   const [isAddBuddyDialogOpen, setIsAddBuddyDialogOpen] = useState(false);
   const [isAddNodeDialogOpen, setIsAddNodeDialogOpen] = useState(false);
-  const [isEditBuddyDialogOpen, setIsEditBuddyDialogOpen] = useState(false);
+  const [isEditBuddyDialogOpen, setIsAddBuddyDialogOpen2] = useState(false); // Refined from prior prompts
   const [isEditNodeDialogOpen, setIsEditNodeDialogOpen] = useState(false);
   const [isViewItemDialogOpen, setIsViewItemDialogOpen] = useState(false);
   const [isManageGroupsDialogOpen, setIsManageGroupsDialogOpen] = useState(false);
@@ -181,14 +181,14 @@ export default function DashboardPage() {
 
   // Sync edit forms
   useEffect(() => {
-    if (itemToEdit && isEditBuddyDialogOpen) {
+    if (itemToEdit && activeTab === 'buddies') {
       setBuddyForm({
         name: itemToEdit.name || '',
         phoneNumber: itemToEdit.phoneNumber || '',
         groups: itemToEdit.groups || []
       });
     }
-    if (itemToEdit && isEditNodeDialogOpen) {
+    if (itemToEdit && activeTab === 'nodes') {
       setNodeForm({
         nodeName: itemToEdit.nodeName || '',
         hardwareId: itemToEdit.hardwareId || '',
@@ -197,7 +197,7 @@ export default function DashboardPage() {
         targetGroups: itemToEdit.targetGroups || []
       });
     }
-  }, [itemToEdit, isEditBuddyDialogOpen, isEditNodeDialogOpen]);
+  }, [itemToEdit, activeTab]);
 
   const groupsRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/buddyGroups`) : null, [rtdb, user]);
   const { data: customGroupsData } = useRtdb(groupsRef);
@@ -333,8 +333,8 @@ export default function DashboardPage() {
     updates[`users/${request.uid}/links/${user.uid}`] = null;
 
     update(ref(rtdb), updates).then(() => {
-      toast({ title: "Link Rejected", description: "Tactical connection purged." });
-      logAction(`Rejected tactical link from: ${request.email}`);
+      toast({ title: "Link Terminated", description: "Tactical connection purged." });
+      logAction(`Terminated tactical link from: ${request.email}`);
     });
   };
 
@@ -346,7 +346,7 @@ export default function DashboardPage() {
 
     update(ref(rtdb), updates).then(() => {
       toast({ title: "Track Request Sent", description: "Awaiting user authorization." });
-      logAction(`Dispatched live track request for: ${link.email}`);
+      logAction(`Dispatched location track request for: ${link.email}`);
     });
   };
 
@@ -375,7 +375,7 @@ export default function DashboardPage() {
     updates[`users/${user.uid}/links/${link.uid}/trackingRequest`] = null;
     updates[`users/${link.uid}/links/${user.uid}/trackingRequest`] = null;
 
-    // Reset trackRequest = false for all nodes if denied (safety fallback)
+    // Reset trackRequest = false for all nodes if denied
     if (nodesData) {
       Object.keys(nodesData).forEach(nodeId => {
         updates[`users/${user.uid}/nodes/${nodeId}/trackRequest`] = false;
@@ -559,7 +559,7 @@ export default function DashboardPage() {
                           className="w-full text-destructive hover:text-destructive hover:bg-destructive/5 text-[9px] font-bold uppercase tracking-widest h-10 rounded-xl" 
                           onClick={() => handleRejectLink(link)}
                         >
-                          Sever Link
+                          Terminate Link
                         </Button>
                       </div>
                     </Card>
@@ -732,7 +732,7 @@ export default function DashboardPage() {
                       <CardContent className="p-8 pt-0">
                         <div className="flex gap-4 pt-6 border-t border-primary/10">
                           <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary/5" onClick={() => { setItemToView(buddy); setIsViewItemDialogOpen(true); }}><Eye className="h-3.5 w-3.5 mr-2" /> View</Button>
-                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary text-white" onClick={() => { setItemToEdit(buddy); setIsEditBuddyDialogOpen(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary text-white" onClick={() => { setItemToEdit(buddy); setIsAddBuddyDialogOpen2(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
                           <Button variant="ghost" size="sm" className="h-10 rounded-xl text-destructive" onClick={() => { setItemToDelete({ ...buddy, type: 'buddy' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
                         </div>
                       </CardContent>
@@ -915,8 +915,8 @@ export default function DashboardPage() {
                <div className="flex items-center gap-4">
                   <MapPin className="h-8 w-8 text-accent animate-pulse" />
                   <div>
-                    <DialogTitle className="text-2xl font-bold text-accent uppercase tracking-tighter">Asset Location</DialogTitle>
-                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Synchronized Spatial Signals</p>
+                    <DialogTitle className="text-2xl font-bold text-accent uppercase tracking-tighter">Location Feed</DialogTitle>
+                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Synchronized Spatial Signal</p>
                   </div>
                </div>
                <Badge className="bg-accent text-white border-none text-[10px] font-bold uppercase px-4 py-2 rounded-xl">Signal Locked</Badge>
@@ -926,12 +926,12 @@ export default function DashboardPage() {
             <ScrollArea className="max-h-[600px]">
               {activeTrackedNodes.length === 0 ? (
                 <div className="p-24 text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">No active location signals reported for this asset.</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">No active spatial signals reported for this asset.</p>
                 </div>
               ) : (
                 <div className="divide-y divide-accent/5">
                   {activeTrackedNodes.map(node => (
-                    <div key={node.id} className="p-0 relative h-[400px]">
+                    <div key={node.id} className="p-0 relative h-[450px]">
                       {isValidCoordinate(node.latitude) && isValidCoordinate(node.longitude) ? (
                         <iframe
                           width="100%"
@@ -948,7 +948,7 @@ export default function DashboardPage() {
                           <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Awaiting GPS Fix for {node.nodeName}</p>
                         </div>
                       )}
-                      <div className="absolute top-6 left-6 z-10 glass-card px-6 py-3 rounded-xl border-accent/20">
+                      <div className="absolute top-6 left-6 z-10 glass-card px-6 py-3 rounded-xl border-accent/20 shadow-xl">
                         <p className="text-[10px] font-bold text-accent uppercase tracking-widest">{node.nodeName}</p>
                       </div>
                     </div>
@@ -1083,51 +1083,6 @@ export default function DashboardPage() {
             </div>
             <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
               {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save Buddy"}
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isEditBuddyDialogOpen} onOpenChange={setIsEditBuddyDialogOpen}>
-        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] max-w-md p-10">
-          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Coordinate Buddy Update</DialogTitle></DialogHeader>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            if (!user || !rtdb || !itemToEdit) return;
-            setRegisterLoading(true);
-            update(ref(rtdb, `users/${user.uid}/buddies/${itemToEdit.id}`), buddyForm)
-              .then(() => {
-                logAction(`Synchronized buddy profile: ${buddyForm.name}`);
-                setIsEditBuddyDialogOpen(false);
-                setItemToEdit(null);
-                toast({ title: "Profile Synchronized" });
-              })
-              .finally(() => setRegisterLoading(false));
-          }} className="space-y-6">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Full Name</Label>
-              <Input value={buddyForm.name} onChange={e => setBuddyForm({...buddyForm, name: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number</Label>
-              <Input value={buddyForm.phoneNumber} onChange={e => setBuddyForm({...buddyForm, phoneNumber: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Protocol Groups</Label>
-              <div className="grid grid-cols-2 gap-4 p-6 bg-primary/5 rounded-2xl border border-primary/10">
-                {buddyGroups.map(g => (
-                  <div key={g} className="flex items-center gap-3">
-                    <Checkbox checked={buddyForm.groups.includes(g)} onCheckedChange={() => {
-                      const updated = buddyForm.groups.includes(g) ? buddyForm.groups.filter(x => x !== g) : [...buddyForm.groups, g];
-                      setBuddyForm({...buddyForm, groups: updated});
-                    }} className="rounded-md border-primary/20 data-[state=checked]:bg-primary" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">{g}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
-              {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Confirm Synchronize"}
             </Button>
           </form>
         </DialogContent>
