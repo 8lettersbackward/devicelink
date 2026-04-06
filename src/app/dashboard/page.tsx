@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useUser, useDatabase, useFirebase } from "@/firebase";
@@ -123,6 +122,12 @@ export default function DashboardPage() {
     if (!user?.email) return "User";
     return user.email.split('@')[0];
   }, [user]);
+
+  const isValidCoordinate = (val: any) => {
+    if (!val || val === "No_fix") return false;
+    const num = parseFloat(val);
+    return !isNaN(num) && isFinite(num) && num !== 0;
+  };
 
   useEffect(() => {
     setHasMounted(true);
@@ -265,7 +270,7 @@ export default function DashboardPage() {
       const statusUnsubscribe = onValue(nodeRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
-          if (data.latitude && data.longitude) {
+          if (isValidCoordinate(data.latitude) && isValidCoordinate(data.longitude)) {
             setTrackingLocation({
               latitude: data.latitude,
               longitude: data.longitude
@@ -277,7 +282,6 @@ export default function DashboardPage() {
             });
             statusUnsubscribe();
             
-            // Auto-reset signal after lock is established
             setTimeout(() => {
               update(nodeRef, { trackRequest: false, trackRequester: null });
             }, 10000);
@@ -421,7 +425,6 @@ export default function DashboardPage() {
                </Card>
 
                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 opacity-40 grayscale pointer-events-none">
-                 {/* This section is now just a placeholder for background aesthetics as per "Search instead of selecting" */}
                  <div className="h-32 rounded-3xl border-2 border-dashed border-primary/10 flex items-center justify-center">
                     <p className="text-[8px] font-bold uppercase tracking-[0.4em]">Standby</p>
                  </div>
@@ -591,7 +594,7 @@ export default function DashboardPage() {
                             <p className="text-xs font-medium opacity-60 flex items-center gap-2"><MapPin className="h-3 w-3" /> {n.place || 'Location Coordinates Acquired'}</p>
                             <div className="flex gap-3">
                                <Button size="sm" onClick={() => { setActiveSosAlert(n); setIsSosMapOpen(true); }} className="h-8 rounded-lg bg-destructive text-[9px] font-bold uppercase tracking-widest px-6 shadow-lg shadow-destructive/20 text-white">Tactical Map</Button>
-                               {n.latitude && n.longitude && (
+                               {isValidCoordinate(n.latitude) && isValidCoordinate(n.longitude) && (
                                   <Button 
                                     variant="outline" 
                                     size="sm" 
@@ -607,7 +610,7 @@ export default function DashboardPage() {
                             </div>
                           </div>
                         )}
-                        {!n.type || n.type !== 'sos' && n.latitude && n.longitude && (
+                        {!n.type || n.type !== 'sos' && isValidCoordinate(n.latitude) && isValidCoordinate(n.longitude) && (
                           <div className="ml-9 mb-4">
                             <Button 
                               variant="outline" 
@@ -673,7 +676,7 @@ export default function DashboardPage() {
                />
                <div className="absolute bottom-6 left-6 right-6 z-[1000] glass-card p-4 rounded-xl flex items-center gap-3">
                   <MapPin className="h-5 w-5 text-secondary" />
-                  <p className="text-[10px] font-bold uppercase tracking-widest flex-1">Lat: {trackingLocation?.latitude?.toFixed(6)} | Lng: {trackingLocation?.longitude?.toFixed(6)}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest flex-1">Lat: {isValidCoordinate(trackingLocation?.latitude) ? parseFloat(trackingLocation.latitude).toFixed(6) : '0.00'} | Lng: {isValidCoordinate(trackingLocation?.longitude) ? parseFloat(trackingLocation.longitude).toFixed(6) : '0.00'}</p>
                </div>
             </div>
 
@@ -693,7 +696,7 @@ export default function DashboardPage() {
             <DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary">Spatial Coordinate Intercept</DialogTitle>
           </DialogHeader>
           <div className="p-0">
-            {mapNotification && (
+            {mapNotification && isValidCoordinate(mapNotification.latitude) && isValidCoordinate(mapNotification.longitude) && (
               <iframe
                 width="100%"
                 height="400"
