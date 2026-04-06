@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useUser, useDatabase, useFirebase } from "@/firebase";
@@ -176,6 +177,26 @@ export default function DashboardPage() {
       return () => off(usersRef, 'value', unsubscribe);
     }
   }, [userRole, rtdb]);
+
+  // Sync edit forms when itemToEdit changes
+  useEffect(() => {
+    if (itemToEdit && isEditBuddyDialogOpen) {
+      setBuddyForm({
+        name: itemToEdit.name || '',
+        phoneNumber: itemToEdit.phoneNumber || '',
+        groups: itemToEdit.groups || []
+      });
+    }
+    if (itemToEdit && isEditNodeDialogOpen) {
+      setNodeForm({
+        nodeName: itemToEdit.nodeName || '',
+        hardwareId: itemToEdit.hardwareId || '',
+        phoneNumber: itemToEdit.phoneNumber || '',
+        temperature: itemToEdit.temperature || 24,
+        targetGroups: itemToEdit.targetGroups || []
+      });
+    }
+  }, [itemToEdit, isEditBuddyDialogOpen, isEditNodeDialogOpen]);
 
   const groupsRef = useMemo(() => user ? ref(rtdb, `users/${user.uid}/buddyGroups`) : null, [rtdb, user]);
   const { data: customGroupsData } = useRtdb(groupsRef);
@@ -810,6 +831,51 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={isEditBuddyDialogOpen} onOpenChange={setIsEditBuddyDialogOpen}>
+        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] max-w-md p-10">
+          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Coordinate Buddy Update</DialogTitle></DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (!user || !rtdb || !itemToEdit) return;
+            setRegisterLoading(true);
+            update(ref(rtdb, `users/${user.uid}/buddies/${itemToEdit.id}`), buddyForm)
+              .then(() => {
+                logAction(`Synchronized buddy profile: ${buddyForm.name}`);
+                setIsEditBuddyDialogOpen(false);
+                setItemToEdit(null);
+                toast({ title: "Profile Synchronized" });
+              })
+              .finally(() => setRegisterLoading(false));
+          }} className="space-y-6">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Full Name</Label>
+              <Input value={buddyForm.name} onChange={e => setBuddyForm({...buddyForm, name: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number</Label>
+              <Input value={buddyForm.phoneNumber} onChange={e => setBuddyForm({...buddyForm, phoneNumber: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Protocol Groups</Label>
+              <div className="grid grid-cols-2 gap-4 p-6 bg-primary/5 rounded-2xl border border-primary/10">
+                {buddyGroups.map(g => (
+                  <div key={g} className="flex items-center gap-3">
+                    <Checkbox checked={buddyForm.groups.includes(g)} onCheckedChange={() => {
+                      const updated = buddyForm.groups.includes(g) ? buddyForm.groups.filter(x => x !== g) : [...buddyForm.groups, g];
+                      setBuddyForm({...buddyForm, groups: updated});
+                    }} className="rounded-md border-primary/20 data-[state=checked]:bg-primary" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">{g}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
+              {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Confirm Synchronize"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isAddNodeDialogOpen} onOpenChange={setIsAddNodeDialogOpen}>
         <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] max-w-md p-10">
           <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Arm Node</DialogTitle></DialogHeader>
@@ -859,6 +925,59 @@ export default function DashboardPage() {
             </div>
             <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
               {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Arm Node"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditNodeDialogOpen} onOpenChange={setIsEditNodeDialogOpen}>
+        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] max-w-md p-10">
+          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Calibrate Node Hardware</DialogTitle></DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (!user || !rtdb || !itemToEdit) return;
+            setRegisterLoading(true);
+            update(ref(rtdb, `users/${user.uid}/nodes/${itemToEdit.id}`), nodeForm)
+              .then(() => {
+                logAction(`Recalibrated hardware node: ${nodeForm.nodeName}`);
+                setIsEditNodeDialogOpen(false);
+                setItemToEdit(null);
+                toast({ title: "Hardware Recalibrated" });
+              })
+              .finally(() => setRegisterLoading(false));
+          }} className="space-y-6">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Node Name</Label>
+              <Input value={nodeForm.nodeName} onChange={e => setNodeForm({...nodeForm, nodeName: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Hardware ID</Label>
+              <Input value={nodeForm.hardwareId} disabled className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-mono opacity-50" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number</Label>
+              <Input value={nodeForm.phoneNumber} onChange={e => setNodeForm({...nodeForm, phoneNumber: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Thermal Threshold (°C)</Label>
+              <Input type="number" value={nodeForm.temperature} onChange={e => setNodeForm({...nodeForm, temperature: parseInt(e.target.value)})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Broadcast Targets</Label>
+              <div className="grid grid-cols-2 gap-4 p-6 bg-primary/5 rounded-2xl border border-primary/10">
+                {buddyGroups.map(g => (
+                  <div key={g} className="flex items-center gap-3">
+                    <Checkbox checked={nodeForm.targetGroups.includes(g)} onCheckedChange={() => {
+                      const updated = nodeForm.targetGroups.includes(g) ? nodeForm.targetGroups.filter(x => x !== g) : [...nodeForm.targetGroups, g];
+                      setNodeForm({...nodeForm, targetGroups: updated});
+                    }} className="rounded-md border-primary/20 data-[state=checked]:bg-primary" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">{g}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
+              {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Confirm Calibration"}
             </Button>
           </form>
         </DialogContent>
