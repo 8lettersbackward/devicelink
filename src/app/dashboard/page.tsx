@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useUser, useDatabase, useFirebase } from "@/firebase";
@@ -387,8 +386,6 @@ export default function DashboardPage() {
 
   const handleOpenLiveMap = (targetUid: string) => {
     if (!rtdb) return;
-    // For MVP, we'll listen to the user's first node or a global SOS status
-    // In a real app, we'd listen to specifically that user's GPS stream
     const nodeRef = ref(rtdb, `users/${targetUid}/nodes`);
     get(nodeRef).then(snapshot => {
       const nodes = snapshot.val();
@@ -514,27 +511,6 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </Card>
-
-              <div className="space-y-6">
-                <h2 className="text-xl font-bold tracking-tight text-[#12086F]">DISCOVERED PERSONNEL</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {allUsers.filter(u => !links.find(l => l.uid === u.uid)).map(target => (
-                    <Card key={target.uid} className="glass-card border-none group transition-all p-8 flex flex-col justify-between">
-                      <div>
-                        <p className="text-lg font-bold text-[#12086F] truncate">{target.displayName}</p>
-                        <p className="text-[10px] font-mono text-secondary uppercase tracking-widest mt-1 truncate">{target.email}</p>
-                      </div>
-                      <Button 
-                        onClick={() => handleSendLinkRequest(target)} 
-                        variant="outline" 
-                        className="mt-6 w-full rounded-xl font-bold text-[9px] uppercase tracking-widest border-primary/20 hover:bg-primary/5 h-10"
-                      >
-                        Send Link Request
-                      </Button>
-                    </Card>
-                  ))}
-                </div>
-              </div>
 
               <div className="space-y-6 pt-10 border-t border-primary/10">
                 <h2 className="text-xl font-bold tracking-tight text-[#12086F]">ACTIVE PROTOCOLS</h2>
