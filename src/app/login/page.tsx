@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { useAuth, useUser, useDatabase } from "@/firebase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,13 +11,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { Loader2, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { ref, get } from "firebase/database";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { user, loading: userLoading } = useUser();
   const rtdb = useDatabase();
   const { toast } = useToast();
@@ -37,13 +38,12 @@ export default function LoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const loggedUser = userCredential.user;
       
-      // Fetch role for redirection context (actual redirection happens in dashboard or layout)
       const profileRef = ref(rtdb, `users/${loggedUser.uid}/profile`);
       const snapshot = await get(profileRef);
       const profile = snapshot.val();
       
       if (profile?.role === 'guardian') {
-        router.push("/dashboard?view=guardian");
+        router.push("/dashboard");
       } else {
         router.push("/dashboard");
       }
@@ -55,6 +55,30 @@ export default function LoginPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!email) {
+      toast({
+        variant: "destructive",
+        title: "Reset Blocked",
+        description: "Please enter your email address to receive a reset dispatch.",
+      });
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      toast({
+        title: "Reset Dispatched",
+        description: "Check your terminal (inbox) for the recovery protocol.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Reset Failed",
+        description: error.message || "Identity recovery dispatch failed.",
+      });
     }
   };
 
@@ -100,16 +124,31 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between ml-1">
                 <Label htmlFor="password" title="Password" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Password</Label>
-                <Link href="#" className="text-[10px] text-secondary font-bold uppercase hover:opacity-80">Reset</Link>
+                <button 
+                  type="button"
+                  onClick={handleResetPassword}
+                  className="text-[10px] text-secondary font-bold uppercase hover:opacity-80 transition-opacity"
+                >
+                  Reset
+                </button>
               </div>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="h-14 bg-primary/5 border-primary/10 rounded-2xl text-foreground"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="h-14 bg-primary/5 border-primary/10 rounded-2xl text-foreground pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-6 p-0">
