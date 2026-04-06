@@ -540,7 +540,7 @@ export default function DashboardPage() {
                             className="w-full bg-accent hover:bg-accent text-white rounded-xl h-10 text-[9px] font-bold uppercase tracking-widest"
                             onClick={() => handleOpenTelemetry(link.uid)}
                           >
-                            <Info className="h-3.5 w-3.5 mr-2" /> Track Asset
+                            <MapPin className="h-3.5 w-3.5 mr-2" /> Track Location
                           </Button>
                         ) : link.trackingRequest === 'requested' ? (
                           <Button disabled className="w-full bg-muted text-muted-foreground rounded-xl h-10 text-[9px] font-bold uppercase tracking-widest">
@@ -909,58 +909,60 @@ export default function DashboardPage() {
       </main>
 
       <Dialog open={isTelemetryOpen} onOpenChange={setIsTelemetryOpen}>
-        <DialogContent className="bg-white border-2 border-accent/20 shadow-2xl rounded-[2rem] max-w-2xl p-0 overflow-hidden">
+        <DialogContent className="bg-white border-2 border-accent/20 shadow-2xl rounded-[2rem] max-w-4xl p-0 overflow-hidden">
           <DialogHeader className="p-10 border-b border-accent/5 bg-accent/5">
              <div className="flex justify-between items-center">
                <div className="flex items-center gap-4">
-                  <Radar className="h-8 w-8 text-accent animate-pulse" />
+                  <MapPin className="h-8 w-8 text-accent animate-pulse" />
                   <div>
-                    <DialogTitle className="text-2xl font-bold text-accent uppercase tracking-tighter">Asset Telemetry</DialogTitle>
-                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Synchronized Hardware Signals</p>
+                    <DialogTitle className="text-2xl font-bold text-accent uppercase tracking-tighter">Asset Location</DialogTitle>
+                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Synchronized Spatial Signals</p>
                   </div>
                </div>
                <Badge className="bg-accent text-white border-none text-[10px] font-bold uppercase px-4 py-2 rounded-xl">Signal Locked</Badge>
              </div>
           </DialogHeader>
-          <div className="p-10 space-y-8">
-            <ScrollArea className="max-h-[400px]">
+          <div className="p-0">
+            <ScrollArea className="max-h-[600px]">
               {activeTrackedNodes.length === 0 ? (
-                <div className="p-12 text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">No hardware nodes reported for this asset.</p>
+                <div className="p-24 text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">No active location signals reported for this asset.</p>
                 </div>
               ) : (
-                <div className="space-y-6">
+                <div className="divide-y divide-accent/5">
                   {activeTrackedNodes.map(node => (
-                    <Card key={node.id} className="p-6 bg-primary/5 border-none rounded-2xl">
-                      <div className="flex justify-between items-start mb-6">
-                        <div>
-                          <p className="text-lg font-bold text-[#12086F]">{node.nodeName}</p>
-                          <p className="text-[10px] font-mono text-secondary uppercase tracking-widest">HWID: {node.hardwareId}</p>
+                    <div key={node.id} className="p-0 relative h-[400px]">
+                      {isValidCoordinate(node.latitude) && isValidCoordinate(node.longitude) ? (
+                        <iframe
+                          width="100%"
+                          height="100%"
+                          style={{ border: 0 }}
+                          loading="lazy"
+                          allowFullScreen
+                          referrerPolicy="no-referrer-when-downgrade"
+                          src={`https://www.google.com/maps?q=${node.latitude},${node.longitude}&output=embed`}
+                        ></iframe>
+                      ) : (
+                        <div className="h-full w-full bg-muted/20 flex flex-col items-center justify-center">
+                          <Radar className="h-12 w-12 text-accent/20 mb-4 animate-pulse" />
+                          <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Awaiting GPS Fix for {node.nodeName}</p>
                         </div>
-                        <Badge className={cn("text-[9px]", node.status === 'online' ? 'bg-secondary text-white' : 'bg-muted text-muted-foreground')}>
-                          {node.status?.toUpperCase() || 'OFFLINE'}
-                        </Badge>
+                      )}
+                      <div className="absolute top-6 left-6 z-10 glass-card px-6 py-3 rounded-xl border-accent/20">
+                        <p className="text-[10px] font-bold text-accent uppercase tracking-widest">{node.nodeName}</p>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                         <div className="p-4 bg-white/60 rounded-xl border border-primary/5">
-                            <Label className="text-[8px] font-bold uppercase opacity-40">Communication ID</Label>
-                            <p className="text-sm font-bold mt-1">{node.phoneNumber || 'N/A'}</p>
-                         </div>
-                         <div className="p-4 bg-white/60 rounded-xl border border-primary/5">
-                            <Label className="text-[8px] font-bold uppercase opacity-40">Thermal Reading</Label>
-                            <p className="text-sm font-bold mt-1">{node.temperature || '---'}°C</p>
-                         </div>
-                      </div>
-                    </Card>
+                    </div>
                   ))}
                 </div>
               )}
             </ScrollArea>
+          </div>
+          <div className="p-10 bg-white">
             <Button 
               onClick={() => setIsTelemetryOpen(false)} 
               className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] bg-accent hover:bg-accent shadow-xl shadow-accent/20 text-white"
             >
-              Close Telemetry Feed
+              Terminate Track Feed
             </Button>
           </div>
         </DialogContent>
