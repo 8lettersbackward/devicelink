@@ -140,7 +140,7 @@ export default function DashboardPage() {
 
   const isValidCoordinate = (val: any) => {
     if (val === undefined || val === null || val === "No_fix") return false;
-    const num = parseFloat(val);
+    const num = typeof val === 'string' ? parseFloat(val) : val;
     return !isNaN(num) && isFinite(num) && num !== 0;
   };
 
@@ -267,7 +267,7 @@ export default function DashboardPage() {
           
           if (isValidCoordinate(alert.latitude) && isValidCoordinate(alert.longitude) && !alert.place) {
             try {
-              const geo = await reverseGeocode({ latitude: alert.latitude, longitude: alert.longitude });
+              const geo = await reverseGeocode({ latitude: Number(alert.latitude), longitude: Number(alert.longitude) });
               enhancedAlert.place = `${geo.city}, ${geo.province}, ${geo.country}`;
             } catch (e) {
               console.error("SOS Geocoding failed", e);
@@ -546,7 +546,7 @@ export default function DashboardPage() {
       ];
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-[#e1f1fd] text-[#12086F] overflow-x-hidden w-full">
+    <div className="flex flex-col md:flex-row min-h-screen bg-[#e1f1fd] text-[#12086F] overflow-x-hidden w-full relative">
       <aside className="w-full md:w-64 bg-white/50 border-r border-primary/10 p-4 sm:p-6 md:h-screen md:sticky top-0 backdrop-blur-md z-40 flex-shrink-0">
         <div className="space-y-8 md:space-y-12">
           <div className="flex items-center gap-4">
@@ -926,13 +926,13 @@ export default function DashboardPage() {
                     </div>
                   ) : (
                     notifications.map(n => (
-                      <div key={n.id} className={cn("mb-6 md:mb-8 pb-6 md:pb-8 border-b border-primary/5 last:border-0 last:mb-0", n.type === 'sos' && "bg-destructive/5 -mx-4 px-4 rounded-xl", n.type === 'link_request' && "bg-secondary/5 -mx-4 px-4 rounded-xl", n.type === 'simulation' && "bg-secondary/5 -mx-4 px-4 rounded-xl")}>
+                      <div key={n.id} className={cn("mb-6 md:mb-8 pb-6 md:pb-8 border-b border-primary/5 last:border-0 last:mb-0 min-w-0", n.type === 'sos' && "bg-destructive/5 -mx-4 px-4 rounded-xl", n.type === 'link_request' && "bg-secondary/5 -mx-4 px-4 rounded-xl", n.type === 'simulation' && "bg-secondary/5 -mx-4 px-4 rounded-xl")}>
                         <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-3">
                           <div className="flex gap-4 items-center min-w-0 flex-1">
                             {n.type === 'sos' && <AlertTriangle className="h-5 w-5 text-destructive animate-pulse flex-shrink-0" />}
                             {n.type === 'link_request' && <UserPlus className="h-5 w-5 text-secondary flex-shrink-0" />}
                             {n.type === 'simulation' && <Radar className="h-5 w-5 text-secondary flex-shrink-0" />}
-                            <p className={cn("text-sm md:text-md font-bold tracking-wide truncate flex-1", n.type === 'sos' && "text-destructive uppercase", n.type === 'link_request' && "text-secondary", n.type === 'simulation' && "text-secondary")}>
+                            <p className={cn("text-sm md:text-md font-bold tracking-wide break-words flex-1 min-w-0", n.type === 'sos' && "text-destructive uppercase", n.type === 'link_request' && "text-secondary", n.type === 'simulation' && "text-secondary")}>
                               {n.type === 'sos' ? `🚨 SOS ALERT - ${n.nodeName || 'UNIDENTIFIED'}` : n.message}
                             </p>
                           </div>
@@ -944,10 +944,10 @@ export default function DashboardPage() {
                           <div className="space-y-4 mb-4 ml-0 sm:ml-9">
                             <p className="text-xs font-medium text-destructive/80">Trigger: {n.trigger || 'Manual SOS'}</p>
                             <div className="space-y-2">
-                              <p className="text-xs font-medium opacity-60 flex items-center gap-2 truncate"><MapPin className="h-3 w-3" /> {n.place || 'Location Coordinates Acquired'}</p>
+                              <p className="text-xs font-medium opacity-60 flex items-center gap-2 break-words"><MapPin className="h-3 w-3 flex-shrink-0" /> {n.place || 'Location Coordinates Acquired'}</p>
                               {isValidCoordinate(n.latitude) && isValidCoordinate(n.longitude) && (
                                 <p className="text-[10px] font-mono font-bold opacity-60 flex items-center gap-2">
-                                  <Navigation className="h-3 w-3" /> LAT: {n.latitude} | LNG: {n.longitude}
+                                  <Navigation className="h-3 w-3 flex-shrink-0" /> LAT: {n.latitude} | LNG: {n.longitude}
                                 </p>
                               )}
                             </div>
@@ -970,9 +970,9 @@ export default function DashboardPage() {
                         {(n.type === 'simulation' || (isValidCoordinate(n.latitude) && n.type !== 'sos')) && (
                           <div className="ml-0 sm:ml-9 mb-4 space-y-3">
                             <div className="space-y-2">
-                              {n.place && <p className="text-xs font-medium text-secondary/80 flex items-center gap-2 truncate"><MapPin className="h-3 w-3" /> {n.place}</p>}
+                              {n.place && <p className="text-xs font-medium text-secondary/80 flex items-center gap-2 break-words"><MapPin className="h-3 w-3 flex-shrink-0" /> {n.place}</p>}
                               <p className="text-[10px] font-mono font-bold opacity-60 flex items-center gap-2">
-                                <Navigation className="h-3 w-3" /> LAT: {n.latitude} | LNG: {n.longitude}
+                                <Navigation className="h-3 w-3 flex-shrink-0" /> LAT: {n.latitude} | LNG: {n.longitude}
                               </p>
                             </div>
                             <Button 
@@ -1110,29 +1110,31 @@ export default function DashboardPage() {
           <DialogHeader className="p-6 md:p-8 border-b border-primary/5">
             <DialogTitle className="text-lg md:text-xl font-bold uppercase tracking-widest text-secondary truncate">Spatial Coordinate Intercept</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto">
-            {mapNotification && isValidCoordinate(mapNotification.latitude) && isValidCoordinate(mapNotification.longitude) && (
-              <div className="relative">
-                <iframe
-                  width="100%"
-                  height="300"
-                  className="md:h-[400px] max-w-full"
-                  style={{ border: 0 }}
-                  loading="lazy"
-                  allowFullScreen
-                  referrerPolicy="no-referrer-when-downgrade"
-                  src={`https://www.google.com/maps?q=${mapNotification.latitude},${mapNotification.longitude}&output=embed`}
-                ></iframe>
-                {mapNotification.place && (
-                   <div className="absolute bottom-4 left-4 right-4 z-[1000] glass-card p-3 rounded-xl flex items-center gap-3">
-                      <MapPin className="h-4 w-4 text-primary" />
-                      <p className="text-[10px] font-bold uppercase tracking-widest flex-1 truncate">{mapNotification.place}</p>
-                   </div>
-                )}
-              </div>
-            )}
+          <div className="flex-1 overflow-hidden relative">
+            <ScrollArea className="h-full">
+              {mapNotification && isValidCoordinate(mapNotification.latitude) && isValidCoordinate(mapNotification.longitude) && (
+                <div className="relative">
+                  <iframe
+                    width="100%"
+                    height="300"
+                    className="md:h-[400px] max-w-full"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    allowFullScreen
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={`https://www.google.com/maps?q=${mapNotification.latitude},${mapNotification.longitude}&output=embed`}
+                  ></iframe>
+                  {mapNotification.place && (
+                    <div className="p-4 md:p-6 bg-white/80 backdrop-blur-md border-t border-primary/10 flex items-center gap-3">
+                        <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+                        <p className="text-[10px] font-bold uppercase tracking-widest flex-1 break-words">{mapNotification.place}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </ScrollArea>
           </div>
-          <div className="p-6 md:p-8 border-t border-primary/5">
+          <div className="p-6 md:p-8 border-t border-primary/5 bg-white">
              <Button onClick={() => setIsMapModalOpen(false)} className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white">
                Acknowledge Signal
              </Button>
@@ -1154,33 +1156,37 @@ export default function DashboardPage() {
                <Badge className="bg-destructive text-white border-none text-[10px] font-bold uppercase px-4 py-2 rounded-xl animate-pulse flex-shrink-0">Critical Alert</Badge>
              </div>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-               <div className="space-y-2">
-                 <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Trigger Source</Label>
-                 <p className="text-sm font-bold text-destructive truncate">{activeSosAlert?.trigger || 'Security Protocol 1-TAP'}</p>
-               </div>
-               <div className="space-y-2">
-                 <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Timestamp</Label>
-                 <p className="text-sm font-bold">{activeSosAlert?.createdAt ? new Date(activeSosAlert.createdAt).toLocaleString() : 'N/A'}</p>
-               </div>
-               <div className="space-y-2 lg:col-span-1">
-                 <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Spatial Coordinates</Label>
-                 <p className="text-[10px] font-mono font-bold text-secondary">LAT: {activeSosAlert?.latitude}<br/>LNG: {activeSosAlert?.longitude}</p>
-               </div>
-            </div>
-            
-            <div className="relative rounded-2xl overflow-hidden border border-destructive/10 shadow-inner">
-               <SOSMap 
-                  latitude={activeSosAlert?.latitude || 0} 
-                  longitude={activeSosAlert?.longitude || 0}
-                  label={activeSosAlert?.nodeName}
-               />
-               <div className="absolute bottom-4 left-4 right-4 md:bottom-6 md:left-6 md:right-6 z-[1000] glass-card p-3 md:p-4 rounded-xl flex items-center gap-3">
-                  <MapPin className="h-4 w-4 md:h-5 md:w-5 text-destructive flex-shrink-0" />
-                  <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest flex-1 truncate">{activeSosAlert?.place || 'Coordinates Identified'}</p>
-               </div>
-            </div>
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full">
+              <div className="p-6 md:p-10 space-y-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Trigger Source</Label>
+                    <p className="text-sm font-bold text-destructive break-words">{activeSosAlert?.trigger || 'Security Protocol 1-TAP'}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Timestamp</Label>
+                    <p className="text-sm font-bold">{activeSosAlert?.createdAt ? new Date(activeSosAlert.createdAt).toLocaleString() : 'N/A'}</p>
+                  </div>
+                  <div className="space-y-2 lg:col-span-1">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Spatial Coordinates</Label>
+                    <p className="text-[10px] font-mono font-bold text-secondary">LAT: {activeSosAlert?.latitude}<br/>LNG: {activeSosAlert?.longitude}</p>
+                  </div>
+                </div>
+                
+                <div className="relative rounded-2xl overflow-hidden border border-destructive/10 shadow-inner">
+                  <SOSMap 
+                      latitude={activeSosAlert?.latitude || 0} 
+                      longitude={activeSosAlert?.longitude || 0}
+                      label={activeSosAlert?.nodeName}
+                  />
+                  <div className="p-4 md:p-6 bg-white/80 backdrop-blur-md border-t border-destructive/10 flex items-center gap-3">
+                      <MapPin className="h-4 w-4 md:h-5 md:w-5 text-destructive flex-shrink-0" />
+                      <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest flex-1 break-words">{activeSosAlert?.place || 'Coordinates Identified'}</p>
+                  </div>
+                </div>
+              </div>
+            </ScrollArea>
           </div>
           <div className="p-6 md:p-10 bg-white border-t border-destructive/5">
             <Button 
