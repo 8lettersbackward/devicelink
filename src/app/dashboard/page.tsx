@@ -116,7 +116,6 @@ export default function DashboardPage() {
 
   const [isAddBuddyDialogOpen, setIsAddBuddyDialogOpen] = useState(false);
   const [isAddNodeDialogOpen, setIsAddNodeDialogOpen] = useState(false);
-  const [isAddBuddyDialogOpenOnMobile, setIsAddBuddyDialogOpenOnMobile] = useState(false);
   const [isEditBuddyDialogOpen, setIsEditBuddyDialogOpen] = useState(false);
   const [isEditNodeDialogOpen, setIsEditNodeDialogOpen] = useState(false);
   const [isViewItemDialogOpen, setIsViewItemDialogOpen] = useState(false);
@@ -252,7 +251,7 @@ export default function DashboardPage() {
   const { data: linksData } = useRtdb(linksRef);
 
   useEffect(() => {
-    if (!user || !user.emailVerified || !rtdb) return;
+    if (!user || !user.emailVerified || !rtdb || !userRole) return;
 
     const queryRef = ref(rtdb, `users/${user.uid}/notifications`);
     
@@ -260,7 +259,8 @@ export default function DashboardPage() {
       const alert = snapshot.val();
       const alertId = snapshot.key;
 
-      if (alert && alert.type === "sos" && alertId !== lastProcessedSosRef.current) {
+      // SOS ALERT is strictly for the User side
+      if (alert && alert.type === "sos" && userRole === 'user' && alertId !== lastProcessedSosRef.current) {
         lastProcessedSosRef.current = alertId;
         const createdAt = alert.createdAt || alert.timestamp || 0;
         if (Date.now() - createdAt < 30000) {
@@ -282,7 +282,7 @@ export default function DashboardPage() {
     });
 
     return () => off(queryRef, "child_added", unsubscribe);
-  }, [user, rtdb]);
+  }, [user, rtdb, userRole]);
 
   const buddyGroups = useMemo(() => {
     const customNames = customGroupsData ? Object.values(customGroupsData).map((g: any) => g.name) : [];
@@ -391,6 +391,17 @@ export default function DashboardPage() {
     update(ref(rtdb), updates)
       .then(() => {
         toast({ title: "Link Dispatched", description: `Tactical link request sent to user associated with hardware signature.` });
+        
+        // Push notification to target
+        const targetNotifRef = ref(rtdb, `users/${targetUser.uid}/notifications`);
+        push(targetNotifRef, {
+          message: `Incoming tactical link request from ${user.email}`,
+          type: 'link_request',
+          senderEmail: user.email,
+          senderUid: user.uid,
+          createdAt: Date.now()
+        });
+
         logAction(`Initiated tactical link request for hardware ID.`);
       })
       .catch((err) => toast({ variant: "destructive", title: "Dispatch Failed", description: err.message }))
@@ -429,6 +440,17 @@ export default function DashboardPage() {
 
     update(ref(rtdb), updates).then(() => {
       toast({ title: "Track Request Sent", description: "Awaiting user authorization." });
+      
+      // Push specific track request notification
+      const targetNotifRef = ref(rtdb, `users/${link.uid}/notifications`);
+      push(targetNotifRef, {
+        message: `Tactical telemetry track request initiated by Guardian ${user.email}`,
+        type: 'track_request',
+        senderEmail: user.email,
+        senderUid: user.uid,
+        createdAt: Date.now()
+      });
+
       logAction(`Dispatched location track request for: ${link.email}`);
     });
   };
@@ -575,7 +597,7 @@ export default function DashboardPage() {
               >
                 <item.icon className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
                 <span className="truncate">{item.label}</span>
-                {item.id === 'my-guardians' && pendingRequests.length > 0 && (
+                {item.id === 'my-guardians' && (pendingRequests.length > 0 || links.some(l => l.trackingRequest === 'pending')) && (
                   <span className="absolute top-1 right-1 h-2 w-2 bg-destructive rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
                 )}
                 {item.id === 'notifications' && notifications.length > 0 && (
@@ -644,7 +666,7 @@ export default function DashboardPage() {
                           >
                             <Radar className="h-3.5 w-3.5 mr-2" /> Track Assets
                           </Button>
-                        ) : link.trackingRequest === 'requested' ? (
+                        ) : link.trackingRequest === 'requested' || link.trackingRequest === 'pending' ? (
                           <Button disabled className="w-full bg-muted text-muted-foreground rounded-xl h-10 text-[9px] font-bold uppercase tracking-widest">
                             Awaiting Authorization
                           </Button>
@@ -780,7 +802,12 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {activeTab === 'buddies' && userRole !== 'guardian' && (
+          {(activeTab === 'buddies' || activeTab === 'nodes') && userRole === 'guardian' ? (
+             <div className="flex flex-col items-center justify-center min-h-[50vh] opacity-40">
+                <ShieldAlert className="h-16 w-16 mb-4" />
+                <p className="text-[10px] font-bold uppercase tracking-[0.4em]">Unauthorized: Buddy/Node protocols restricted to User role.</p>
+             </div>
+          ) : activeTab === 'buddies' && (
             <div className="space-y-8 md:space-y-10">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tighter text-[#12086F]">MANAGE BUDDIES</h1>
@@ -830,7 +857,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {activeTab === 'nodes' && userRole !== 'guardian' && (
+          {activeTab === 'nodes' && userRole === 'user' && (
             <div className="space-y-8 md:space-y-10">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tighter text-[#12086F]">MANAGE NODES</h1>
@@ -900,13 +927,15 @@ export default function DashboardPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tighter text-[#12086F]">NOTIFICATION</h1>
                 <div className="flex flex-wrap gap-4 w-full sm:w-auto">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsSimulateDialogOpen(true)} 
-                    className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-6 border-secondary/40 hover:bg-secondary/5 text-secondary flex-1 sm:flex-none"
-                  >
-                    <Radar className="h-4 w-4 mr-2" /> Simulate Signal
-                  </Button>
+                  {userRole === 'user' && (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsSimulateDialogOpen(true)} 
+                      className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-6 border-secondary/40 hover:bg-secondary/5 text-secondary flex-1 sm:flex-none"
+                    >
+                      <Radar className="h-4 w-4 mr-2" /> Simulate Signal
+                    </Button>
+                  )}
                   {notifications.length > 0 && (
                     <Button 
                       variant="ghost" 
@@ -927,13 +956,13 @@ export default function DashboardPage() {
                     </div>
                   ) : (
                     notifications.map(n => (
-                      <div key={n.id} className={cn("mb-6 md:mb-8 pb-6 md:pb-8 border-b border-primary/5 last:border-0 last:mb-0 min-w-0", n.type === 'sos' && "bg-destructive/5 -mx-4 px-4 rounded-xl", n.type === 'link_request' && "bg-secondary/5 -mx-4 px-4 rounded-xl", n.type === 'simulation' && "bg-secondary/5 -mx-4 px-4 rounded-xl")}>
+                      <div key={n.id} className={cn("mb-6 md:mb-8 pb-6 md:pb-8 border-b border-primary/5 last:border-0 last:mb-0 min-w-0", n.type === 'sos' && "bg-destructive/5 -mx-4 px-4 rounded-xl", (n.type === 'link_request' || n.type === 'track_request') && "bg-secondary/5 -mx-4 px-4 rounded-xl", n.type === 'simulation' && "bg-secondary/5 -mx-4 px-4 rounded-xl")}>
                         <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-3">
                           <div className="flex gap-4 items-center min-w-0 flex-1">
                             {n.type === 'sos' && <AlertTriangle className="h-5 w-5 text-destructive animate-pulse flex-shrink-0" />}
-                            {n.type === 'link_request' && <UserPlus className="h-5 w-5 text-secondary flex-shrink-0" />}
+                            {(n.type === 'link_request' || n.type === 'track_request') && <UserPlus className="h-5 w-5 text-secondary flex-shrink-0" />}
                             {n.type === 'simulation' && <Radar className="h-5 w-5 text-secondary flex-shrink-0" />}
-                            <p className={cn("text-sm md:text-md font-bold tracking-wide break-words flex-1 min-w-0", n.type === 'sos' && "text-destructive uppercase", n.type === 'link_request' && "text-secondary", n.type === 'simulation' && "text-secondary")}>
+                            <p className={cn("text-sm md:text-md font-bold tracking-wide break-words flex-1 min-w-0", n.type === 'sos' && "text-destructive uppercase", (n.type === 'link_request' || n.type === 'track_request') && "text-secondary", n.type === 'simulation' && "text-secondary")}>
                               {n.type === 'sos' ? `🚨 SOS ALERT - ${n.nodeName || 'UNIDENTIFIED'}` : n.message}
                             </p>
                           </div>
@@ -941,7 +970,8 @@ export default function DashboardPage() {
                             {safeFormatTime(n.createdAt)}
                           </Badge>
                         </div>
-                        {n.type === 'sos' && (
+                        
+                        {n.type === 'sos' && userRole === 'user' && (
                           <div className="space-y-4 mb-4 ml-0 sm:ml-9">
                             <p className="text-xs font-medium text-destructive/80">Trigger: {n.trigger || 'Manual SOS'}</p>
                             <div className="space-y-2">
@@ -957,18 +987,20 @@ export default function DashboardPage() {
                             </div>
                           </div>
                         )}
-                        {n.type === 'link_request' && (
+
+                        {(n.type === 'link_request' || n.type === 'track_request') && (
                           <div className="mt-4 ml-0 sm:ml-9">
                              <Button 
                                size="sm" 
                                onClick={() => setActiveTab('my-guardians')} 
                                className="h-8 rounded-lg bg-secondary text-[9px] font-bold uppercase tracking-widest px-6 shadow-lg shadow-secondary/20 text-white w-full sm:w-auto"
                              >
-                               Review Request
+                               {n.type === 'track_request' ? "Review Track Access" : "Review Link Request"}
                              </Button>
                           </div>
                         )}
-                        {(n.type === 'simulation' || (isValidCoordinate(n.latitude) && n.type !== 'sos')) && (
+
+                        {(n.type === 'simulation' || (isValidCoordinate(n.latitude) && n.type !== 'sos' && n.type !== 'track_request' && n.type !== 'link_request')) && (
                           <div className="ml-0 sm:ml-9 mb-4 space-y-3">
                             <div className="space-y-2">
                               {n.place && <p className="text-xs font-medium text-secondary/80 flex items-center gap-2 break-words"><MapPin className="h-3 w-3 flex-shrink-0" /> {n.place}</p>}
