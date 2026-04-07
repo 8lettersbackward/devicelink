@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useUser, useDatabase, useFirebase } from "@/firebase";
@@ -271,16 +270,6 @@ export default function DashboardPage() {
     if (!linksData) return [];
     return Object.entries(linksData).map(([id, val]: [string, any]) => ({ ...val, uid: id }));
   }, [linksData]);
-
-  const availableToLink = useMemo(() => {
-    const linkedUids = links.map(l => l.uid);
-    return allUsers.filter(u => !linkedUids.includes(u.uid));
-  }, [allUsers, links]);
-
-  const availableGuardians = useMemo(() => {
-    const linkedUids = links.map(l => l.uid);
-    return allUsers.filter(u => u.role === 'guardian' && !linkedUids.includes(u.uid));
-  }, [allUsers, links]);
 
   const pendingRequests = useMemo(() => links.filter(l => l.status === 'pending'), [links]);
   const activeLinks = useMemo(() => links.filter(l => l.status === 'linked'), [links]);
@@ -559,34 +548,6 @@ export default function DashboardPage() {
               </Card>
 
               <div className="space-y-6 pt-10 border-t border-primary/10">
-                <h2 className="text-xl font-bold tracking-tight text-[#12086F]">DISCOVERABLE PERSONNEL</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {availableToLink.length === 0 ? (
-                    <div className="col-span-full py-12 text-center opacity-40">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.3em]">No available personnel detected in scan range.</p>
-                    </div>
-                  ) : (
-                    availableToLink.map(target => (
-                      <Card key={target.uid} className="glass-card border-none group transition-all p-8 flex flex-col justify-between">
-                        <div className="mb-6">
-                          <p className="text-lg font-bold text-[#12086F] truncate">{target.displayName}</p>
-                          <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest truncate">{target.email}</p>
-                          <Badge className="mt-3 bg-primary/10 text-primary border-none text-[8px] uppercase font-bold px-2 py-0.5 rounded-md">ID: {target.role}</Badge>
-                        </div>
-                        <Button 
-                          onClick={() => handleSendLinkRequest(target)} 
-                          disabled={registerLoading}
-                          className="w-full bg-primary hover:bg-primary text-white rounded-xl h-10 text-[9px] font-bold uppercase tracking-widest"
-                        >
-                          {registerLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><UserPlus className="h-3.5 w-3.5 mr-2" /> Enlist Link</>}
-                        </Button>
-                      </Card>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-6 pt-10 border-t border-primary/10">
                 <h2 className="text-xl font-bold tracking-tight text-[#12086F]">ACTIVE PROTOCOLS</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {activeLinks.map(link => (
@@ -681,34 +642,6 @@ export default function DashboardPage() {
                     ))}
                   </div>
                 )}
-              </div>
-
-              <div className="space-y-6 pt-10 border-t border-primary/10">
-                <h2 className="text-xl font-bold tracking-tight text-[#12086F]">DISCOVERABLE GUARDIANS</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {availableGuardians.length === 0 ? (
-                    <div className="col-span-full py-12 text-center opacity-40">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.3em]">No available guardians detected in scan range.</p>
-                    </div>
-                  ) : (
-                    availableGuardians.map(target => (
-                      <Card key={target.uid} className="glass-card border-none group transition-all p-8 flex flex-col justify-between">
-                        <div className="mb-6">
-                          <p className="text-lg font-bold text-[#12086F] truncate">{target.displayName}</p>
-                          <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest truncate">{target.email}</p>
-                          <Badge className="mt-3 bg-secondary/10 text-secondary border-none text-[8px] uppercase font-bold px-2 py-0.5 rounded-md">ID: GUARDIAN</Badge>
-                        </div>
-                        <Button 
-                          onClick={() => handleSendLinkRequest(target)} 
-                          disabled={registerLoading}
-                          className="w-full bg-secondary hover:bg-secondary text-white rounded-xl h-10 text-[9px] font-bold uppercase tracking-widest"
-                        >
-                          {registerLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><UserPlus className="h-3.5 w-3.5 mr-2" /> Request Link</>}
-                        </Button>
-                      </Card>
-                    ))
-                  )}
-                </div>
               </div>
 
               <div className="space-y-6 pt-10 border-t border-primary/10">
