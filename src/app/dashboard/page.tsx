@@ -316,17 +316,6 @@ export default function DashboardPage() {
       createdAt: now
     };
 
-    const notificationRef = ref(rtdb, `users/${targetUser.uid}/notifications`);
-    const newNotifKey = push(notificationRef).key;
-    if (newNotifKey) {
-      updates[`users/${targetUser.uid}/notifications/${newNotifKey}`] = {
-        message: `Incoming Link Request from ${userRole === 'guardian' ? 'Guardian' : 'User'}: ${user.email}`,
-        createdAt: now,
-        type: 'link_request',
-        fromUid: user.uid
-      };
-    }
-
     update(ref(rtdb), updates)
       .then(() => {
         toast({ title: "Link Dispatched", description: `Tactical link request sent to ${targetUser.email}` });
@@ -967,18 +956,16 @@ export default function DashboardPage() {
                <div className="flex items-center gap-4">
                   <Radar className="h-8 w-8 text-accent animate-pulse" />
                   <div>
-                    <DialogTitle className="text-2xl font-bold text-accent uppercase tracking-tighter">Hardware Telemetry Hub</DialogTitle>
-                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Control Master Terminal</p>
+                    <DialogTitle className="sr-only">Asset Control Hub</DialogTitle>
                   </div>
                </div>
-               <Badge className="bg-accent text-white border-none text-[10px] font-bold uppercase px-4 py-2 rounded-xl">Network Active</Badge>
              </div>
           </DialogHeader>
           <div className="p-0">
             <ScrollArea className="max-h-[600px]">
               {activeTrackedNodes.length === 0 ? (
                 <div className="p-24 text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">No active hardware units reported for this asset.</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">No active assets reported.</p>
                 </div>
               ) : (
                 <div className="divide-y divide-accent/5">
@@ -990,12 +977,6 @@ export default function DashboardPage() {
                            <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">ID: {node.hardwareId}</p>
                         </div>
                         <div className="flex items-center gap-4">
-                           <div className="text-right mr-4">
-                              <p className="text-[10px] font-bold uppercase opacity-40">Telemetry Status</p>
-                              <p className={cn("text-[10px] font-bold uppercase tracking-widest", node.trackRequest ? "text-accent" : "text-muted-foreground")}>
-                                {node.trackRequest ? "SIGNAL BROADCASTING" : "STANDBY"}
-                              </p>
-                           </div>
                            <Button 
                              onClick={() => handleToggleNodeTrack(node.id, node.trackRequest || false)}
                              className={cn(
@@ -1009,20 +990,6 @@ export default function DashboardPage() {
                            </Button>
                         </div>
                       </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                         <div className="p-4 bg-muted/20 rounded-xl">
-                            <p className="text-[10px] font-bold uppercase opacity-40 mb-1">Last Contact</p>
-                            <p className="text-xs font-mono">{safeFormatDate(node.registeredAt)} {safeFormatTime(node.registeredAt)}</p>
-                         </div>
-                         <div className="p-4 bg-muted/20 rounded-xl">
-                            <p className="text-[10px] font-bold uppercase opacity-40 mb-1">Battery / Power</p>
-                            <div className="flex items-center gap-2">
-                               <Wifi className="h-3 w-3 text-accent" />
-                               <p className="text-xs font-bold">STABLE</p>
-                            </div>
-                         </div>
-                      </div>
                     </div>
                   ))}
                 </div>
@@ -1034,7 +1001,7 @@ export default function DashboardPage() {
               onClick={() => setIsTelemetryOpen(false)} 
               className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] bg-accent hover:bg-accent shadow-xl shadow-accent/20 text-white"
             >
-              Close Telemetry Hub
+              CLOSE ASSET
             </Button>
           </div>
         </DialogContent>
