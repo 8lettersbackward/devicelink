@@ -53,7 +53,9 @@ import {
   ShieldCheck,
   UserCheck,
   Navigation,
-  Info
+  Info,
+  Radio,
+  Wifi
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ref, set, push, remove, update, onChildAdded, off, onValue, get } from "firebase/database";
@@ -104,6 +106,7 @@ export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isTelemetryOpen, setIsTelemetryOpen] = useState(false);
   const [activeTrackedNodes, setActiveTrackedNodes] = useState<any[]>([]);
+  const [telemetryTargetUid, setTelemetryTargetUid] = useState<string | null>(null);
 
   const [isAddBuddyDialogOpen, setIsAddBuddyDialogOpen] = useState(false);
   const [isAddNodeDialogOpen, setIsAddNodeDialogOpen] = useState(false);
@@ -375,13 +378,6 @@ export default function DashboardPage() {
     updates[`users/${user.uid}/links/${link.uid}/trackingRequest`] = 'approved';
     updates[`users/${link.uid}/links/${user.uid}/trackingRequest`] = 'approved';
 
-    // Set trackRequest = true for all nodes belonging to the user
-    if (nodesData) {
-      Object.keys(nodesData).forEach(nodeId => {
-        updates[`users/${user.uid}/nodes/${nodeId}/trackRequest`] = true;
-      });
-    }
-
     update(ref(rtdb), updates).then(() => {
       toast({ title: "Track Authorized", description: "Hardware telemetry broadcast granted." });
       logAction(`Authorized tracking for Guardian: ${link.email}`);
@@ -393,13 +389,6 @@ export default function DashboardPage() {
     const updates: any = {};
     updates[`users/${user.uid}/links/${link.uid}/trackingRequest`] = null;
     updates[`users/${link.uid}/links/${user.uid}/trackingRequest`] = null;
-
-    // Reset trackRequest = false for all nodes if denied
-    if (nodesData) {
-      Object.keys(nodesData).forEach(nodeId => {
-        updates[`users/${user.uid}/nodes/${nodeId}/trackRequest`] = false;
-      });
-    }
 
     update(ref(rtdb), updates).then(() => {
       toast({ title: "Track Denied", description: "Spatial telemetry request rejected." });
@@ -419,16 +408,31 @@ export default function DashboardPage() {
 
   const handleOpenTelemetry = (targetUid: string) => {
     if (!rtdb) return;
+    setTelemetryTargetUid(targetUid);
     const nodeRef = ref(rtdb, `users/${targetUid}/nodes`);
-    get(nodeRef).then(snapshot => {
+    const unsubscribe = onValue(nodeRef, (snapshot) => {
       const nodesVal = snapshot.val();
       if (nodesVal) {
         const nodeList = Object.entries(nodesVal).map(([id, val]: [string, any]) => ({ ...val, id }));
         setActiveTrackedNodes(nodeList);
         setIsTelemetryOpen(true);
       } else {
-        toast({ variant: "destructive", title: "Asset Missing", description: "User has no active hardware nodes reported." });
+        setActiveTrackedNodes([]);
+        setIsTelemetryOpen(true);
       }
+    });
+
+    // We store unsubscribe to clean up if needed, but since it's a dialog we'll handle closing
+    return unsubscribe;
+  };
+
+  const handleToggleNodeTrack = (nodeId: string, currentStatus: boolean) => {
+    if (!rtdb || !telemetryTargetUid) return;
+    const nodePath = `users/${telemetryTargetUid}/nodes/${nodeId}`;
+    update(ref(rtdb, nodePath), { trackRequest: !currentStatus });
+    toast({ 
+      title: !currentStatus ? "Track Signal Dispatched" : "Track Signal Suspended",
+      description: !currentStatus ? "Requesting real-time telemetry from node." : "Telemetry request terminated."
     });
   };
 
@@ -565,7 +569,7 @@ export default function DashboardPage() {
                             className="w-full bg-accent hover:bg-accent text-white rounded-xl h-10 text-[9px] font-bold uppercase tracking-widest"
                             onClick={() => handleOpenTelemetry(link.uid)}
                           >
-                            <MapPin className="h-3.5 w-3.5 mr-2" /> Track Location
+                            <Radio className="h-3.5 w-3.5 mr-2" /> Track Assets
                           </Button>
                         ) : link.trackingRequest === 'requested' ? (
                           <Button disabled className="w-full bg-muted text-muted-foreground rounded-xl h-10 text-[9px] font-bold uppercase tracking-widest">
@@ -950,44 +954,85 @@ export default function DashboardPage() {
           <DialogHeader className="p-10 border-b border-accent/5 bg-accent/5">
              <div className="flex justify-between items-center">
                <div className="flex items-center gap-4">
-                  <MapPin className="h-8 w-8 text-accent animate-pulse" />
+                  <Radar className="h-8 w-8 text-accent animate-pulse" />
                   <div>
-                    <DialogTitle className="text-2xl font-bold text-accent uppercase tracking-tighter">Location Feed</DialogTitle>
-                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Synchronized Spatial Signal</p>
+                    <DialogTitle className="text-2xl font-bold text-accent uppercase tracking-tighter">Hardware Telemetry Hub</DialogTitle>
+                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Control Master Terminal</p>
                   </div>
                </div>
-               <Badge className="bg-accent text-white border-none text-[10px] font-bold uppercase px-4 py-2 rounded-xl">Signal Locked</Badge>
+               <Badge className="bg-accent text-white border-none text-[10px] font-bold uppercase px-4 py-2 rounded-xl">Network Active</Badge>
              </div>
           </DialogHeader>
           <div className="p-0">
             <ScrollArea className="max-h-[600px]">
               {activeTrackedNodes.length === 0 ? (
                 <div className="p-24 text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">No active spatial signals reported for this asset.</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">No active hardware units reported for this asset.</p>
                 </div>
               ) : (
                 <div className="divide-y divide-accent/5">
                   {activeTrackedNodes.map(node => (
-                    <div key={node.id} className="p-0 relative h-[450px]">
-                      {isValidCoordinate(node.latitude) && isValidCoordinate(node.longitude) ? (
-                        <iframe
-                          width="100%"
-                          height="100%"
-                          style={{ border: 0 }}
-                          loading="lazy"
-                          allowFullScreen
-                          referrerPolicy="no-referrer-when-downgrade"
-                          src={`https://www.google.com/maps?q=${node.latitude},${node.longitude}&output=embed`}
-                        ></iframe>
-                      ) : (
-                        <div className="h-full w-full bg-muted/20 flex flex-col items-center justify-center">
-                          <Radar className="h-12 w-12 text-accent/20 mb-4 animate-pulse" />
-                          <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Awaiting GPS Fix for {node.nodeName}</p>
+                    <div key={node.id} className="p-10 space-y-6">
+                      <div className="flex justify-between items-center">
+                        <div>
+                           <p className="text-lg font-bold text-[#12086F]">{node.nodeName}</p>
+                           <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">ID: {node.hardwareId}</p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                           <div className="text-right mr-4">
+                              <p className="text-[10px] font-bold uppercase opacity-40">Telemetry Status</p>
+                              <p className={cn("text-[10px] font-bold uppercase tracking-widest", node.trackRequest ? "text-accent" : "text-muted-foreground")}>
+                                {node.trackRequest ? "SIGNAL BROADCASTING" : "STANDBY"}
+                              </p>
+                           </div>
+                           <Button 
+                             onClick={() => handleToggleNodeTrack(node.id, node.trackRequest || false)}
+                             className={cn(
+                               "h-12 px-8 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all",
+                               node.trackRequest 
+                                 ? "bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20" 
+                                 : "bg-accent hover:bg-accent text-white shadow-lg shadow-accent/20"
+                             )}
+                           >
+                             {node.trackRequest ? "Stop Request" : "Track Request"}
+                           </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                         <div className="p-4 bg-muted/20 rounded-xl">
+                            <p className="text-[10px] font-bold uppercase opacity-40 mb-1">Last Contact</p>
+                            <p className="text-xs font-mono">{safeFormatDate(node.registeredAt)} {safeFormatTime(node.registeredAt)}</p>
+                         </div>
+                         <div className="p-4 bg-muted/20 rounded-xl">
+                            <p className="text-[10px] font-bold uppercase opacity-40 mb-1">Battery / Power</p>
+                            <div className="flex items-center gap-2">
+                               <Wifi className="h-3 w-3 text-accent" />
+                               <p className="text-xs font-bold">STABLE</p>
+                            </div>
+                         </div>
+                      </div>
+
+                      {node.trackRequest && (
+                        <div className="rounded-2xl overflow-hidden border border-accent/10 relative h-[300px]">
+                          {isValidCoordinate(node.latitude) && isValidCoordinate(node.longitude) ? (
+                            <iframe
+                              width="100%"
+                              height="100%"
+                              style={{ border: 0 }}
+                              loading="lazy"
+                              allowFullScreen
+                              referrerPolicy="no-referrer-when-downgrade"
+                              src={`https://www.google.com/maps?q=${node.latitude},${node.longitude}&output=embed`}
+                            ></iframe>
+                          ) : (
+                            <div className="h-full w-full bg-muted/10 flex flex-col items-center justify-center">
+                              <Radar className="h-10 w-10 text-accent/20 mb-4 animate-pulse" />
+                              <p className="text-[10px] font-bold uppercase tracking-widest opacity-40 text-center px-10">Awaiting Signal Fix...<br/>GPS Hardware Initializing</p>
+                            </div>
+                          )}
                         </div>
                       )}
-                      <div className="absolute top-6 left-6 z-10 glass-card px-6 py-3 rounded-xl border-accent/20 shadow-xl">
-                        <p className="text-[10px] font-bold text-accent uppercase tracking-widest">{node.nodeName}</p>
-                      </div>
                     </div>
                   ))}
                 </div>
@@ -999,7 +1044,7 @@ export default function DashboardPage() {
               onClick={() => setIsTelemetryOpen(false)} 
               className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] bg-accent hover:bg-accent shadow-xl shadow-accent/20 text-white"
             >
-              Terminate Track Feed
+              Close Telemetry Hub
             </Button>
           </div>
         </DialogContent>
@@ -1390,3 +1435,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
