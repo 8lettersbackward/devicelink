@@ -277,6 +277,11 @@ export default function DashboardPage() {
     return allUsers.filter(u => !linkedUids.includes(u.uid));
   }, [allUsers, links]);
 
+  const availableGuardians = useMemo(() => {
+    const linkedUids = links.map(l => l.uid);
+    return allUsers.filter(u => u.role === 'guardian' && !linkedUids.includes(u.uid));
+  }, [allUsers, links]);
+
   const pendingRequests = useMemo(() => links.filter(l => l.status === 'pending'), [links]);
   const activeLinks = useMemo(() => links.filter(l => l.status === 'linked'), [links]);
 
@@ -323,7 +328,7 @@ export default function DashboardPage() {
     const newNotifKey = push(notificationRef).key;
     if (newNotifKey) {
       updates[`users/${targetUser.uid}/notifications/${newNotifKey}`] = {
-        message: `Incoming Link Request from Guardian: ${user.email}`,
+        message: `Incoming Link Request from ${userRole === 'guardian' ? 'Guardian' : 'User'}: ${user.email}`,
         createdAt: now,
         type: 'link_request',
         fromUid: user.uid
@@ -676,6 +681,34 @@ export default function DashboardPage() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              <div className="space-y-6 pt-10 border-t border-primary/10">
+                <h2 className="text-xl font-bold tracking-tight text-[#12086F]">DISCOVERABLE GUARDIANS</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {availableGuardians.length === 0 ? (
+                    <div className="col-span-full py-12 text-center opacity-40">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.3em]">No available guardians detected in scan range.</p>
+                    </div>
+                  ) : (
+                    availableGuardians.map(target => (
+                      <Card key={target.uid} className="glass-card border-none group transition-all p-8 flex flex-col justify-between">
+                        <div className="mb-6">
+                          <p className="text-lg font-bold text-[#12086F] truncate">{target.displayName}</p>
+                          <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest truncate">{target.email}</p>
+                          <Badge className="mt-3 bg-secondary/10 text-secondary border-none text-[8px] uppercase font-bold px-2 py-0.5 rounded-md">ID: GUARDIAN</Badge>
+                        </div>
+                        <Button 
+                          onClick={() => handleSendLinkRequest(target)} 
+                          disabled={registerLoading}
+                          className="w-full bg-secondary hover:bg-secondary text-white rounded-xl h-10 text-[9px] font-bold uppercase tracking-widest"
+                        >
+                          {registerLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><UserPlus className="h-3.5 w-3.5 mr-2" /> Request Link</>}
+                        </Button>
+                      </Card>
+                    ))
+                  )}
+                </div>
               </div>
 
               <div className="space-y-6 pt-10 border-t border-primary/10">
@@ -1119,10 +1152,6 @@ export default function DashboardPage() {
           <form onSubmit={(e) => {
             e.preventDefault();
             if (!user || !rtdb) return;
-            if (buddyForm.phoneNumber.length !== 11) {
-              toast({ variant: "destructive", title: "Invalid Signature", description: "Phone number must be exactly 11 digits." });
-              return;
-            }
             setRegisterLoading(true);
             const buddyId = `BUDDY-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
             set(ref(rtdb, `users/${user.uid}/buddies/${buddyId}`), { ...buddyForm, id: buddyId, registeredAt: Date.now() })
@@ -1139,15 +1168,8 @@ export default function DashboardPage() {
               <Input value={buddyForm.name} onChange={e => setBuddyForm({...buddyForm, name: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number (11 Digits)</Label>
-              <Input 
-                value={buddyForm.phoneNumber} 
-                onChange={e => setBuddyForm({...buddyForm, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 11)})} 
-                className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" 
-                maxLength={11}
-                placeholder="09123456789"
-                required 
-              />
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number</Label>
+              <Input value={buddyForm.phoneNumber} onChange={e => setBuddyForm({...buddyForm, phoneNumber: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Protocol Groups</Label>
@@ -1176,10 +1198,6 @@ export default function DashboardPage() {
           <form onSubmit={(e) => {
             e.preventDefault();
             if (!user || !rtdb || !itemToEdit) return;
-            if (buddyForm.phoneNumber.length !== 11) {
-              toast({ variant: "destructive", title: "Invalid Signature", description: "Phone number must be exactly 11 digits." });
-              return;
-            }
             setRegisterLoading(true);
             update(ref(rtdb, `users/${user.uid}/buddies/${itemToEdit.id}`), buddyForm)
               .then(() => {
@@ -1195,14 +1213,8 @@ export default function DashboardPage() {
               <Input value={buddyForm.name} onChange={e => setBuddyForm({...buddyForm, name: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number (11 Digits)</Label>
-              <Input 
-                value={buddyForm.phoneNumber} 
-                onChange={e => setBuddyForm({...buddyForm, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 11)})} 
-                className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" 
-                maxLength={11}
-                required 
-              />
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number</Label>
+              <Input value={buddyForm.phoneNumber} onChange={e => setBuddyForm({...buddyForm, phoneNumber: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" required />
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Protocol Groups</Label>
@@ -1231,10 +1243,6 @@ export default function DashboardPage() {
           <form onSubmit={(e) => {
             e.preventDefault();
             if (!user || !rtdb) return;
-            if (nodeForm.phoneNumber && nodeForm.phoneNumber.length !== 11) {
-              toast({ variant: "destructive", title: "Invalid Signature", description: "Phone number must be exactly 11 digits." });
-              return;
-            }
             setRegisterLoading(true);
             const nodeId = nodeForm.hardwareId || `NODE-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
             set(ref(rtdb, `users/${user.uid}/nodes/${nodeId}`), { ...nodeForm, id: nodeId, status: 'online', registeredAt: Date.now() })
@@ -1255,14 +1263,8 @@ export default function DashboardPage() {
               <Input value={nodeForm.hardwareId} onChange={e => setNodeForm({...nodeForm, hardwareId: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-mono" required />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number (11 Digits)</Label>
-              <Input 
-                value={nodeForm.phoneNumber} 
-                onChange={e => setNodeForm({...nodeForm, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 11)})} 
-                className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" 
-                maxLength={11}
-                placeholder="09123456789"
-              />
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number</Label>
+              <Input value={nodeForm.phoneNumber} onChange={e => setNodeForm({...nodeForm, phoneNumber: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" />
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Initial Thermal Threshold (°C)</Label>
@@ -1295,10 +1297,6 @@ export default function DashboardPage() {
           <form onSubmit={(e) => {
             e.preventDefault();
             if (!user || !rtdb || !itemToEdit) return;
-            if (nodeForm.phoneNumber && nodeForm.phoneNumber.length !== 11) {
-              toast({ variant: "destructive", title: "Invalid Signature", description: "Phone number must be exactly 11 digits." });
-              return;
-            }
             setRegisterLoading(true);
             update(ref(rtdb, `users/${user.uid}/nodes/${itemToEdit.id}`), nodeForm)
               .then(() => {
@@ -1323,13 +1321,8 @@ export default function DashboardPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number (11 Digits)</Label>
-              <Input 
-                value={nodeForm.phoneNumber} 
-                onChange={e => setNodeForm({...nodeForm, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 11)})} 
-                className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" 
-                maxLength={11}
-              />
+              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Phone Number</Label>
+              <Input value={nodeForm.phoneNumber} onChange={e => setNodeForm({...nodeForm, phoneNumber: e.target.value})} className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold" />
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Thermal Threshold (°C)</Label>
