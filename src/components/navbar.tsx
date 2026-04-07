@@ -96,28 +96,34 @@ export function Navbar() {
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden glass-card mx-6 my-4 p-8 space-y-8 rounded-[32px] animate-in fade-in zoom-in-95 duration-200">
+        <div className="md:hidden fixed top-16 left-0 w-full h-[calc(100vh-64px)] bg-white z-[60] p-8 space-y-10 animate-in fade-in slide-in-from-top-4 duration-300 overflow-y-auto">
           {user ? (
             <>
-              <div className="pb-6 border-b border-primary/5">
-                <div className="flex items-center gap-2">
-                  {userRole === 'guardian' && <ShieldAlert className="h-4 w-4 text-secondary" />}
-                  <p className="text-sm font-bold uppercase tracking-widest text-primary">{currentName}</p>
+              <div className="pb-8 border-b border-primary/5">
+                <div className="flex items-center gap-3">
+                  {userRole === 'guardian' && <ShieldAlert className="h-5 w-5 text-secondary" />}
+                  <p className="text-lg font-bold uppercase tracking-widest text-primary">{currentName}</p>
                 </div>
-                <p className="text-[10px] font-mono text-muted-foreground mt-2">{user.email}</p>
+                <p className="text-xs font-mono text-muted-foreground mt-3">{user.email}</p>
               </div>
-              <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-bold uppercase tracking-[0.3em] text-foreground">TERMINAL</Link>
-              <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-bold uppercase tracking-[0.3em] text-foreground">PROFILE</Link>
-              {userRole === 'guardian' && (
-                <Link href="/dashboard?view=guardian" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-bold uppercase tracking-[0.3em] text-secondary">TACTICAL TRACK</Link>
-              )}
-              <button onClick={handleSignOut} className="w-full text-left text-xs font-bold uppercase tracking-[0.3em] text-destructive">TERMINATE SESSION</button>
+              <div className="space-y-6">
+                <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-bold uppercase tracking-[0.3em] text-foreground hover:text-primary transition-colors">TERMINAL</Link>
+                <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-bold uppercase tracking-[0.3em] text-foreground hover:text-primary transition-colors">PROFILE</Link>
+                {userRole === 'guardian' && (
+                  <Link href="/dashboard?view=guardian" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-bold uppercase tracking-[0.3em] text-secondary hover:text-secondary/80 transition-colors">TACTICAL TRACK</Link>
+                )}
+              </div>
+              <div className="pt-8 border-t border-primary/5">
+                <button onClick={() => { handleSignOut(); setMobileMenuOpen(false); }} className="w-full text-left text-sm font-bold uppercase tracking-[0.3em] text-destructive flex items-center gap-2">
+                  TERMINATE SESSION
+                </button>
+              </div>
             </>
           ) : (
-            <>
-              <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-bold uppercase tracking-[0.3em] text-foreground">SIGN IN</Link>
-              <Link href="/signup" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-bold uppercase tracking-[0.3em] text-primary">GET STARTED</Link>
-            </>
+            <div className="space-y-8 flex flex-col pt-4">
+              <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold uppercase tracking-[0.3em] text-foreground">SIGN IN</Link>
+              <Link href="/signup" onClick={() => setMobileMenuOpen(false)} className="text-lg font-bold uppercase tracking-[0.3em] text-primary">GET STARTED</Link>
+            </div>
           )}
         </div>
       )}
