@@ -54,7 +54,6 @@ export default function SignupPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const newUser = userCredential.user;
       
-      // Send verification email
       await sendEmailVerification(newUser);
       
       await set(ref(rtdb, `users/${newUser.uid}/profile`), {
@@ -66,7 +65,7 @@ export default function SignupPage() {
 
       toast({
         title: "Tactical Dispatch Sent",
-        description: "Verification signature dispatched to your email.",
+        description: "Verification signature dispatched to your email (check spam messages).",
       });
 
       router.push("/verify-email");

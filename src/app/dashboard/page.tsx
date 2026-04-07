@@ -176,7 +176,8 @@ export default function DashboardPage() {
               uid,
               email: val.profile?.email || 'N/A',
               displayName: val.profile?.displayName || (val.profile?.email ? val.profile.email.split('@')[0] : 'Tactical Unit'),
-              role: val.profile?.role || 'user'
+              role: val.profile?.role || 'user',
+              nodes: val.nodes || {}
             }));
           setAllUsers(list);
         }
@@ -384,11 +385,15 @@ export default function DashboardPage() {
 
   const handleSearchManual = () => {
     if (!searchQuery) return;
-    const target = allUsers.find(u => u.email?.toLowerCase() === searchQuery.toLowerCase());
+    const target = allUsers.find(u => {
+      const userNodes = Object.values(u.nodes || {});
+      return userNodes.some((node: any) => node.hardwareId?.toLowerCase() === searchQuery.toLowerCase());
+    });
+    
     if (target) {
       handleSendLinkRequest(target);
     } else {
-      toast({ variant: "destructive", title: "Target Missing", description: "No registered personnel found with this signature." });
+      toast({ variant: "destructive", title: "Target Missing", description: "No registered hardware signature found." });
     }
   };
 
@@ -539,10 +544,10 @@ export default function DashboardPage() {
               <Card className="glass-card border-none p-6 md:p-10 shadow-2xl overflow-hidden">
                 <div className="space-y-8">
                   <div className="space-y-4">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Precision Search (Email)</Label>
+                    <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Precision Search (Hardware ID)</Label>
                     <div className="flex flex-col sm:flex-row gap-4">
                       <Input 
-                        placeholder="e.g. cristian@gmail.com" 
+                        placeholder="e.g. NODE-X92J" 
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSearchManual()}
@@ -553,7 +558,7 @@ export default function DashboardPage() {
                         disabled={registerLoading || !searchQuery}
                         className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-14 md:h-16 px-12 bg-secondary hover:bg-secondary/90 text-white w-full sm:w-auto"
                       >
-                        {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><UserPlus className="h-5 w-5 mr-3" /> Intercept</>}
+                        {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Search className="h-5 w-5 mr-3" /> Intercept</>}
                       </Button>
                     </div>
                   </div>
