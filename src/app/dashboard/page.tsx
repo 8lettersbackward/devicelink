@@ -53,7 +53,6 @@ import {
   ShieldCheck,
   UserCheck,
   Navigation,
-  Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ref, set, push, remove, update, onChildAdded, off, onValue, get } from "firebase/database";
@@ -103,11 +102,6 @@ export default function DashboardPage() {
     targetGroups: [] as string[]
   });
 
-  const [simulationForm, setSimulationForm] = useState({
-    latitude: '40.7128',
-    longitude: '-74.0060'
-  });
-
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isTelemetryOpen, setIsTelemetryOpen] = useState(false);
@@ -121,7 +115,6 @@ export default function DashboardPage() {
   const [isViewItemDialogOpen, setIsViewItemDialogOpen] = useState(false);
   const [isManageGroupsDialogOpen, setIsManageGroupsDialogOpen] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
-  const [isSimulateDialogOpen, setIsSimulateDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
   const [itemToView, setItemToView] = useState<any>(null);
   const [itemToEdit, setItemToEdit] = useState<any>(null);
@@ -334,38 +327,6 @@ export default function DashboardPage() {
     setVaultClearedAt(now);
     localStorage.setItem('vaultClearedAt', now.toString());
     toast({ title: "Terminal Purged", description: "Interface logs cleared locally." });
-  };
-
-  const handleExecuteSimulation = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !rtdb) return;
-    
-    const lat = parseFloat(simulationForm.latitude);
-    const lng = parseFloat(simulationForm.longitude);
-    
-    if (isNaN(lat) || isNaN(lng)) {
-      toast({ variant: "destructive", title: "Invalid Input", description: "Please enter valid numeric coordinates." });
-      return;
-    }
-
-    setRegisterLoading(true);
-    let placeName = "Location Coordinates Acquired";
-    try {
-      const geo = await reverseGeocode({ latitude: lat, longitude: lng });
-      placeName = `${geo.city}, ${geo.province}, ${geo.country}`;
-    } catch (e) {
-      console.error("Simulation Geocoding failed", e);
-    }
-
-    logAction("MANUAL SIGNAL INTERCEPT", "simulation", {
-      latitude: lat,
-      longitude: lng,
-      place: placeName
-    });
-
-    setRegisterLoading(false);
-    setIsSimulateDialogOpen(false);
-    toast({ title: "Signal Dispatched", description: `Tactical intercept at: ${placeName}` });
   };
 
   const handleSendLinkRequest = (targetUser: any) => {
@@ -925,20 +886,11 @@ export default function DashboardPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tighter text-[#12086F]">NOTIFICATION</h1>
                 <div className="flex flex-wrap gap-4 w-full sm:w-auto">
-                  {userRole === 'user' && (
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setIsSimulateDialogOpen(true)} 
-                      className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-6 border-secondary/40 hover:bg-secondary/5 text-secondary flex-1 sm:flex-none"
-                    >
-                      <Radar className="h-4 w-4 mr-2" /> Simulate Signal
-                    </Button>
-                  )}
                   {notifications.length > 0 && (
                     <Button 
-                      variant="ghost" 
+                      variant="outline" 
                       onClick={handleClearNotifications} 
-                      className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-6 border border-primary/10 hover:bg-destructive/10 text-destructive flex-1 sm:flex-none"
+                      className="rounded-2xl font-bold text-[10px] uppercase tracking-widest h-12 px-8 border border-destructive/20 hover:bg-destructive/5 text-destructive w-full sm:w-auto"
                     >
                       <Eraser className="h-4 w-4 mr-2" /> Clear Vault
                     </Button>
@@ -954,13 +906,12 @@ export default function DashboardPage() {
                     </div>
                   ) : (
                     notifications.map(n => (
-                      <div key={n.id} className={cn("mb-6 md:mb-8 pb-6 md:pb-8 border-b border-primary/5 last:border-0 last:mb-0 min-w-0", n.type === 'sos' && "bg-destructive/5 -mx-4 px-4 rounded-xl", (n.type === 'link_request' || n.type === 'track_request') && "bg-secondary/5 -mx-4 px-4 rounded-xl", n.type === 'simulation' && "bg-secondary/5 -mx-4 px-4 rounded-xl")}>
+                      <div key={n.id} className={cn("mb-6 md:mb-8 pb-6 md:pb-8 border-b border-primary/5 last:border-0 last:mb-0 min-w-0", n.type === 'sos' && "bg-destructive/5 -mx-4 px-4 rounded-xl", (n.type === 'link_request' || n.type === 'track_request') && "bg-secondary/5 -mx-4 px-4 rounded-xl")}>
                         <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-3">
                           <div className="flex gap-4 items-center min-w-0 flex-1">
                             {n.type === 'sos' && <AlertTriangle className="h-5 w-5 text-destructive animate-pulse flex-shrink-0" />}
                             {(n.type === 'link_request' || n.type === 'track_request') && <UserPlus className="h-5 w-5 text-secondary flex-shrink-0" />}
-                            {n.type === 'simulation' && <Radar className="h-5 w-5 text-secondary flex-shrink-0" />}
-                            <p className={cn("text-sm md:text-md font-bold tracking-wide break-words flex-1 min-w-0", n.type === 'sos' && "text-destructive uppercase", (n.type === 'link_request' || n.type === 'track_request') && "text-secondary", n.type === 'simulation' && "text-secondary")}>
+                            <p className={cn("text-sm md:text-md font-bold tracking-wide break-words flex-1 min-w-0", n.type === 'sos' && "text-destructive uppercase", (n.type === 'link_request' || n.type === 'track_request') && "text-secondary")}>
                               {n.type === 'sos' ? `🚨 SOS ALERT - ${n.nodeName || 'UNIDENTIFIED'}` : n.message}
                             </p>
                           </div>
@@ -998,7 +949,7 @@ export default function DashboardPage() {
                           </div>
                         )}
 
-                        {(n.type === 'simulation' || (isValidCoordinate(n.latitude) && n.type !== 'sos' && n.type !== 'track_request' && n.type !== 'link_request')) && (
+                        {isValidCoordinate(n.latitude) && n.type !== 'sos' && n.type !== 'track_request' && n.type !== 'link_request' && (
                           <div className="ml-0 sm:ml-9 mb-4 space-y-3">
                             <div className="space-y-2">
                               {n.place && <p className="text-xs font-medium text-secondary/80 flex items-center gap-2 break-words"><MapPin className="h-3 w-3 flex-shrink-0" /> {n.place}</p>}
@@ -1046,39 +997,6 @@ export default function DashboardPage() {
           )}
         </div>
       </main>
-
-      <Dialog open={isSimulateDialogOpen} onOpenChange={setIsSimulateDialogOpen}>
-        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] w-[95vw] max-w-md p-6 md:p-10 overflow-y-auto max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle className="text-lg md:text-xl font-bold uppercase tracking-widest text-secondary mb-6 truncate">Signal Simulation Command</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleExecuteSimulation} className="space-y-6">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Intercept Latitude</Label>
-              <Input 
-                value={simulationForm.latitude} 
-                onChange={e => setSimulationForm({...simulationForm, latitude: e.target.value})} 
-                className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-mono" 
-                placeholder="40.7128"
-                required 
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1">Intercept Longitude</Label>
-              <Input 
-                value={simulationForm.longitude} 
-                onChange={e => setSimulationForm({...simulationForm, longitude: e.target.value})} 
-                className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-mono" 
-                placeholder="-74.0060"
-                required 
-              />
-            </div>
-            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
-              {registerLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-4 w-4 mr-3" /> Dispatch Signal</>}
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={isTelemetryOpen} onOpenChange={setIsTelemetryOpen}>
         <DialogContent className="bg-white border-2 border-accent/20 shadow-2xl rounded-[2rem] w-[95vw] max-w-4xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
