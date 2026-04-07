@@ -52,6 +52,7 @@ import {
   X,
   ShieldCheck,
   UserCheck,
+  Navigation,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ref, set, push, remove, update, onChildAdded, off, onValue, get } from "firebase/database";
@@ -130,7 +131,7 @@ export default function DashboardPage() {
   }, [user]);
 
   const isValidCoordinate = (val: any) => {
-    if (!val || val === "No_fix") return false;
+    if (val === undefined || val === null || val === "No_fix") return false;
     const num = parseFloat(val);
     return !isNaN(num) && isFinite(num) && num !== 0;
   };
@@ -316,8 +317,8 @@ export default function DashboardPage() {
 
     update(ref(rtdb), updates)
       .then(() => {
-        toast({ title: "Link Dispatched", description: `Tactical link request sent to ${targetUser.email}` });
-        logAction(`Initiated tactical link request for: ${targetUser.email}`);
+        toast({ title: "Link Dispatched", description: `Tactical link request sent to user associated with hardware signature.` });
+        logAction(`Initiated tactical link request for hardware ID.`);
       })
       .catch((err) => toast({ variant: "destructive", title: "Dispatch Failed", description: err.message }))
       .finally(() => setRegisterLoading(false));
@@ -874,7 +875,14 @@ export default function DashboardPage() {
                         {n.type === 'sos' && (
                           <div className="space-y-4 mb-4 ml-0 sm:ml-9">
                             <p className="text-xs font-medium text-destructive/80">Trigger: {n.trigger || 'Manual SOS'}</p>
-                            <p className="text-xs font-medium opacity-60 flex items-center gap-2 truncate"><MapPin className="h-3 w-3" /> {n.place || 'Location Coordinates Acquired'}</p>
+                            <div className="space-y-2">
+                              <p className="text-xs font-medium opacity-60 flex items-center gap-2 truncate"><MapPin className="h-3 w-3" /> {n.place || 'Location Coordinates Acquired'}</p>
+                              {isValidCoordinate(n.latitude) && isValidCoordinate(n.longitude) && (
+                                <p className="text-[10px] font-mono font-bold opacity-60 flex items-center gap-2">
+                                  <Navigation className="h-3 w-3" /> LAT: {n.latitude} | LNG: {n.longitude}
+                                </p>
+                              )}
+                            </div>
                             <div className="flex flex-wrap gap-3">
                                <Button size="sm" onClick={() => { setActiveSosAlert(n); setIsSosMapOpen(true); }} className="h-8 rounded-lg bg-destructive text-[9px] font-bold uppercase tracking-widest px-6 shadow-lg shadow-destructive/20 text-white flex-1 sm:flex-none">Tactical Map</Button>
                                {isValidCoordinate(n.latitude) && isValidCoordinate(n.longitude) && (
@@ -1045,7 +1053,7 @@ export default function DashboardPage() {
              </div>
           </DialogHeader>
           <div className="p-6 md:p-10 space-y-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                <div className="space-y-2">
                  <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Trigger Source</Label>
                  <p className="text-sm font-bold text-destructive truncate">{activeSosAlert?.trigger || 'Security Protocol 1-TAP'}</p>
@@ -1053,6 +1061,10 @@ export default function DashboardPage() {
                <div className="space-y-2">
                  <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Timestamp</Label>
                  <p className="text-sm font-bold">{activeSosAlert?.createdAt ? new Date(activeSosAlert.createdAt).toLocaleString() : 'N/A'}</p>
+               </div>
+               <div className="space-y-2 lg:col-span-1">
+                 <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Spatial Coordinates</Label>
+                 <p className="text-[10px] font-mono font-bold text-secondary">{activeSosAlert?.latitude}, {activeSosAlert?.longitude}</p>
                </div>
             </div>
             
