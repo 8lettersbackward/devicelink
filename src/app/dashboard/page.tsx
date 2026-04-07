@@ -83,7 +83,6 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<TabType>('buddies');
   const [hasMounted, setHasMounted] = useState(false);
   const [registerLoading, setRegisterLoading] = useState(false);
-  const [vaultClearedAt, setVaultClearedAt] = useState(0);
   const [userRole, setUserRole] = useState<string | null>(null);
 
   const trackingTimers = useRef<Record<string, any>>({});
@@ -139,10 +138,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setHasMounted(true);
-    const savedClearedAt = localStorage.getItem('vaultClearedAt');
-    if (savedClearedAt) {
-      setVaultClearedAt(parseInt(savedClearedAt));
-    }
     if (!userLoading) {
       if (!user) {
         router.push("/login");
@@ -299,9 +294,8 @@ export default function DashboardPage() {
         const createdAt = val.createdAt || val.timestamp || 0;
         return { ...val, id, createdAt };
       })
-      .filter(n => n.createdAt > vaultClearedAt)
       .sort((a, b) => b.createdAt - a.createdAt);
-  }, [notificationsData, vaultClearedAt]);
+  }, [notificationsData]);
 
   const links = useMemo(() => {
     if (!linksData) return [];
@@ -323,10 +317,13 @@ export default function DashboardPage() {
   };
 
   const handleClearNotifications = () => {
-    const now = Date.now();
-    setVaultClearedAt(now);
-    localStorage.setItem('vaultClearedAt', now.toString());
-    toast({ title: "Terminal Purged", description: "Interface logs cleared locally." });
+    if (!user || !rtdb) return;
+    const notificationsRef = ref(rtdb, `users/${user.uid}/notifications`);
+    remove(notificationsRef).then(() => {
+      toast({ title: "Terminal Purged", description: "All tactical logs permanently cleared from the database." });
+    }).catch((err) => {
+      toast({ variant: "destructive", title: "Purge Failed", description: err.message });
+    });
   };
 
   const handleSendLinkRequest = (targetUser: any) => {
