@@ -58,12 +58,18 @@ export default function SOSMap({ latitude, longitude, label }: SOSMapProps) {
 
       mapInstance.current = map;
 
-      // Initial size fix for dialogs
-      setTimeout(() => {
-        if (mounted.current && mapInstance.current) {
-          mapInstance.current.invalidateSize();
-        }
-      }, 300);
+      // Handle dialog animations/layout shifts
+      const timer1 = setTimeout(() => {
+        if (mounted.current && mapInstance.current) mapInstance.current.invalidateSize();
+      }, 100);
+      const timer2 = setTimeout(() => {
+        if (mounted.current && mapInstance.current) mapInstance.current.invalidateSize();
+      }, 500);
+
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      };
     } catch (error) {
       console.warn("Tactical Map Initialization Error:", error);
     }
@@ -76,7 +82,7 @@ export default function SOSMap({ latitude, longitude, label }: SOSMapProps) {
         markerRef.current = null;
       }
     };
-  }, []); // Only init once
+  }, []); // Only init once per mount
 
   // Update Marker and View on Prop Change
   useEffect(() => {
