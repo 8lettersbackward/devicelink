@@ -826,7 +826,7 @@ export default function DashboardPage() {
                         </div>
                         <div className="flex flex-wrap gap-4 pt-6 border-t border-primary/10">
                           <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary/5" onClick={() => { setItemToView(node); setIsViewItemDialogOpen(true); }}><Eye className="h-3.5 w-3.5 mr-2" /> View</Button>
-                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary text-white" onClick={() => { setItemToEdit(node); setIsEditBuddyDialogOpen(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary text-white" onClick={() => { setItemToEdit(node); setIsEditNodeDialogOpen(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
                           <Button variant="ghost" size="sm" className="h-10 rounded-xl text-destructive" onClick={() => { setItemToDelete({ ...node, type: 'node' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
                         </div>
                       </CardContent>
@@ -1286,109 +1286,4 @@ export default function DashboardPage() {
 
       <Dialog open={isViewItemDialogOpen} onOpenChange={setIsViewItemDialogOpen}>
         <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] max-w-md p-10">
-          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Asset Overview</DialogTitle></DialogHeader>
-          {itemToView && (
-            <div className="space-y-8">
-              <div className="p-8 bg-primary/5 rounded-3xl border border-primary/10 space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest">Descriptor</span>
-                  <span className="text-sm font-bold text-[#12086F]">{itemToView.nodeName || itemToView.name}</span>
-                </div>
-                {itemToView.phoneNumber && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest">Phone Number</span>
-                    <span className="text-[10px] font-mono text-secondary">{itemToView.phoneNumber}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest">{itemToView.hardwareId ? 'Hardware ID' : 'Internal ID'}</span>
-                  <span className="text-[10px] font-mono text-secondary">{itemToView.hardwareId || itemToView.id}</span>
-                </div>
-                {itemToView.temperature !== undefined && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest">Thermal Threshold</span>
-                    <span className="text-[10px] font-mono text-secondary">{itemToView.temperature}°C</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest">Current Status</span>
-                  <Badge className={cn("text-[9px] uppercase font-bold", itemToView.status === 'online' ? "bg-secondary/20 text-secondary" : "bg-muted/20 text-muted-foreground")}>{itemToView.status || 'Active'}</Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] uppercase font-bold opacity-40 tracking-widest">Link Created</span>
-                  <span className="text-[10px] opacity-60 font-bold">{safeFormatDate(itemToView.registeredAt)} {safeFormatTime(itemToView.registeredAt)}</span>
-                </div>
-              </div>
-              <div className="p-8 bg-primary/5 rounded-3xl border border-primary/10">
-                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-secondary mb-6">Authorized Protocols</p>
-                <div className="flex flex-wrap gap-2">
-                  {(itemToView.targetGroups || itemToView.groups || []).map((g: string) => (
-                    <Badge key={g} variant="outline" className="bg-white/50 border-primary/10 text-[9px] px-4 py-1.5 opacity-80 uppercase font-bold text-primary">{g}</Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isManageGroupsDialogOpen} onOpenChange={setIsManageGroupsDialogOpen}>
-        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] max-w-md p-10">
-          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest text-secondary mb-6">Safety Protocols</DialogTitle></DialogHeader>
-          <div className="space-y-8">
-            <div className="flex gap-3">
-              <Input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} placeholder="Protocol Name" className="bg-primary/5 border-primary/10 rounded-2xl h-14 text-sm font-bold uppercase tracking-widest" />
-              <Button onClick={() => {
-                if (!user || !newGroupName) return;
-                push(ref(rtdb, `users/${user.uid}/buddyGroups`), { name: newGroupName });
-                logAction(`Created new protocol group: ${newGroupName}`);
-                setNewGroupName("");
-              }} className="h-14 w-14 rounded-2xl p-0 shadow-lg bg-primary hover:bg-primary text-white"><PlusCircle className="h-6 w-6" /></Button>
-            </div>
-            <ScrollArea className="h-64 pr-4">
-              <div className="space-y-3">
-                {buddyGroups.map(g => (
-                  <div key={g} className="p-5 bg-primary/5 rounded-2xl flex justify-between items-center group/item transition-all border border-transparent">
-                    <span className="text-[10px] font-bold uppercase tracking-widest">{g}</span>
-                    {!DEFAULT_BUDDY_GROUPS.includes(g) && (
-                      <Button variant="ghost" size="sm" className="h-10 w-10 rounded-xl text-destructive" onClick={() => {
-                        const gId = Object.entries(customGroupsData || {}).find(([k, v]: any) => v.name === g)?.[0];
-                        if (gId) {
-                          remove(ref(rtdb, `users/${user.uid}/buddyGroups/${gId}`));
-                          logAction(`Removed protocol group: ${g}`);
-                        }
-                      }}><Trash2 className="h-4 w-4" /></Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] p-10">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl font-bold uppercase tracking-widest text-destructive mb-4">Purge Asset?</AlertDialogTitle>
-            <AlertDialogDescription className="text-sm font-medium leading-relaxed">This asset will be permanently erased from the terminal hub and protocol networks.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="mt-8 gap-4">
-            <AlertDialogCancel className="rounded-2xl h-12 font-bold text-[10px] uppercase tracking-widest flex-1 border-primary/10">Abort</AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              if (!user || !itemToDelete) return;
-              const path = itemToDelete.type === 'buddy' ? `users/${user.uid}/buddies/${itemToDelete.id}` : `users/${user.uid}/nodes/${itemToDelete.id}`;
-              const name = itemToDelete.nodeName || itemToDelete.name;
-              remove(ref(rtdb, path)).then(() => {
-                logAction(`Purged asset from network: ${name} (${itemToDelete.type})`);
-                setIsDeleteDialogOpen(false);
-                setItemToDelete(null);
-                toast({ title: "Asset Purged" });
-              });
-            }} className="rounded-2xl h-12 font-bold text-[10px] uppercase tracking-widest flex-1 bg-destructive hover:bg-destructive text-white">Confirm Purge</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  );
-}
+          <DialogHeader><DialogTitle className="text-xl font-bold uppercase tracking-widest
