@@ -207,6 +207,26 @@ export default function DashboardPage() {
     }
   }, [itemToEdit, activeTab]);
 
+  useEffect(() => {
+    if (!rtdb || !telemetryTargetUid || !isTelemetryOpen) {
+      setActiveTrackedNodes([]);
+      return;
+    }
+
+    const nodeRef = ref(rtdb, `users/${telemetryTargetUid}/nodes`);
+    const unsubscribe = onValue(nodeRef, (snapshot) => {
+      const nodesVal = snapshot.val();
+      if (nodesVal) {
+        const nodeList = Object.entries(nodesVal).map(([id, val]: [string, any]) => ({ ...val, id }));
+        setActiveTrackedNodes(nodeList);
+      } else {
+        setActiveTrackedNodes([]);
+      }
+    });
+
+    return () => off(nodeRef, 'value', unsubscribe);
+  }, [rtdb, telemetryTargetUid, isTelemetryOpen]);
+
   const groupsRef = useMemo(() => user && user.emailVerified ? ref(rtdb, `users/${user.uid}/buddyGroups`) : null, [rtdb, user]);
   const { data: customGroupsData } = useRtdb(groupsRef);
 
@@ -399,22 +419,8 @@ export default function DashboardPage() {
   };
 
   const handleOpenTelemetry = (targetUid: string) => {
-    if (!rtdb) return;
     setTelemetryTargetUid(targetUid);
-    const nodeRef = ref(rtdb, `users/${targetUid}/nodes`);
-    const unsubscribe = onValue(nodeRef, (snapshot) => {
-      const nodesVal = snapshot.val();
-      if (nodesVal) {
-        const nodeList = Object.entries(nodesVal).map(([id, val]: [string, any]) => ({ ...val, id }));
-        setActiveTrackedNodes(nodeList);
-        setIsTelemetryOpen(true);
-      } else {
-        setActiveTrackedNodes([]);
-        setIsTelemetryOpen(true);
-      }
-    });
-
-    return unsubscribe;
+    setIsTelemetryOpen(true);
   };
 
   const handleToggleNodeTrack = (nodeId: string, currentStatus: boolean) => {
