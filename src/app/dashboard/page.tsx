@@ -296,19 +296,34 @@ export default function DashboardPage() {
     if (!user || !rtdb) return;
     setRegisterLoading(true);
 
+    const now = Date.now();
     const updates: any = {};
+    
+    // Core Link Records
     updates[`users/${targetUser.uid}/links/${user.uid}`] = {
       status: 'pending',
       email: user.email,
       role: userRole,
-      createdAt: Date.now()
+      createdAt: now
     };
     updates[`users/${user.uid}/links/${targetUser.uid}`] = {
       status: 'requested',
       email: targetUser.email,
       role: targetUser.role,
-      createdAt: Date.now()
+      createdAt: now
     };
+
+    // Alert Target User
+    const notificationRef = ref(rtdb, `users/${targetUser.uid}/notifications`);
+    const newNotifKey = push(notificationRef).key;
+    if (newNotifKey) {
+      updates[`users/${targetUser.uid}/notifications/${newNotifKey}`] = {
+        message: `Incoming Link Request from Guardian: ${user.email}`,
+        createdAt: now,
+        type: 'link_request',
+        fromUid: user.uid
+      };
+    }
 
     update(ref(rtdb), updates)
       .then(() => {
@@ -475,7 +490,7 @@ export default function DashboardPage() {
                 key={item.id}
                 onClick={() => setActiveTab(item.id as TabType)}
                 className={cn(
-                  "w-full flex items-center gap-4 px-4 py-3.5 transition-all rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em]",
+                  "w-full flex items-center gap-4 px-4 py-3.5 transition-all rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] relative",
                   activeTab === item.id 
                     ? "bg-primary text-white shadow-lg shadow-primary/20" 
                     : "hover:bg-primary/5 text-muted-foreground"
@@ -483,6 +498,12 @@ export default function DashboardPage() {
               >
                 <item.icon className="h-4 w-4" />
                 <span>{item.label}</span>
+                {item.id === 'my-guardians' && pendingRequests.length > 0 && (
+                  <span className="absolute top-2 right-2 h-2 w-2 bg-destructive rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
+                )}
+                {item.id === 'notifications' && notifications.length > 0 && (
+                  <span className="absolute top-2 right-2 h-2 w-2 bg-secondary rounded-full animate-pulse shadow-[0_0_8px_rgba(72,149,239,0.6)]" />
+                )}
               </button>
             ))}
           </nav>
@@ -604,7 +625,7 @@ export default function DashboardPage() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {pendingRequests.map(request => (
-                      <Card key={request.uid} className="glass-card border-none p-8 space-y-6 bg-secondary/5">
+                      <Card key={request.uid} className="glass-card border-none p-8 space-y-6 bg-secondary/5 border-l-4 border-l-destructive animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div>
                           <p className="text-lg font-bold text-[#12086F] truncate">{request.email.split('@')[0]}</p>
                           <p className="text-[10px] font-mono text-secondary uppercase tracking-widest truncate">{request.email}</p>
@@ -802,7 +823,7 @@ export default function DashboardPage() {
                         </div>
                         <div className="flex flex-wrap gap-4 pt-6 border-t border-primary/10">
                           <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary/5" onClick={() => { setItemToView(node); setIsViewItemDialogOpen(true); }}><Eye className="h-3.5 w-3.5 mr-2" /> View</Button>
-                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary text-white" onClick={() => { setItemToEdit(node); setIsEditNodeDialogOpen(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
+                          <Button variant="ghost" size="sm" className="h-10 rounded-xl text-[9px] font-bold uppercase tracking-widest flex-1 bg-primary text-white" onClick={() => { setItemToEdit(node); setIsEditBuddyDialogOpen(true); }}><Pencil className="h-3.5 w-3.5 mr-2" /> Edit</Button>
                           <Button variant="ghost" size="sm" className="h-10 rounded-xl text-destructive" onClick={() => { setItemToDelete({ ...node, type: 'node' }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
                         </div>
                       </CardContent>
@@ -836,11 +857,12 @@ export default function DashboardPage() {
                     </div>
                   ) : (
                     notifications.map(n => (
-                      <div key={n.id} className={cn("mb-8 pb-8 border-b border-primary/5 last:border-0 last:mb-0", n.type === 'sos' && "bg-destructive/5 -mx-4 px-4 rounded-xl")}>
+                      <div key={n.id} className={cn("mb-8 pb-8 border-b border-primary/5 last:border-0 last:mb-0", n.type === 'sos' && "bg-destructive/5 -mx-4 px-4 rounded-xl", n.type === 'link_request' && "bg-secondary/5 -mx-4 px-4 rounded-xl")}>
                         <div className="flex justify-between items-start mb-3">
                           <div className="flex gap-4 items-center">
                             {n.type === 'sos' && <AlertTriangle className="h-5 w-5 text-destructive animate-pulse" />}
-                            <p className={cn("text-md font-bold tracking-wide", n.type === 'sos' && "text-destructive uppercase")}>
+                            {n.type === 'link_request' && <UserPlus className="h-5 w-5 text-secondary" />}
+                            <p className={cn("text-md font-bold tracking-wide", n.type === 'sos' && "text-destructive uppercase", n.type === 'link_request' && "text-secondary")}>
                               {n.type === 'sos' ? `🚨 SOS ALERT - ${n.nodeName || 'UNIDENTIFIED'}` : n.message}
                             </p>
                           </div>
@@ -870,7 +892,18 @@ export default function DashboardPage() {
                             </div>
                           </div>
                         )}
-                        {!n.type || n.type !== 'sos' && isValidCoordinate(n.latitude) && isValidCoordinate(n.longitude) && (
+                        {n.type === 'link_request' && (
+                          <div className="mt-4 ml-9">
+                             <Button 
+                               size="sm" 
+                               onClick={() => setActiveTab('my-guardians')} 
+                               className="h-8 rounded-lg bg-secondary text-[9px] font-bold uppercase tracking-widest px-6 shadow-lg shadow-secondary/20 text-white"
+                             >
+                               Review Request
+                             </Button>
+                          </div>
+                        )}
+                        {!n.type || (n.type !== 'sos' && n.type !== 'link_request') && isValidCoordinate(n.latitude) && isValidCoordinate(n.longitude) && (
                           <div className="ml-9 mb-4">
                             <Button 
                               variant="outline" 
