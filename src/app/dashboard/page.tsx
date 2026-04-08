@@ -996,7 +996,7 @@ export default function DashboardPage() {
       </main>
 
       <Dialog open={isTelemetryOpen} onOpenChange={setIsTelemetryOpen}>
-        <DialogContent className="bg-white border-2 border-accent/20 shadow-2xl rounded-[2rem] w-[95vw] max-w-4xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
+        <DialogContent className="bg-white border-2 border-accent/20 shadow-2xl rounded-[2rem] w-[95vw] max-w-4xl p-0 overflow-hidden max-h-[90vh] flex flex-col [&>button]:hidden">
           <DialogHeader className="p-6 md:p-10 border-b border-accent/5 bg-accent/5 z-50">
              <div className="flex justify-between items-center">
                <div className="flex items-center gap-4">
@@ -1063,7 +1063,7 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={isMapModalOpen} onOpenChange={setIsMapModalOpen}>
-        <DialogContent className="bg-white border-none shadow-2xl rounded-[2rem] w-[95vw] max-w-3xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
+        <DialogContent className="bg-white border-none shadow-2xl rounded-[2rem] w-[95vw] max-w-3xl p-0 overflow-hidden max-h-[90vh] flex flex-col [&>button]:hidden">
           <DialogHeader className="p-6 md:p-8 border-b border-primary/5 z-50 bg-white">
             <DialogTitle className="text-sm sm:text-lg md:text-xl font-bold uppercase tracking-widest text-secondary break-words min-w-0">Spatial Coordinate Intercept</DialogTitle>
           </DialogHeader>
@@ -1095,7 +1095,7 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={isSosMapOpen} onOpenChange={setIsSosMapOpen}>
-        <DialogContent className="bg-white border-2 border-destructive/20 shadow-2xl rounded-[2rem] w-[95vw] max-w-2xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
+        <DialogContent className="bg-white border-2 border-destructive/20 shadow-2xl rounded-[2rem] w-[95vw] max-w-2xl p-0 overflow-hidden max-h-[90vh] flex flex-col [&>button]:hidden">
           <DialogHeader className="p-6 md:p-10 border-b border-destructive/5 bg-destructive/5 z-50">
              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                <div className="flex items-center gap-4 overflow-hidden flex-1 min-w-0">
@@ -1152,7 +1152,7 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={isAddBuddyDialogOpen} onOpenChange={setIsAddBuddyDialogOpen}>
-        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] w-[95vw] max-w-md p-6 md:p-10 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] w-[95vw] max-w-md p-6 md:p-10 max-h-[90vh] overflow-y-auto [&>button]:hidden">
           <DialogHeader><DialogTitle className="text-lg md:text-xl font-bold uppercase tracking-widest text-secondary mb-6 truncate">Enlist Buddy</DialogTitle></DialogHeader>
           <form onSubmit={(e) => {
             e.preventDefault();
@@ -1190,15 +1190,18 @@ export default function DashboardPage() {
                 ))}
               </div>
             </div>
-            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
-              {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save Buddy"}
-            </Button>
+            <div className="flex gap-4">
+              <Button type="button" variant="outline" onClick={() => setIsAddBuddyDialogOpen(false)} className="flex-1 h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest">Abort</Button>
+              <Button type="submit" className="flex-1 h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
+                {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save Buddy"}
+              </Button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isEditBuddyDialogOpen} onOpenChange={setIsEditBuddyDialogOpen}>
-        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] w-[95vw] max-w-md p-6 md:p-10 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] w-[95vw] max-w-md p-6 md:p-10 max-h-[90vh] overflow-y-auto [&>button]:hidden">
           <DialogHeader><DialogTitle className="text-lg md:text-xl font-bold uppercase tracking-widest text-secondary mb-6 truncate">Recalibrate Buddy Protocol</DialogTitle></DialogHeader>
           <form onSubmit={(e) => {
             e.preventDefault();
@@ -1235,15 +1238,18 @@ export default function DashboardPage() {
                 ))}
               </div>
             </div>
-            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
-              {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Confirm Recalibration"}
-            </Button>
+            <div className="flex gap-4">
+              <Button type="button" variant="outline" onClick={() => setIsEditBuddyDialogOpen(false)} className="flex-1 h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest">Abort</Button>
+              <Button type="submit" className="flex-1 h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
+                {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Confirm Recalibration"}
+              </Button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isAddNodeDialogOpen} onOpenChange={setIsAddNodeDialogOpen}>
-        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] w-[95vw] max-w-md p-6 md:p-10 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] w-[95vw] max-w-md p-6 md:p-10 max-h-[90vh] overflow-y-auto [&>button]:hidden">
           <DialogHeader><DialogTitle className="text-lg md:text-xl font-bold uppercase tracking-widest text-secondary mb-6 truncate">Arm Node</DialogTitle></DialogHeader>
           <form onSubmit={(e) => {
             e.preventDefault();
@@ -1289,15 +1295,18 @@ export default function DashboardPage() {
                 ))}
               </div>
             </div>
-            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
-              {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Arm Node"}
-            </Button>
+            <div className="flex gap-4">
+              <Button type="button" variant="outline" onClick={() => setIsAddNodeDialogOpen(false)} className="flex-1 h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest">Abort</Button>
+              <Button type="submit" className="flex-1 h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
+                {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Arm Node"}
+              </Button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isEditNodeDialogOpen} onOpenChange={setIsEditNodeDialogOpen}>
-        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] w-[95vw] max-w-md p-6 md:p-10 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] w-[95vw] max-w-md p-6 md:p-10 max-h-[90vh] overflow-y-auto [&>button]:hidden">
           <DialogHeader><DialogTitle className="text-lg md:text-xl font-bold uppercase tracking-widest text-secondary mb-6 truncate">Calibrate Node Hardware</DialogTitle></DialogHeader>
           <form onSubmit={(e) => {
             e.preventDefault();
@@ -1347,15 +1356,18 @@ export default function DashboardPage() {
                 ))}
               </div>
             </div>
-            <Button type="submit" className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
-              {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Confirm Calibration"}
-            </Button>
+            <div className="flex gap-4">
+              <Button type="button" variant="outline" onClick={() => setIsEditNodeDialogOpen(false)} className="flex-1 h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest">Abort</Button>
+              <Button type="submit" className="flex-1 h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white" disabled={registerLoading}>
+                {registerLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Confirm Calibration"}
+              </Button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isViewItemDialogOpen} onOpenChange={setIsViewItemDialogOpen}>
-        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] w-[95vw] max-w-md p-6 md:p-10 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] w-[95vw] max-w-md p-6 md:p-10 max-h-[90vh] overflow-y-auto [&>button]:hidden">
           <DialogHeader><DialogTitle className="text-lg md:text-xl font-bold uppercase tracking-widest text-secondary mb-6 truncate">Asset Overview</DialogTitle></DialogHeader>
           {itemToView && (
             <div className="space-y-6 md:space-y-8">
@@ -1403,13 +1415,14 @@ export default function DashboardPage() {
                   ))}
                 </div>
               </div>
+              <Button onClick={() => setIsViewItemDialogOpen(false)} className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest bg-primary hover:bg-primary text-white">Acknowledge Asset</Button>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
       <Dialog open={isManageGroupsDialogOpen} onOpenChange={setIsManageGroupsDialogOpen}>
-        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] w-[95vw] max-w-md p-6 md:p-10 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-white border border-primary/10 shadow-xl rounded-[2rem] w-[95vw] max-w-md p-6 md:p-10 max-h-[90vh] overflow-y-auto [&>button]:hidden">
           <DialogHeader><DialogTitle className="text-lg md:text-xl font-bold uppercase tracking-widest text-secondary mb-6 truncate">Safety Protocols</DialogTitle></DialogHeader>
           <div className="space-y-6 md:space-y-8">
             <div className="flex gap-3">
@@ -1439,6 +1452,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             </ScrollArea>
+            <Button onClick={() => setIsManageGroupsDialogOpen(false)} className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest bg-secondary hover:bg-secondary text-white">Close Protocols</Button>
           </div>
         </DialogContent>
       </Dialog>
