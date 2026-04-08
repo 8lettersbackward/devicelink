@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useUser, useDatabase, useRtdb, useAuth } from "@/firebase";
@@ -13,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { updateProfile, signOut, updatePassword } from "firebase/auth";
 import { ref, set } from "firebase/database";
-import { Loader2, User as UserIcon, LogOut, IdCard, Mail, Camera, ArrowLeft, Lock, KeyRound } from "lucide-react";
+import { Loader2, User as UserIcon, LogOut, IdCard, Mail, ArrowLeft, Lock, KeyRound } from "lucide-react";
 
 export default function ProfilePage() {
   const { user, loading: userLoading } = useUser();
@@ -50,8 +49,7 @@ export default function ProfilePage() {
     
     try {
       await updateProfile(user, { 
-        displayName: displayName,
-        photoURL: avatarUrl 
+        displayName: displayName
       });
 
       const userProfileRef = ref(rtdb, `users/${user.uid}/profile`);
@@ -59,7 +57,6 @@ export default function ProfilePage() {
         ...profileData,
         displayName,
         email: user.email,
-        avatarUrl,
         updatedAt: Date.now()
       });
 
@@ -209,19 +206,6 @@ export default function ProfilePage() {
                   />
                   <p className="text-[8px] text-muted-foreground uppercase">This name will be displayed across your terminal hub.</p>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="avatar-url" className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 text-muted-foreground">
-                    <Camera className="h-3 w-3" /> Avatar resource URL
-                  </Label>
-                  <Input 
-                    id="avatar-url" 
-                    placeholder="https://..." 
-                    value={avatarUrl} 
-                    onChange={(e) => setAvatarUrl(e.target.value)} 
-                    className="bg-background border-white/10 focus:border-primary h-14 text-[10px] font-mono"
-                  />
-                </div>
               </CardContent>
               <CardFooter className="pt-6 border-t border-white/10">
                 <Button type="submit" disabled={updating} className="w-full h-16 bg-primary hover:bg-secondary uppercase font-bold tracking-[0.3em] text-xs shadow-2xl">
@@ -234,7 +218,7 @@ export default function ProfilePage() {
           <Card className="border-none shadow-2xl bg-white rounded-xl">
             <CardHeader className="border-b border-white/10">
               <CardTitle className="text-sm uppercase font-bold tracking-[0.2em] text-secondary flex items-center gap-2">
-                <Lock className="h-4 w-4" /> Security Credentials
+                <Lock className="h-4 w-4" /> Change Password
               </CardTitle>
               <CardDescription className="text-[10px] uppercase text-muted-foreground">Update your master account password.</CardDescription>
             </CardHeader>
