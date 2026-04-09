@@ -123,7 +123,7 @@ export default function DashboardPage() {
 
   const [activeSosAlert, setActiveSosAlert] = useState<any>(null);
   const [isSosMapOpen, setIsSosMapOpen] = useState(false);
-  const lastProcessedSosRef = useRef<string | null>(null);
+  const lastProcessedAlertRef = useRef<string | null>(null);
 
   const currentName = useMemo(() => {
     if (!user?.email) return "User";
@@ -239,7 +239,7 @@ export default function DashboardPage() {
   const { data: linksData } = useRtdb(linksRef);
 
   useEffect(() => {
-    if (!user || !user.emailVerified || !rtdb || !userRole) return;
+    if (!user || !user.emailVerified || !rtdb) return;
 
     const queryRef = ref(rtdb, `users/${user.uid}/notifications`);
     
@@ -247,23 +247,25 @@ export default function DashboardPage() {
       const alert = snapshot.val();
       const alertId = snapshot.key;
 
-      if (alert && alert.type === "sos" && userRole === 'user' && alertId !== lastProcessedSosRef.current) {
-        lastProcessedSosRef.current = alertId;
+      if (!alert || alertId === lastProcessedAlertRef.current) return;
+      lastProcessedAlertRef.current = alertId;
+
+      // Real place geocoding for ANY notification with coordinates
+      if (isValidCoordinate(alert.latitude) && isValidCoordinate(alert.longitude) && !alert.place) {
+        try {
+          const geo = await reverseGeocode({ latitude: Number(alert.latitude), longitude: Number(alert.longitude) });
+          const place = `${geo.city}, ${geo.province}, ${geo.country}`;
+          update(ref(rtdb, `users/${user.uid}/notifications/${alertId}`), { place });
+        } catch (e) {
+          console.error("Geocoding failed", e);
+        }
+      }
+
+      // Special handling for SOS for User role
+      if (alert.type === "sos" && userRole === 'user') {
         const createdAt = alert.createdAt || alert.timestamp || 0;
         if (Date.now() - createdAt < 30000) {
-          let enhancedAlert = { ...alert, id: alertId, createdAt };
-          
-          if (isValidCoordinate(alert.latitude) && isValidCoordinate(alert.longitude) && !alert.place) {
-            try {
-              const geo = await reverseGeocode({ latitude: Number(alert.latitude), longitude: Number(alert.longitude) });
-              enhancedAlert.place = `${geo.city}, ${geo.province}, ${geo.country}`;
-              update(ref(rtdb, `users/${user.uid}/notifications/${alertId}`), { place: enhancedAlert.place });
-            } catch (e) {
-              console.error("SOS Geocoding failed", e);
-            }
-          }
-          
-          setActiveSosAlert(enhancedAlert);
+          setActiveSosAlert({ ...alert, id: alertId, createdAt });
           setIsSosMapOpen(true);
         }
       }
@@ -506,7 +508,7 @@ export default function DashboardPage() {
   const safeFormatTime = (ts: any) => {
     if (!ts) return "---";
     const d = new Date(ts);
-    return isNaN(d.getTime()) ? "---" : d.toLocaleTimeString();
+    return isNaN(d.getTime()) ? "---" : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
 
   const safeFormatDate = (ts: any) => {
@@ -570,11 +572,8 @@ export default function DashboardPage() {
                 >
                   <item.icon className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
                   <span className="truncate">{item.label}</span>
-                  {item.id === 'my-guardians' && (pendingRequests.length > 0 || links.some(l => l.trackingRequest === 'pending')) && (
-                    <span className="absolute top-1 right-1 h-2 w-2 bg-destructive rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
-                  )}
-                  {item.id === 'notifications' && notifications.length > 0 && (
-                    <span className="absolute top-1 right-1 h-2 w-2 bg-secondary rounded-full animate-pulse shadow-[0_0_8px_rgba(72,149,239,0.6)]" />
+                  {notifications.length > 0 && item.id === 'notifications' && (
+                    <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-destructive rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
                   )}
                 </button>
               );
