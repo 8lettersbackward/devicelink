@@ -258,7 +258,8 @@ export default function DashboardPage() {
 
       if (alert.type === "sos") {
         const createdAt = alert.createdAt || alert.timestamp || 0;
-        if (Date.now() - createdAt < 30000) {
+        // Don't auto-open modal for TrackResponse triggers
+        if (Date.now() - createdAt < 30000 && alert.trigger !== "TrackResponse") {
           setActiveSosAlert({ ...alert, id: alertId, createdAt });
           setIsSosMapOpen(true);
         }
@@ -896,79 +897,102 @@ export default function DashboardPage() {
                       <p className="text-[10px] font-bold uppercase tracking-[0.4em]">Notification Vault Clear</p>
                     </div>
                   ) : (
-                    notifications.map(n => (
-                      <div key={n.id} className={cn("mb-6 md:mb-8 pb-6 md:pb-8 border-b border-primary/5 last:border-0 last:mb-0 min-w-0", n.type === 'sos' && "bg-destructive/5 -mx-4 px-4 rounded-xl", (n.type === 'link_request' || n.type === 'track_request') && "bg-secondary/5 -mx-4 px-4 rounded-xl")}>
-                        <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-3">
-                          <div className="flex gap-4 items-center min-w-0 flex-1">
-                            {n.type === 'sos' && <AlertTriangle className="h-5 w-5 text-destructive animate-pulse flex-shrink-0" />}
-                            {(n.type === 'link_request' || n.type === 'track_request') && <UserPlus className="h-5 w-5 text-secondary flex-shrink-0" />}
-                            <p className={cn("text-sm md:text-md font-bold tracking-wide break-words flex-1 min-w-0", n.type === 'sos' && "text-destructive uppercase", (n.type === 'link_request' || n.type === 'track_request') && "text-secondary")}>
-                              {n.type === 'sos' ? `🚨 SOS ALERT - ${n.nodeName || 'UNIDENTIFIED'}` : n.message}
-                            </p>
-                          </div>
-                          <Badge variant="outline" className={cn("text-[8px] md:text-[9px] font-bold px-3 bg-white/50 flex-shrink-0 self-end sm:self-center", n.type === 'sos' ? "border-destructive/40 text-destructive" : "border-secondary/40 text-secondary")}>
-                            {safeFormatTime(n.createdAt)}
-                          </Badge>
-                        </div>
-                        
-                        {(n.type === 'sos' || isValidCoordinate(n.latitude)) && (
-                          <div className="ml-0 sm:ml-9 mb-4 space-y-4">
-                            <div className="space-y-2">
-                              {n.type === 'sos' && <p className="text-xs font-medium text-destructive/80">Trigger: {n.trigger || 'Manual SOS'}</p>}
-                              {n.place && <p className="text-xs font-medium opacity-70 flex items-center gap-2 break-words"><MapPin className="h-3 w-3 flex-shrink-0" /> {n.place}</p>}
-                              <p className="text-[10px] font-mono font-bold opacity-60 flex items-center gap-2">
-                                <Navigation className="h-3 w-3 flex-shrink-0" /> LAT: {n.latitude} | LNG: {n.longitude}
-                              </p>
-                              {n.senderEmail && (
-                                <p className="text-[10px] font-bold text-accent uppercase tracking-widest flex items-center gap-2">
-                                  <ShieldAlert className="h-3 w-3" /> Linked Guardian: {n.senderEmail}
-                                </p>
+                    notifications.map(n => {
+                      const isTrackResponse = n.trigger === "TrackResponse";
+                      return (
+                        <div key={n.id} className={cn(
+                          "mb-6 md:mb-8 pb-6 md:pb-8 border-b border-primary/5 last:border-0 last:mb-0 min-w-0", 
+                          n.type === 'sos' && (isTrackResponse ? "bg-secondary/5" : "bg-destructive/5"),
+                          "-mx-4 px-4 rounded-xl",
+                          (n.type === 'link_request' || n.type === 'track_request') && "bg-secondary/5"
+                        )}>
+                          <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-3">
+                            <div className="flex gap-4 items-center min-w-0 flex-1">
+                              {n.type === 'sos' && (
+                                isTrackResponse 
+                                  ? <Radar className="h-5 w-5 text-secondary animate-pulse flex-shrink-0" />
+                                  : <AlertTriangle className="h-5 w-5 text-destructive animate-pulse flex-shrink-0" />
                               )}
+                              {(n.type === 'link_request' || n.type === 'track_request') && <UserPlus className="h-5 w-5 text-secondary flex-shrink-0" />}
+                              <p className={cn(
+                                "text-sm md:text-md font-bold tracking-wide break-words flex-1 min-w-0", 
+                                n.type === 'sos' && (isTrackResponse ? "text-secondary uppercase" : "text-destructive uppercase"), 
+                                (n.type === 'link_request' || n.type === 'track_request') && "text-secondary"
+                              )}>
+                                {n.type === 'sos' ? (isTrackResponse ? `📡 Telemetry Received - ${n.nodeName || 'UNIDENTIFIED'}` : `🚨 SOS ALERT - ${n.nodeName || 'UNIDENTIFIED'}`) : n.message}
+                              </p>
                             </div>
-                            
-                            <div className="flex flex-wrap gap-2">
-                              <Button 
-                                variant={n.type === 'sos' ? 'default' : 'outline'}
-                                size="sm" 
-                                className={cn(
-                                  "h-8 rounded-xl text-[9px] font-bold uppercase tracking-widest px-6",
-                                  n.type === 'sos' ? "bg-destructive hover:bg-destructive shadow-lg shadow-destructive/20 text-white" : "border-primary/20 hover:bg-primary/5"
+                            <Badge variant="outline" className={cn(
+                              "text-[8px] md:text-[9px] font-bold px-3 bg-white/50 flex-shrink-0 self-end sm:self-center", 
+                              n.type === 'sos' && !isTrackResponse ? "border-destructive/40 text-destructive" : "border-secondary/40 text-secondary"
+                            )}>
+                              {safeFormatTime(n.createdAt)}
+                            </Badge>
+                          </div>
+                          
+                          {(n.type === 'sos' || isValidCoordinate(n.latitude)) && (
+                            <div className="ml-0 sm:ml-9 mb-4 space-y-4">
+                              <div className="space-y-2">
+                                {n.type === 'sos' && (
+                                  <p className={cn("text-xs font-medium", isTrackResponse ? "text-secondary/80" : "text-destructive/80")}>
+                                    Trigger: {n.trigger || 'Manual SOS'}
+                                  </p>
                                 )}
-                                onClick={() => { 
-                                  setActiveSosAlert(n); 
-                                  setIsSosMapOpen(true); 
-                                }}
-                              >
-                                <MapPin className="h-3.5 w-3.5 mr-2" /> Tactical Map
-                              </Button>
+                                {n.place && <p className="text-xs font-medium opacity-70 flex items-center gap-2 break-words"><MapPin className="h-3 w-3 flex-shrink-0" /> {n.place}</p>}
+                                <p className="text-[10px] font-mono font-bold opacity-60 flex items-center gap-2">
+                                  <Navigation className="h-3 w-3 flex-shrink-0" /> LAT: {n.latitude} | LNG: {n.longitude}
+                                </p>
+                                {n.senderEmail && (
+                                  <p className="text-[10px] font-bold text-accent uppercase tracking-widest flex items-center gap-2">
+                                    <ShieldAlert className="h-3 w-3" /> Linked Guardian: {n.senderEmail}
+                                  </p>
+                                )}
+                              </div>
                               
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 rounded-xl text-[9px] font-bold uppercase tracking-widest px-6 text-accent hover:bg-accent/5"
-                                onClick={() => window.open(`https://www.google.com/maps?q=${n.latitude},${n.longitude}`, '_blank')}
-                              >
-                                <Navigation className="h-3.5 w-3.5 mr-2" /> Google Maps
-                              </Button>
+                              <div className="flex flex-wrap gap-2">
+                                <Button 
+                                  variant={n.type === 'sos' ? 'default' : 'outline'}
+                                  size="sm" 
+                                  className={cn(
+                                    "h-8 rounded-xl text-[9px] font-bold uppercase tracking-widest px-6",
+                                    n.type === 'sos' && !isTrackResponse ? "bg-destructive hover:bg-destructive shadow-lg shadow-destructive/20 text-white" : "bg-secondary hover:bg-secondary shadow-lg shadow-secondary/20 text-white"
+                                  )}
+                                  onClick={() => { 
+                                    setActiveSosAlert(n); 
+                                    setIsSosMapOpen(true); 
+                                  }}
+                                >
+                                  <MapPin className="h-3.5 w-3.5 mr-2" /> Tactical Map
+                                </Button>
+                                
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 rounded-xl text-[9px] font-bold uppercase tracking-widest px-6 text-accent hover:bg-accent/5"
+                                  onClick={() => window.open(`https://www.google.com/maps?q=${n.latitude},${n.longitude}`, '_blank')}
+                                >
+                                  <Navigation className="h-3.5 w-3.5 mr-2" /> Google Maps
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
 
-                        {(n.type === 'link_request' || n.type === 'track_request') && (
-                          <div className="mt-4 ml-0 sm:ml-9">
-                             <Button 
-                               size="sm" 
-                               onClick={() => setActiveTab('my-guardians')} 
-                               className="h-8 rounded-lg bg-secondary text-[9px] font-bold uppercase tracking-widest px-6 shadow-lg shadow-secondary/20 text-white w-full sm:w-auto"
-                             >
-                               {n.type === 'track_request' ? "Review Track Access" : "Review Link Request"}
-                             </Button>
-                          </div>
-                        )}
+                          {(n.type === 'link_request' || n.type === 'track_request') && (
+                            <div className="mt-4 ml-0 sm:ml-9">
+                               <Button 
+                                 size="sm" 
+                                 onClick={() => setActiveTab('my-guardians')} 
+                                 className="h-8 rounded-lg bg-secondary text-[9px] font-bold uppercase tracking-widest px-6 shadow-lg shadow-secondary/20 text-white w-full sm:w-auto"
+                               >
+                                 {n.type === 'track_request' ? "Review Track Access" : "Review Link Request"}
+                               </Button>
+                            </div>
+                          )}
 
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold ml-0 sm:ml-9">{safeFormatDate(n.createdAt)}</p>
-                      </div>
-                    ))
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold ml-0 sm:ml-9">{safeFormatDate(n.createdAt)}</p>
+                        </div>
+                      );
+                    })
                   )}
                 </ScrollArea>
               </Card>
@@ -1062,17 +1086,37 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={isSosMapOpen} onOpenChange={setIsSosMapOpen}>
-        <DialogContent className="bg-white border-2 border-destructive/20 shadow-2xl rounded-[2rem] w-[95vw] max-w-2xl p-0 overflow-hidden max-h-[90vh] flex flex-col [&>button]:hidden">
-          <DialogHeader className="p-4 sm:p-6 md:p-10 border-b border-destructive/5 bg-destructive/5 z-50">
+        <DialogContent className={cn(
+          "bg-white border-2 shadow-2xl rounded-[2rem] w-[95vw] max-w-2xl p-0 overflow-hidden max-h-[90vh] flex flex-col [&>button]:hidden",
+          activeSosAlert?.trigger === "TrackResponse" ? "border-secondary/20" : "border-destructive/20"
+        )}>
+          <DialogHeader className={cn(
+            "p-4 sm:p-6 md:p-10 border-b z-50",
+            activeSosAlert?.trigger === "TrackResponse" ? "border-secondary/5 bg-secondary/5" : "border-destructive/5 bg-destructive/5"
+          )}>
              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                <div className="flex items-center gap-4 overflow-hidden flex-1 min-w-0">
-                  <AlertTriangle className="h-6 w-6 md:h-8 md:w-8 text-destructive animate-bounce flex-shrink-0" />
+                  {activeSosAlert?.trigger === "TrackResponse" ? (
+                    <Radar className="h-6 w-6 md:h-8 md:w-8 text-secondary animate-pulse flex-shrink-0" />
+                  ) : (
+                    <AlertTriangle className="h-6 w-6 md:h-8 md:w-8 text-destructive animate-bounce flex-shrink-0" />
+                  )}
                   <div className="overflow-hidden min-w-0">
-                    <DialogTitle className="text-sm sm:text-xl md:text-2xl font-bold text-destructive uppercase tracking-tighter break-words min-w-0">Tactical SOS Intercept</DialogTitle>
+                    <DialogTitle className={cn(
+                      "text-sm sm:text-xl md:text-2xl font-bold uppercase tracking-tighter break-words min-w-0",
+                      activeSosAlert?.trigger === "TrackResponse" ? "text-secondary" : "text-destructive"
+                    )}>
+                      {activeSosAlert?.trigger === "TrackResponse" ? "Tactical Telemetry Intercept" : "Tactical SOS Intercept"}
+                    </DialogTitle>
                     <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 truncate">Master Signal: {activeSosAlert?.nodeName || 'Hardware Node'}</p>
                   </div>
                </div>
-               <Badge className="bg-destructive text-white border-none text-[10px] font-bold uppercase px-4 py-2 rounded-xl animate-pulse flex-shrink-0">Critical Alert</Badge>
+               <Badge className={cn(
+                 "text-white border-none text-[10px] font-bold uppercase px-4 py-2 rounded-xl animate-pulse flex-shrink-0",
+                 activeSosAlert?.trigger === "TrackResponse" ? "bg-secondary" : "bg-destructive"
+               )}>
+                 {activeSosAlert?.trigger === "TrackResponse" ? "Signal Received" : "Critical Alert"}
+               </Badge>
              </div>
           </DialogHeader>
           <div className="flex-1 overflow-hidden">
@@ -1081,7 +1125,10 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Trigger Source</Label>
-                    <p className="text-sm font-bold text-destructive break-words">{activeSosAlert?.trigger || 'Security Protocol 1-TAP'}</p>
+                    <p className={cn(
+                      "text-sm font-bold break-words",
+                      activeSosAlert?.trigger === "TrackResponse" ? "text-secondary" : "text-destructive"
+                    )}>{activeSosAlert?.trigger || 'Security Protocol 1-TAP'}</p>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Timestamp</Label>
@@ -1093,24 +1140,39 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 
-                <div className="relative rounded-2xl overflow-hidden border border-destructive/10 shadow-inner">
+                <div className={cn(
+                  "relative rounded-2xl overflow-hidden border shadow-inner",
+                  activeSosAlert?.trigger === "TrackResponse" ? "border-secondary/10" : "border-destructive/10"
+                )}>
                   <SOSMap 
                       latitude={activeSosAlert?.latitude || 0} 
                       longitude={activeSosAlert?.longitude || 0}
-                      label={activeSosAlert?.place || activeSosAlert?.nodeName || "SOS SIGNAL"}
+                      label={activeSosAlert?.place || activeSosAlert?.nodeName || (activeSosAlert?.trigger === "TrackResponse" ? "TELEMETRY" : "SOS SIGNAL")}
                   />
-                  <div className="p-4 md:p-6 bg-white/80 backdrop-blur-md border-t border-destructive/10 flex items-center gap-3">
-                      <MapPin className="h-4 w-4 md:h-5 md:w-5 text-destructive flex-shrink-0" />
+                  <div className={cn(
+                    "p-4 md:p-6 bg-white/80 backdrop-blur-md border-t flex items-center gap-3",
+                    activeSosAlert?.trigger === "TrackResponse" ? "border-secondary/10" : "border-destructive/10"
+                  )}>
+                      <MapPin className={cn(
+                        "h-4 w-4 md:h-5 md:w-5 flex-shrink-0",
+                        activeSosAlert?.trigger === "TrackResponse" ? "text-secondary" : "text-destructive"
+                      )} />
                       <p className="text-9px md:text-[10px] font-bold uppercase tracking-widest flex-1 break-words">{activeSosAlert?.place || 'Coordinates Identified'}</p>
                   </div>
                 </div>
               </div>
             </ScrollArea>
           </div>
-          <div className="p-4 sm:p-6 md:p-10 bg-white border-t border-destructive/5 z-50">
+          <div className={cn(
+            "p-4 sm:p-6 md:p-10 bg-white border-t z-50",
+            activeSosAlert?.trigger === "TrackResponse" ? "border-secondary/5" : "border-destructive/5"
+          )}>
             <Button 
               onClick={() => setIsSosMapOpen(false)} 
-              className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] bg-destructive hover:bg-destructive shadow-xl shadow-destructive/20 text-white"
+              className={cn(
+                "w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] shadow-xl text-white",
+                activeSosAlert?.trigger === "TrackResponse" ? "bg-secondary hover:bg-secondary shadow-secondary/20" : "bg-destructive hover:bg-destructive shadow-destructive/20"
+              )}
             >
               CLOSE
             </Button>
