@@ -66,7 +66,7 @@ import { reverseGeocode } from "@/ai/flows/reverse-geocode-flow";
 
 const SOSMap = dynamic(() => import("./sos-map"), { 
   ssr: false,
-  loading: () => <div className="h-[250px] md:h-[350px] w-full bg-muted animate-pulse rounded-lg flex items-center justify-center text-[10px] font-bold uppercase tracking-widest opacity-40">Initializing Terminal Map...</div>
+  loading: () => <div className="h-[200px] sm:h-[250px] md:h-[350px] w-full bg-muted animate-pulse rounded-lg flex items-center justify-center text-[10px] font-bold uppercase tracking-widest opacity-40">Initializing Terminal Map...</div>
 });
 
 type TabType = 'buddies' | 'nodes' | 'notifications' | 'settings' | 'guardian' | 'my-guardians';
@@ -1019,7 +1019,7 @@ export default function DashboardPage() {
 
       <Dialog open={isTelemetryOpen} onOpenChange={setIsTelemetryOpen}>
         <DialogContent className="bg-white border-2 border-accent/20 shadow-2xl rounded-[2rem] w-[95vw] max-w-4xl p-0 overflow-hidden max-h-[90vh] flex flex-col [&>button]:hidden">
-          <DialogHeader className="p-6 md:p-10 border-b border-accent/5 bg-accent/5 z-50">
+          <DialogHeader className="p-4 sm:p-6 md:p-10 border-b border-accent/5 bg-accent/5 z-50">
              <div className="flex justify-between items-center">
                <div className="flex items-center gap-4">
                   <Radar className="h-6 w-6 md:h-8 md:w-8 text-accent animate-pulse flex-shrink-0" />
@@ -1073,7 +1073,7 @@ export default function DashboardPage() {
               )}
             </ScrollArea>
           </div>
-          <div className="p-6 md:p-10 bg-white border-t border-accent/5 z-50">
+          <div className="p-4 sm:p-6 md:p-10 bg-white border-t border-accent/5 z-50">
             <Button 
               onClick={() => setIsTelemetryOpen(false)} 
               className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] bg-accent hover:bg-accent shadow-xl shadow-accent/20 text-white"
@@ -1086,7 +1086,7 @@ export default function DashboardPage() {
 
       <Dialog open={isSosMapOpen} onOpenChange={setIsSosMapOpen}>
         <DialogContent className="bg-white border-2 border-destructive/20 shadow-2xl rounded-[2rem] w-[95vw] max-w-2xl p-0 overflow-hidden max-h-[90vh] flex flex-col [&>button]:hidden">
-          <DialogHeader className="p-6 md:p-10 border-b border-destructive/5 bg-destructive/5 z-50">
+          <DialogHeader className="p-4 sm:p-6 md:p-10 border-b border-destructive/5 bg-destructive/5 z-50">
              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                <div className="flex items-center gap-4 overflow-hidden flex-1 min-w-0">
                   <AlertTriangle className="h-6 w-6 md:h-8 md:w-8 text-destructive animate-bounce flex-shrink-0" />
@@ -1100,7 +1100,7 @@ export default function DashboardPage() {
           </DialogHeader>
           <div className="flex-1 overflow-hidden">
             <ScrollArea className="h-full">
-              <div className="p-6 md:p-10 space-y-8">
+              <div className="p-4 sm:p-6 md:p-10 space-y-8">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Trigger Source</Label>
@@ -1130,7 +1130,7 @@ export default function DashboardPage() {
               </div>
             </ScrollArea>
           </div>
-          <div className="p-6 md:p-10 bg-white border-t border-destructive/5 z-50">
+          <div className="p-4 sm:p-6 md:p-10 bg-white border-t border-destructive/5 z-50">
             <Button 
               onClick={() => setIsSosMapOpen(false)} 
               className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] bg-destructive hover:bg-destructive shadow-xl shadow-destructive/20 text-white"

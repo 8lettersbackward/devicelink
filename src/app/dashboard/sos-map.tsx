@@ -135,7 +135,7 @@ export default function SOSMap({ latitude, longitude, label }: SOSMapProps) {
 
   if (!isValid) {
     return (
-      <div className="h-[250px] md:h-[350px] w-full rounded-xl bg-muted/10 flex flex-col items-center justify-center border-2 border-dashed border-primary/10">
+      <div className="h-[200px] sm:h-[250px] md:h-[350px] w-full rounded-xl bg-muted/10 flex flex-col items-center justify-center border-2 border-dashed border-primary/10">
         <div className="p-8 bg-white/50 rounded-full mb-4">
            <div className="h-10 w-10 border-4 border-primary/10 border-t-primary rounded-full animate-spin" />
         </div>
@@ -145,7 +145,7 @@ export default function SOSMap({ latitude, longitude, label }: SOSMapProps) {
   }
 
   return (
-    <div className="relative h-[250px] md:h-[350px] w-full rounded-xl overflow-hidden group border border-primary/5">
+    <div className="relative h-[200px] sm:h-[250px] md:h-[350px] w-full rounded-xl overflow-hidden group border border-primary/5">
       <div 
         ref={mapRef} 
         className="h-full w-full z-10"
