@@ -111,17 +111,16 @@ export default function DashboardPage() {
   const [isEditNodeDialogOpen, setIsEditNodeDialogOpen] = useState(false);
   const [isViewItemDialogOpen, setIsViewItemDialogOpen] = useState(false);
   const [isManageGroupsDialogOpen, setIsManageGroupsDialogOpen] = useState(false);
-  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
   const [itemToView, setItemToView] = useState<any>(null);
   const [itemToEdit, setItemToEdit] = useState<any>(null);
-  const [mapNotification, setMapNotification] = useState<any>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
 
   const [activeSosAlert, setActiveSosAlert] = useState<any>(null);
   const [isSosMapOpen, setIsSosMapOpen] = useState(false);
   const lastProcessedAlertRef = useRef<string | null>(null);
+  const [expandedMapId, setExpandedMapId] = useState<string | null>(null);
 
   const currentName = useMemo(() => {
     if (!user?.email) return "User";
@@ -942,25 +941,52 @@ export default function DashboardPage() {
                           </div>
                         )}
 
-                        {isValidCoordinate(n.latitude) && n.type !== 'sos' && n.type !== 'track_request' && n.type !== 'link_request' && (
-                          <div className="ml-0 sm:ml-9 mb-4 space-y-3">
+                        {isValidCoordinate(n.latitude) && n.type !== 'sos' && (
+                          <div className="ml-0 sm:ml-9 mb-4 space-y-4">
                             <div className="space-y-2">
                               {n.place && <p className="text-xs font-medium text-secondary/80 flex items-center gap-2 break-words"><MapPin className="h-3 w-3 flex-shrink-0" /> {n.place}</p>}
                               <p className="text-[10px] font-mono font-bold opacity-60 flex items-center gap-2">
                                 <Navigation className="h-3 w-3 flex-shrink-0" /> LAT: {n.latitude} | LNG: {n.longitude}
                               </p>
+                              {n.senderEmail && (
+                                <p className="text-[10px] font-bold text-accent uppercase tracking-widest flex items-center gap-2">
+                                  <ShieldAlert className="h-3 w-3" /> Linked Guardian: {n.senderEmail}
+                                </p>
+                              )}
                             </div>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="h-8 rounded-xl text-[9px] font-bold uppercase tracking-widest px-6 border-primary/20 hover:bg-primary/5 w-full sm:w-auto"
-                              onClick={() => {
-                                setMapNotification(n);
-                                setIsMapModalOpen(true);
-                              }}
-                            >
-                              <MapPin className="h-3.5 w-3.5 mr-2" /> View Map
-                            </Button>
+                            
+                            <div className="flex flex-wrap gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className={cn(
+                                  "h-8 rounded-xl text-[9px] font-bold uppercase tracking-widest px-6 border-primary/20",
+                                  expandedMapId === n.id ? "bg-primary text-white" : "hover:bg-primary/5"
+                                )}
+                                onClick={() => setExpandedMapId(expandedMapId === n.id ? null : n.id)}
+                              >
+                                <MapPin className="h-3.5 w-3.5 mr-2" /> {expandedMapId === n.id ? 'Close Map' : 'Tactical Map'}
+                              </Button>
+                              
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 rounded-xl text-[9px] font-bold uppercase tracking-widest px-6 text-accent hover:bg-accent/5"
+                                onClick={() => window.open(`https://www.google.com/maps?q=${n.latitude},${n.longitude}`, '_blank')}
+                              >
+                                <Navigation className="h-3.5 w-3.5 mr-2" /> Google Maps
+                              </Button>
+                            </div>
+
+                            {expandedMapId === n.id && (
+                              <div className="rounded-2xl overflow-hidden border border-primary/10 shadow-inner animate-in fade-in slide-in-from-top-2 duration-300">
+                                <SOSMap 
+                                  latitude={n.latitude} 
+                                  longitude={n.longitude} 
+                                  label={n.place || n.message || "SIGNAL INTERCEPT"} 
+                                />
+                              </div>
+                            )}
                           </div>
                         )}
                         <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold ml-0 sm:ml-9">{safeFormatDate(n.createdAt)}</p>
@@ -1054,38 +1080,6 @@ export default function DashboardPage() {
             >
               CLOSE
             </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isMapModalOpen} onOpenChange={setIsMapModalOpen}>
-        <DialogContent className="bg-white border-none shadow-2xl rounded-[2rem] w-[95vw] max-w-3xl p-0 overflow-hidden max-h-[90vh] flex flex-col [&>button]:hidden">
-          <DialogHeader className="p-6 md:p-8 border-b border-primary/5 z-50 bg-white">
-            <DialogTitle className="text-sm sm:text-lg md:text-xl font-bold uppercase tracking-widest text-secondary break-words min-w-0">Spatial Coordinate Intercept</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-hidden relative">
-             <ScrollArea className="h-full">
-              {mapNotification && isValidCoordinate(mapNotification.latitude) && isValidCoordinate(mapNotification.longitude) && (
-                <div className="flex flex-col h-full">
-                  <SOSMap 
-                      latitude={mapNotification.latitude} 
-                      longitude={mapNotification.longitude}
-                      label={mapNotification.place || mapNotification.message || "SIGNAL INTERCEPT"}
-                  />
-                  {mapNotification.place && (
-                    <div className="p-4 md:p-6 bg-white/80 backdrop-blur-md border-t border-primary/10 flex items-center gap-3">
-                        <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
-                        <p className="text-[10px] font-bold uppercase tracking-widest flex-1 break-words">{mapNotification.place}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </ScrollArea>
-          </div>
-          <div className="p-6 md:p-8 border-t border-primary/5 bg-white z-50">
-             <Button onClick={() => setIsMapModalOpen(false)} className="w-full h-14 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary text-white">
-               CLOSE
-             </Button>
           </div>
         </DialogContent>
       </Dialog>
