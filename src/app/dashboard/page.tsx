@@ -99,8 +99,8 @@ export default function DashboardPage() {
 
   const navItems = useMemo(() => {
     return userRole === 'guardian' 
-      ? [{ id: 'guardian', label: 'TACTICAL RADAR', icon: Radar }, { id: 'notifications', label: 'NOTIFICATION', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: Settings }]
-      : [{ id: 'buddies', label: 'MANAGE BUDDIES', icon: Smartphone }, { id: 'nodes', label: 'MANAGE NODES', icon: Cpu }, { id: 'my-guardians', label: 'MY GUARDIANS', icon: ShieldCheck }, { id: 'notifications', label: 'NOTIFICATION', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: Settings }];
+      ? [{ id: 'guardian', label: 'RADAR', icon: Radar }, { id: 'notifications', label: 'ALERTS', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: Settings }]
+      : [{ id: 'buddies', label: 'BUDDIES', icon: Smartphone }, { id: 'nodes', label: 'NODES', icon: Cpu }, { id: 'notifications', label: 'ALERTS', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: Settings }];
   }, [userRole]);
 
   const logOutTerminal = () => signOut(auth).then(() => router.push("/login"));
@@ -109,55 +109,76 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-background text-foreground overflow-x-hidden">
-      {/* Sidebar - Responsive height and width */}
-      <aside className="w-full md:w-80 p-6 md:p-8 md:h-screen md:sticky top-0 z-40 border-b md:border-b-0 md:border-r border-black/5 bg-background/50 flex flex-col justify-between">
-        <div className="space-y-8 md:space-y-12">
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex justify-around items-center p-4 bg-background/80 backdrop-blur-md border-t border-black/5 pb-8">
+        {navItems.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => setActiveTab(item.id as TabType)}
+            className={cn(
+              "flex flex-col items-center gap-1 transition-all text-[8px] font-bold uppercase tracking-widest relative px-2",
+              activeTab === item.id 
+                ? "text-primary scale-110" 
+                : "text-muted-foreground"
+            )}
+          >
+            <item.icon className={cn("h-5 w-5", activeTab === item.id ? "text-primary" : "text-muted-foreground")} />
+            <span>{item.label}</span>
+            {notifications.length > 0 && item.id === 'notifications' && (
+              <span className="absolute top-0 right-1 h-1.5 w-1.5 bg-primary rounded-full" />
+            )}
+          </button>
+        ))}
+      </nav>
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex w-72 p-6 h-screen sticky top-0 z-40 border-r border-black/5 bg-background/50 flex-col justify-between">
+        <div className="space-y-10">
           <div className="flex items-center gap-3 px-2">
-            <div className="h-10 w-10 neo-flat flex items-center justify-center text-primary shrink-0">
-              <Hexagon className="h-6 w-6" />
+            <div className="h-9 w-9 neo-flat flex items-center justify-center text-primary shrink-0">
+              <Hexagon className="h-5 w-5" />
             </div>
-            <h1 className="text-lg md:text-xl font-black tracking-tighter uppercase flex items-baseline gap-1 text-foreground">
+            <h1 className="text-lg font-black tracking-tighter uppercase flex items-baseline gap-1 text-foreground">
               1TAP <span className="text-primary">BUDDY</span>
             </h1>
           </div>
 
-          <nav className="flex md:flex-col gap-2 md:gap-4 overflow-x-auto md:overflow-x-visible pb-4 md:pb-0 scrollbar-hide">
+          <nav className="flex flex-col gap-3">
             {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id as TabType)}
                 className={cn(
-                  "flex items-center gap-3 md:gap-4 px-4 md:px-6 py-3 md:py-4 transition-all text-[9px] md:text-[11px] font-bold uppercase tracking-[0.1em] relative group whitespace-nowrap shrink-0 md:shrink",
+                  "flex items-center gap-4 px-5 py-4 transition-all text-[10px] font-bold uppercase tracking-[0.1em] relative group whitespace-nowrap",
                   activeTab === item.id 
                     ? "neo-inset text-primary" 
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <item.icon className={cn("h-4 w-4", activeTab === item.id ? "text-primary" : "text-muted-foreground")} />
-                <span className="truncate">{item.label}</span>
+                <span>{item.label}</span>
                 {notifications.length > 0 && item.id === 'notifications' && (
-                  <span className="absolute top-2 md:top-1/2 md:-translate-y-1/2 right-2 md:right-6 h-1.5 md:h-2 w-1.5 md:w-2 bg-primary rounded-full" />
+                  <span className="absolute top-1/2 -translate-y-1/2 right-6 h-1.5 w-1.5 bg-primary rounded-full" />
                 )}
               </button>
             ))}
           </nav>
         </div>
 
-        {/* Profile Card at bottom of sidebar */}
-        <div className="mt-4 md:mt-auto hidden sm:block">
-          <div className="p-4 md:p-6 neo-flat space-y-4">
-            <div className="flex items-center gap-3 md:gap-4">
-              <Avatar className="h-8 w-8 md:h-10 md:w-10 neo-inset shrink-0">
-                <AvatarFallback className="bg-transparent text-[8px] md:text-[10px] font-bold text-foreground">{currentName[0].toUpperCase()}</AvatarFallback>
+        <div className="mt-auto">
+          <div className="p-5 neo-flat space-y-4">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-9 w-9 neo-inset shrink-0">
+                <AvatarFallback className="bg-transparent text-[9px] font-bold text-foreground">{currentName[0].toUpperCase()}</AvatarFallback>
               </Avatar>
               <div className="overflow-hidden">
-                <p className="text-[9px] md:text-[10px] font-black truncate uppercase tracking-widest text-foreground">{currentName}</p>
-                <p className="text-[8px] md:text-[9px] font-bold text-primary uppercase tracking-widest">{userRole}</p>
+                <p className="text-[10px] font-black truncate uppercase tracking-widest text-foreground">{currentName}</p>
+                <p className="text-[8px] font-bold text-primary uppercase tracking-widest">{userRole}</p>
               </div>
             </div>
             <button 
               onClick={logOutTerminal}
-              className="flex items-center gap-2 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-destructive transition-colors pl-1"
+              className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest text-muted-foreground hover:text-destructive transition-colors pl-1"
             >
               <LogOut className="h-3 w-3" />
               DISCONNECT
@@ -166,51 +187,63 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      <main className="flex-1 p-6 sm:p-8 md:p-16 w-full">
-        <div className="max-w-6xl mx-auto">
+      {/* Main Content Area */}
+      <main className="flex-1 p-6 sm:p-8 md:p-8 w-full pb-32 md:pb-8">
+        <div className="max-w-6xl mx-auto mt-4 md:mt-0">
           {activeTab === 'buddies' && (
-            <div className="space-y-8 md:space-y-12">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+            <div className="space-y-8">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Manage Buddies</h2>
-                <div className="flex flex-wrap gap-3 md:gap-4 w-full sm:w-auto">
-                  <Button className="neo-btn flex-1 sm:flex-none h-10 md:h-11 px-4 md:px-6 text-[9px] md:text-[10px] font-bold uppercase tracking-widest bg-background text-foreground hover:text-primary">
+                <div className="flex gap-3 w-full sm:w-auto">
+                  <Button className="neo-btn flex-1 sm:flex-none h-10 px-4 text-[9px] font-bold uppercase tracking-widest bg-background text-foreground hover:text-primary">
                     <PlusSquare className="h-4 w-4 mr-2" /> ENLIST
                   </Button>
-                  <Button className="neo-btn flex-1 sm:flex-none h-10 md:h-11 px-4 md:px-6 text-[9px] md:text-[10px] font-bold uppercase tracking-widest bg-background text-primary">
+                  <Button className="neo-btn flex-1 sm:flex-none h-10 px-4 text-[9px] font-bold uppercase tracking-widest bg-background text-primary">
                     <ShieldAlert className="h-4 w-4 mr-2" /> PROTOCOLS
                   </Button>
                 </div>
               </div>
 
-              {/* Neomorphic Content Card */}
-              <div className="neo-flat p-6 sm:p-10 min-h-[300px] md:min-h-[400px] flex items-center justify-center text-center">
-                 <div className="space-y-4 md:space-y-6 opacity-30">
-                   <Smartphone className="h-12 w-12 md:h-16 md:w-16 mx-auto text-foreground" />
-                   <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.3em] md:tracking-[0.4em] text-foreground">Operational Vault Empty</p>
+              <div className="neo-flat p-8 min-h-[300px] flex items-center justify-center text-center">
+                 <div className="space-y-6 opacity-30">
+                   <Smartphone className="h-12 w-12 mx-auto text-foreground" />
+                   <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-foreground">Operational Vault Empty</p>
+                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'guardian' && (
+            <div className="space-y-8">
+              <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Guardian Hub</h2>
+              <div className="neo-flat p-8 min-h-[400px] flex items-center justify-center text-center">
+                 <div className="space-y-6 opacity-30">
+                   <Radar className="h-12 w-12 mx-auto text-foreground" />
+                   <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-foreground">Terminal Section Initializing...</p>
                  </div>
               </div>
             </div>
           )}
 
           {activeTab === 'notifications' && (
-            <div className="space-y-8 md:space-y-12">
-              <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Notification Stream</h2>
-              <div className="neo-flat p-6 sm:p-10">
-                <ScrollArea className="h-[400px] md:h-[600px] pr-4 md:pr-6">
+            <div className="space-y-8">
+              <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Alert Stream</h2>
+              <div className="neo-flat p-6 sm:p-8">
+                <ScrollArea className="h-[500px] pr-4">
                   {notifications.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-[300px] md:h-[400px] opacity-10">
-                      <Bell className="h-12 w-12 md:h-16 md:w-16 mb-6 text-foreground" />
-                      <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.4em] text-foreground">Telemetry Clear</p>
+                    <div className="flex flex-col items-center justify-center h-[300px] opacity-10">
+                      <Bell className="h-12 w-12 mb-6 text-foreground" />
+                      <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-foreground">Telemetry Clear</p>
                     </div>
                   ) : (
                     notifications.map(n => (
-                      <div key={n.id} className="mb-6 md:mb-8 p-6 md:p-8 neo-flat bg-background/20">
+                      <div key={n.id} className="mb-6 p-6 neo-flat bg-background/20">
                         <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                           <div className="flex gap-4 items-center">
                             {n.type === 'sos' ? <AlertTriangle className="h-5 w-5 text-destructive animate-pulse" /> : <Radar className="h-5 w-5 text-primary" />}
                             <div>
-                              <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest leading-relaxed text-foreground">{n.message}</p>
-                              <p className="text-[8px] md:text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-1">{new Date(n.createdAt).toLocaleString()}</p>
+                              <p className="text-[10px] font-bold uppercase tracking-widest leading-relaxed text-foreground">{n.message}</p>
+                              <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest mt-1">{new Date(n.createdAt).toLocaleString()}</p>
                             </div>
                           </div>
                           <Badge className="neo-btn bg-background text-[8px] font-bold px-4 py-1 uppercase shrink-0 text-foreground">{n.type}</Badge>
@@ -224,11 +257,11 @@ export default function DashboardPage() {
           )}
 
           {/* Placeholder for other tabs */}
-          {activeTab !== 'buddies' && activeTab !== 'notifications' && (
-            <div className="space-y-8 md:space-y-12">
+          {!['buddies', 'notifications', 'guardian'].includes(activeTab) && (
+            <div className="space-y-8">
                <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">{activeTab.replace('-', ' ')}</h2>
-               <div className="neo-flat p-10 md:p-20 flex items-center justify-center opacity-20">
-                 <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.4em] md:tracking-[0.5em] text-center text-foreground">Terminal Section Initializing...</p>
+               <div className="neo-flat p-20 flex items-center justify-center opacity-20">
+                 <p className="text-[9px] font-bold uppercase tracking-[0.5em] text-center text-foreground">Terminal Section Initializing...</p>
                </div>
             </div>
           )}

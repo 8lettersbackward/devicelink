@@ -25,7 +25,7 @@ export default function RootLayout({
       <body className="font-body antialiased selection:bg-accent selection:text-accent-foreground overflow-x-hidden min-h-screen bg-background" suppressHydrationWarning>
         <FirebaseClientProvider>
           <Navbar />
-          <main className="pt-10 min-h-screen w-full overflow-x-hidden">
+          <main className="min-h-screen w-full overflow-x-hidden">
             {children}
           </main>
           <Toaster />
