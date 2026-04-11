@@ -1182,7 +1182,7 @@ export default function DashboardPage() {
             )}
           </div>
           <DialogFooter className="mt-8">
-            <Button onClick={() => setViewingBuddy(null)} className="w-full h-14 neo-btn bg-white text-foreground hover:text-primary text-[10px] font-black uppercase tracking-[0.2em] rounded-[1.5rem]">CLOSE DOSSIER</Button>
+            <Button onClick={() => setViewingBuddy(null)} className="w-full h-14 neo-btn bg-white text-foreground hover:text-primary text-[10px] font-black uppercase tracking-[0.2em] rounded-[1.5rem]">CLOSE</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1231,7 +1231,7 @@ export default function DashboardPage() {
             )}
           </div>
           <DialogFooter className="mt-8 pt-4 border-t border-black/5">
-            <Button onClick={() => setViewingNode(null)} className="w-full h-14 neo-btn bg-white text-foreground hover:text-primary text-[10px] font-black uppercase tracking-[0.2em] rounded-[1.5rem]">DISMISS PROFILE</Button>
+            <Button onClick={() => setViewingNode(null)} className="w-full h-14 neo-btn bg-white text-foreground hover:text-primary text-[10px] font-black uppercase tracking-[0.2em] rounded-[1.5rem]">CLOSE</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
