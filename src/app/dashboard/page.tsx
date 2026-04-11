@@ -161,7 +161,6 @@ export default function DashboardPage() {
     if (!radarSearchTerm || !radarSearchTerm.trim() || radarSearchTerm.trim().length < 3) return [];
     const term = radarSearchTerm.toLowerCase().trim();
     return availableNodes.filter(node => {
-      // Hardened check for hardwareId to prevent runtime errors
       const hId = node.hardwareId ? String(node.hardwareId).toLowerCase() : "";
       return hId === term;
     });
@@ -662,14 +661,14 @@ export default function DashboardPage() {
                   <>
                     {userRole !== 'guardian' && links.map(link => (
                       <div key={link.id} className={cn("neo-flat p-6 space-y-4", link.status === 'pending' || link.trackingRequest === 'requested' ? "bg-primary/5" : "bg-white")}>
-                        <div className="flex justify-between items-start">
-                          <div className="flex gap-4 items-center">
-                            <Avatar className="h-10 w-10 neo-inset border border-black/5">
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="flex gap-3 items-center min-w-0">
+                            <Avatar className="h-10 w-10 neo-inset border border-black/5 shrink-0">
                               <AvatarFallback className="bg-transparent text-[10px] font-black text-foreground">{link.guardianEmail?.[0].toUpperCase() || 'G'}</AvatarFallback>
                             </Avatar>
-                            <div className="overflow-hidden">
+                            <div className="min-w-0 flex-1">
                               <p className="text-[10px] font-black uppercase tracking-widest text-foreground truncate">{link.guardianEmail}</p>
-                              <Badge className={cn("text-[7px] font-black px-2 py-0.5 rounded-sm uppercase mt-1", link.status === 'linked' ? "bg-green-500/10 text-green-600" : "bg-primary/10 text-primary")}>
+                              <Badge className={cn("text-[7px] font-black px-2 py-0.5 rounded-sm uppercase mt-1 shrink-0", link.status === 'linked' ? "bg-green-500/10 text-green-600" : "bg-primary/10 text-primary")}>
                                 {link.status}
                               </Badge>
                             </div>
@@ -711,17 +710,17 @@ export default function DashboardPage() {
                       const linkedNode = availableNodes.find(n => n.hardwareId === link.hardwareId && n.ownerUid === link.id);
                       return (
                         <div key={link.id} className="neo-flat p-6 space-y-4">
-                          <div className="flex justify-between items-start">
-                            <div className="flex gap-4 items-center">
-                              <Avatar className="h-10 w-10 neo-inset border border-black/5">
+                          <div className="flex justify-between items-start gap-4">
+                            <div className="flex gap-4 items-center min-w-0">
+                              <Avatar className="h-10 w-10 neo-inset border border-black/5 shrink-0">
                                 <AvatarFallback className="bg-transparent text-[10px] font-black text-foreground">{link.targetEmail?.[0].toUpperCase() || 'U'}</AvatarFallback>
                               </Avatar>
-                              <div className="overflow-hidden">
+                              <div className="min-w-0 flex-1">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-foreground truncate">{link.targetEmail}</p>
                                 <p className="text-[8px] font-black text-muted-foreground uppercase mt-1 truncate">ID: {link.hardwareId}</p>
                               </div>
                             </div>
-                            <Badge className={cn("text-[7px] font-black px-2 py-0.5 rounded-sm uppercase", link.status === 'linked' ? "bg-green-500/10 text-green-600" : "bg-primary/10 text-primary")}>
+                            <Badge className={cn("text-[7px] font-black px-2 py-0.5 rounded-sm uppercase shrink-0", link.status === 'linked' ? "bg-green-500/10 text-green-600" : "bg-primary/10 text-primary")}>
                               {link.status}
                             </Badge>
                           </div>
@@ -838,10 +837,10 @@ export default function DashboardPage() {
                     const existingLink = links.find(l => l.hardwareId === node.hardwareId);
                     return (
                       <div key={node.id} className="neo-flat p-6 space-y-4 group">
-                        <div className="flex justify-between items-start">
-                          <div className="flex gap-4 items-center">
-                            <div className="h-10 w-10 neo-inset flex items-center justify-center text-primary/40"><Cpu className="h-5 w-5" /></div>
-                            <div className="overflow-hidden">
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex gap-4 items-center min-w-0">
+                            <div className="h-10 w-10 neo-inset flex items-center justify-center text-primary/40 shrink-0"><Cpu className="h-5 w-5" /></div>
+                            <div className="min-w-0 flex-1">
                               <p className="text-[10px] font-black uppercase tracking-widest text-foreground truncate">{node.nodeName}</p>
                               <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest truncate">{node.ownerEmail}</p>
                             </div>
