@@ -5,21 +5,21 @@
 @layer base {
   :root {
     --background: 220 20% 94%; /* #ECF0F3 */
-    --foreground: 220 30% 30%; /* #34495e */
+    --foreground: 220 40% 15%; /* Strictly Dark - Deep Charcoal/Navy */
     --card: 220 20% 94%;
-    --card-foreground: 220 30% 30%;
+    --card-foreground: 220 40% 15%;
     --popover: 220 20% 94%;
-    --popover-foreground: 220 30% 30%;
+    --popover-foreground: 220 40% 15%;
     --primary: 217 91% 60%; /* Bright Blue */
-    --primary-foreground: 0 0% 100%;
+    --primary-foreground: 220 40% 15%; /* Dark text on blue buttons */
     --secondary: 220 15% 85%;
-    --secondary-foreground: 220 30% 30%;
+    --secondary-foreground: 220 40% 15%;
     --muted: 220 15% 90%;
-    --muted-foreground: 220 20% 50%;
+    --muted-foreground: 220 25% 35%; /* Darker Muted Text */
     --accent: 217 91% 60%;
-    --accent-foreground: 0 0% 100%;
+    --accent-foreground: 220 40% 15%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
     --border: 220 15% 88%;
     --input: 220 15% 88%;
     --ring: 217 91% 60%;

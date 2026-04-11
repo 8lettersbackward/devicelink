@@ -27,7 +27,7 @@ export function Navbar() {
   const currentName = user?.displayName || currentEmailPrefix;
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-white/10 h-16">
+    <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-black/5 h-16">
       <div className="max-w-7xl mx-auto px-6 h-full">
         <div className="flex justify-between h-full items-center">
           <div className="flex-shrink-0">
@@ -52,7 +52,7 @@ export function Navbar() {
                      <UserIcon className="h-5 w-5" />
                    </div>
                 </Link>
-                <Button variant="outline" size="sm" onClick={handleSignOut} className="neo-btn h-10 px-6 text-[10px] font-bold uppercase tracking-widest text-foreground">
+                <Button variant="outline" size="sm" onClick={handleSignOut} className="neo-btn h-10 px-6 text-[10px] font-bold uppercase tracking-widest text-foreground hover:text-destructive">
                   Log Out
                 </Button>
               </div>
@@ -69,7 +69,7 @@ export function Navbar() {
           </div>
 
           <div className="md:hidden flex items-center">
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 h-10 w-10 neo-flat flex items-center justify-center">
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 h-10 w-10 neo-flat flex items-center justify-center text-foreground">
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
@@ -80,7 +80,7 @@ export function Navbar() {
         <div className="md:hidden fixed top-16 left-0 w-full h-[calc(100vh-64px)] bg-background z-[60] p-8 space-y-10 animate-in fade-in slide-in-from-top-4 duration-300">
           {user ? (
             <>
-              <div className="pb-8 border-b border-white/10">
+              <div className="pb-8 border-b border-black/5">
                 <p className="text-lg font-bold uppercase tracking-widest text-foreground">{currentName}</p>
                 <p className="text-xs font-mono text-muted-foreground mt-2">{user.email}</p>
               </div>
@@ -88,7 +88,7 @@ export function Navbar() {
                 <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-bold uppercase tracking-[0.3em] text-foreground">HUB TERMINAL</Link>
                 <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-bold uppercase tracking-[0.3em] text-foreground">PROFILE</Link>
               </div>
-              <div className="pt-8 border-t border-white/10">
+              <div className="pt-8 border-t border-black/5">
                 <button onClick={() => { handleSignOut(); setMobileMenuOpen(false); }} className="w-full text-left text-sm font-bold uppercase tracking-[0.3em] text-destructive">
                   TERMINATE SESSION
                 </button>

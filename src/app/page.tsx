@@ -39,7 +39,7 @@ export default function Home() {
           
           <div className="space-y-6 md:space-y-8">
             <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-bold tracking-tighter text-foreground leading-none">
-              1TAP <br className="sm:hidden" /> <span className="opacity-40 uppercase tracking-[0.05em] sm:tracking-[0.1em]">SECURE</span>
+              1TAP <br className="sm:hidden" /> <span className="opacity-40 uppercase tracking-[0.05em] sm:tracking-[0.1em] text-foreground">SECURE</span>
             </h1>
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-md mx-auto font-medium leading-relaxed px-4">
               Professional safety orchestration. <br className="hidden sm:block" /> Precision neomorphic protection.
@@ -61,7 +61,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="py-8 md:py-12 text-center text-muted-foreground/40 text-[8px] md:text-[10px] tracking-[0.2em] md:tracking-[0.3em] uppercase relative z-10">
+      <footer className="py-8 md:py-12 text-center text-muted-foreground font-bold text-[8px] md:text-[10px] tracking-[0.2em] md:tracking-[0.3em] uppercase relative z-10">
         <div className="max-w-7xl mx-auto px-6">
           <p>© 2024 1TAP SECURE. NEOMORPHIC HUB v2.0</p>
         </div>
