@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useUser, useDatabase, useFirebase } from "@/firebase";
@@ -174,16 +173,17 @@ export default function DashboardPage() {
     if (!user || !rtdb) return;
     const formData = new FormData(e.currentTarget);
     const buddyData = {
-      name: formData.get('name') as string,
+      name: formData.get('buddyName') as string,
       phoneNumber: formData.get('phoneNumber') as string,
       groups: selectedGroups
     };
 
     if (editingBuddy) {
+      // Correct Modal Transition to avoid focus lock
       setIsBuddyDialogOpen(false);
       setTimeout(() => {
         setPendingUpdate({ type: 'buddy', data: buddyData });
-      }, 100);
+      }, 200);
     } else {
       try {
         await push(ref(rtdb, `users/${user.uid}/buddies`), buddyData);
@@ -208,10 +208,11 @@ export default function DashboardPage() {
     };
 
     if (editingNode) {
+      // Correct Modal Transition to avoid focus lock
       setIsNodeDialogOpen(false);
       setTimeout(() => {
         setPendingUpdate({ type: 'node', data: nodeData });
-      }, 100);
+      }, 200);
     } else {
       try {
         await push(ref(rtdb, `users/${user.uid}/nodes`), nodeData);
@@ -229,6 +230,7 @@ export default function DashboardPage() {
     const currentEditingBuddy = editingBuddy;
     const currentEditingNode = editingNode;
 
+    // Reset modals first to unlock UI
     setPendingUpdate(null);
 
     try {
@@ -582,7 +584,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+      <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
         <AlertDialogContent className="neo-flat p-8 border-none bg-[#ECF0F3] max-w-md shadow-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl font-black uppercase tracking-tight text-foreground flex items-center gap-3">
@@ -609,7 +611,7 @@ export default function DashboardPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={!!pendingUpdate} onOpenChange={() => setPendingUpdate(null)}>
+      <AlertDialog open={!!pendingUpdate} onOpenChange={(open) => !open && setPendingUpdate(null)}>
         <AlertDialogContent className="neo-flat p-8 border-none bg-[#ECF0F3] max-w-md shadow-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl font-black uppercase tracking-tight text-foreground flex items-center gap-3">
@@ -642,7 +644,7 @@ export default function DashboardPage() {
           <form onSubmit={handleSaveBuddy} className="space-y-6 mt-4 flex-1 overflow-y-auto pr-2">
             <div className="space-y-2">
               <Label className="text-[9px] font-black text-foreground uppercase tracking-widest ml-1">Personnel Name</Label>
-              <Input name="name" defaultValue={editingBuddy?.name} required className="h-12 neo-inset bg-background text-foreground border-none px-5 font-black uppercase text-[10px]" />
+              <Input name="buddyName" defaultValue={editingBuddy?.name} required className="h-12 neo-inset bg-background text-foreground border-none px-5 font-black uppercase text-[10px]" />
             </div>
             <div className="space-y-2">
               <Label className="text-[9px] font-black text-foreground uppercase tracking-widest ml-1">Contact Signal</Label>
@@ -759,7 +761,7 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!interceptAlert} onOpenChange={() => setInterceptAlert(null)}>
+      <Dialog open={!!interceptAlert} onOpenChange={(open) => !open && setInterceptAlert(null)}>
         <DialogContent className="max-w-2xl neo-flat p-0 border-none bg-[#ECF0F3] [&>button]:hidden flex flex-col overflow-hidden max-h-[90vh] shadow-[0_0_50px_rgba(239,68,68,0.2)]">
           <DialogHeader className="p-8 pb-4 flex-shrink-0 bg-destructive/5 border-b border-destructive/10">
             <div className="flex justify-between items-center w-full">
