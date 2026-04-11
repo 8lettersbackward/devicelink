@@ -2,7 +2,7 @@
 
 import { useUser, useDatabase, useFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,7 +50,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useRtdb } from "@/firebase/database/use-rtdb";
-import { reverseGeocode } from "@/ai/flows/reverse-geocode-flow";
 
 const SOSMap = dynamic(() => import("./sos-map"), { 
   ssr: false,
@@ -58,8 +57,6 @@ const SOSMap = dynamic(() => import("./sos-map"), {
 });
 
 type TabType = 'buddies' | 'nodes' | 'notifications' | 'settings' | 'guardian' | 'my-guardians';
-
-const DEFAULT_BUDDY_GROUPS = ["Family", "Friend", "Close Friend"];
 
 export default function DashboardPage() {
   const { user, loading: userLoading } = useUser();
@@ -112,25 +109,25 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-background text-foreground overflow-x-hidden">
-      {/* Sidebar based on reference image */}
-      <aside className="w-full md:w-80 p-8 md:h-screen md:sticky top-0 z-40 border-r border-white/20 bg-background/50 flex flex-col justify-between">
-        <div className="space-y-12">
+      {/* Sidebar - Responsive height and width */}
+      <aside className="w-full md:w-80 p-6 md:p-8 md:h-screen md:sticky top-0 z-40 border-b md:border-b-0 md:border-r border-white/20 bg-background/50 flex flex-col justify-between">
+        <div className="space-y-8 md:space-y-12">
           <div className="flex items-center gap-3 px-2">
-            <div className="h-10 w-10 neo-flat flex items-center justify-center text-primary">
+            <div className="h-10 w-10 neo-flat flex items-center justify-center text-primary shrink-0">
               <Hexagon className="h-6 w-6" />
             </div>
-            <h1 className="text-xl font-black tracking-tighter uppercase flex items-baseline gap-1">
+            <h1 className="text-lg md:text-xl font-black tracking-tighter uppercase flex items-baseline gap-1">
               1TAP <span className="text-primary">BUDDY</span>
             </h1>
           </div>
 
-          <nav className="flex flex-col gap-4">
+          <nav className="flex md:flex-col gap-2 md:gap-4 overflow-x-auto md:overflow-x-visible pb-4 md:pb-0 scrollbar-hide">
             {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id as TabType)}
                 className={cn(
-                  "flex items-center gap-4 px-6 py-4 transition-all text-[11px] font-bold uppercase tracking-[0.1em] relative group",
+                  "flex items-center gap-3 md:gap-4 px-4 md:px-6 py-3 md:py-4 transition-all text-[9px] md:text-[11px] font-bold uppercase tracking-[0.1em] relative group whitespace-nowrap shrink-0 md:shrink",
                   activeTab === item.id 
                     ? "neo-inset text-primary" 
                     : "text-muted-foreground hover:text-foreground"
@@ -139,28 +136,28 @@ export default function DashboardPage() {
                 <item.icon className={cn("h-4 w-4", activeTab === item.id ? "text-primary" : "text-muted-foreground")} />
                 <span className="truncate">{item.label}</span>
                 {notifications.length > 0 && item.id === 'notifications' && (
-                  <span className="absolute top-1/2 -translate-y-1/2 right-6 h-2 w-2 bg-primary rounded-full" />
+                  <span className="absolute top-2 md:top-1/2 md:-translate-y-1/2 right-2 md:right-6 h-1.5 md:h-2 w-1.5 md:w-2 bg-primary rounded-full" />
                 )}
               </button>
             ))}
           </nav>
         </div>
 
-        {/* Profile Card at bottom of sidebar */}
-        <div className="mt-auto space-y-4">
-          <div className="p-6 neo-flat space-y-4">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-10 w-10 neo-inset">
-                <AvatarFallback className="bg-transparent text-[10px] font-bold text-muted-foreground">{currentName[0].toUpperCase()}</AvatarFallback>
+        {/* Profile Card at bottom of sidebar (Hidden or resized on small screens) */}
+        <div className="mt-4 md:mt-auto hidden sm:block">
+          <div className="p-4 md:p-6 neo-flat space-y-4">
+            <div className="flex items-center gap-3 md:gap-4">
+              <Avatar className="h-8 w-8 md:h-10 md:w-10 neo-inset shrink-0">
+                <AvatarFallback className="bg-transparent text-[8px] md:text-[10px] font-bold text-muted-foreground">{currentName[0].toUpperCase()}</AvatarFallback>
               </Avatar>
               <div className="overflow-hidden">
-                <p className="text-[10px] font-black truncate uppercase tracking-widest">{currentName} TERMINAL</p>
-                <p className="text-[9px] font-bold text-primary uppercase tracking-widest">{userRole}</p>
+                <p className="text-[9px] md:text-[10px] font-black truncate uppercase tracking-widest">{currentName}</p>
+                <p className="text-[8px] md:text-[9px] font-bold text-primary uppercase tracking-widest">{userRole}</p>
               </div>
             </div>
             <button 
               onClick={logOutTerminal}
-              className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-destructive transition-colors pl-1"
+              className="flex items-center gap-2 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-destructive transition-colors pl-1"
             >
               <LogOut className="h-3 w-3" />
               DISCONNECT
@@ -169,54 +166,54 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      <main className="flex-1 p-8 md:p-16 w-full">
+      <main className="flex-1 p-6 sm:p-8 md:p-16 w-full">
         <div className="max-w-6xl mx-auto">
           {activeTab === 'buddies' && (
-            <div className="space-y-12">
+            <div className="space-y-8 md:space-y-12">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-                <h2 className="text-2xl font-black tracking-tight uppercase text-foreground/80">Manage Buddies</h2>
-                <div className="flex gap-4">
-                  <Button className="neo-btn h-11 px-6 text-[10px] font-bold uppercase tracking-widest bg-background text-muted-foreground hover:text-primary">
+                <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground/80">Manage Buddies</h2>
+                <div className="flex flex-wrap gap-3 md:gap-4 w-full sm:w-auto">
+                  <Button className="neo-btn flex-1 sm:flex-none h-10 md:h-11 px-4 md:px-6 text-[9px] md:text-[10px] font-bold uppercase tracking-widest bg-background text-muted-foreground hover:text-primary">
                     <PlusSquare className="h-4 w-4 mr-2" /> ENLIST
                   </Button>
-                  <Button className="neo-btn h-11 px-6 text-[10px] font-bold uppercase tracking-widest bg-background text-primary">
+                  <Button className="neo-btn flex-1 sm:flex-none h-10 md:h-11 px-4 md:px-6 text-[9px] md:text-[10px] font-bold uppercase tracking-widest bg-background text-primary">
                     <ShieldAlert className="h-4 w-4 mr-2" /> PROTOCOLS
                   </Button>
                 </div>
               </div>
 
               {/* Neomorphic Content Card */}
-              <div className="neo-flat p-10 min-h-[400px] flex items-center justify-center text-center">
-                 <div className="space-y-6 opacity-30">
-                   <Smartphone className="h-16 w-16 mx-auto" />
-                   <p className="text-[10px] font-bold uppercase tracking-[0.4em]">Operational Vault Empty</p>
+              <div className="neo-flat p-6 sm:p-10 min-h-[300px] md:min-h-[400px] flex items-center justify-center text-center">
+                 <div className="space-y-4 md:space-y-6 opacity-30">
+                   <Smartphone className="h-12 w-12 md:h-16 md:w-16 mx-auto" />
+                   <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.3em] md:tracking-[0.4em]">Operational Vault Empty</p>
                  </div>
               </div>
             </div>
           )}
 
           {activeTab === 'notifications' && (
-            <div className="space-y-12">
-              <h2 className="text-2xl font-black tracking-tight uppercase text-foreground/80">Notification Stream</h2>
-              <div className="neo-flat p-10">
-                <ScrollArea className="h-[600px] pr-6">
+            <div className="space-y-8 md:space-y-12">
+              <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground/80">Notification Stream</h2>
+              <div className="neo-flat p-6 sm:p-10">
+                <ScrollArea className="h-[400px] md:h-[600px] pr-4 md:pr-6">
                   {notifications.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-[400px] opacity-10">
-                      <Bell className="h-16 w-16 mb-6" />
-                      <p className="text-[10px] font-bold uppercase tracking-[0.4em]">Telemetry Clear</p>
+                    <div className="flex flex-col items-center justify-center h-[300px] md:h-[400px] opacity-10">
+                      <Bell className="h-12 w-12 md:h-16 md:w-16 mb-6" />
+                      <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.4em]">Telemetry Clear</p>
                     </div>
                   ) : (
                     notifications.map(n => (
-                      <div key={n.id} className="mb-8 p-8 neo-flat bg-background/20">
-                        <div className="flex justify-between items-start">
+                      <div key={n.id} className="mb-6 md:mb-8 p-6 md:p-8 neo-flat bg-background/20">
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                           <div className="flex gap-4 items-center">
                             {n.type === 'sos' ? <AlertTriangle className="h-5 w-5 text-destructive animate-pulse" /> : <Radar className="h-5 w-5 text-primary" />}
                             <div>
-                              <p className="text-xs font-bold uppercase tracking-widest">{n.message}</p>
-                              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-1">{new Date(n.createdAt).toLocaleString()}</p>
+                              <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest leading-relaxed">{n.message}</p>
+                              <p className="text-[8px] md:text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-1">{new Date(n.createdAt).toLocaleString()}</p>
                             </div>
                           </div>
-                          <Badge className="neo-btn bg-background text-[8px] font-bold px-4 py-1 uppercase">{n.type}</Badge>
+                          <Badge className="neo-btn bg-background text-[8px] font-bold px-4 py-1 uppercase shrink-0">{n.type}</Badge>
                         </div>
                       </div>
                     ))
@@ -228,10 +225,10 @@ export default function DashboardPage() {
 
           {/* Placeholder for other tabs */}
           {activeTab !== 'buddies' && activeTab !== 'notifications' && (
-            <div className="space-y-12">
-               <h2 className="text-2xl font-black tracking-tight uppercase text-foreground/80">{activeTab.replace('-', ' ')}</h2>
-               <div className="neo-flat p-20 flex items-center justify-center opacity-20">
-                 <p className="text-[10px] font-bold uppercase tracking-[0.5em]">Terminal Section Initializing...</p>
+            <div className="space-y-8 md:space-y-12">
+               <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground/80">{activeTab.replace('-', ' ')}</h2>
+               <div className="neo-flat p-10 md:p-20 flex items-center justify-center opacity-20">
+                 <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.4em] md:tracking-[0.5em] text-center">Terminal Section Initializing...</p>
                </div>
             </div>
           )}
