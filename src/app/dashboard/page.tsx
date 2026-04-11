@@ -185,6 +185,8 @@ export default function DashboardPage() {
     };
 
     if (editingBuddy) {
+      // FIX: Close main dialog before opening confirmation to avoid Radix/ShadCN modal freeze
+      setIsBuddyDialogOpen(false);
       setPendingUpdate({ type: 'buddy', data: buddyData });
     } else {
       try {
@@ -210,6 +212,8 @@ export default function DashboardPage() {
     };
 
     if (editingNode) {
+      // FIX: Close main dialog before opening confirmation to avoid Radix/ShadCN modal freeze
+      setIsNodeDialogOpen(false);
       setPendingUpdate({ type: 'node', data: nodeData });
     } else {
       try {
@@ -224,21 +228,26 @@ export default function DashboardPage() {
 
   const executeUpdate = async () => {
     if (!user || !rtdb || !pendingUpdate) return;
+    
+    // Extract data before clearing state
+    const { type, data } = pendingUpdate;
+    const currentEditingBuddy = editingBuddy;
+    const currentEditingNode = editingNode;
+
+    // Clear confirmation state immediately to close the AlertDialog
+    setPendingUpdate(null);
+
     try {
-      if (pendingUpdate.type === 'buddy' && editingBuddy) {
-        await update(ref(rtdb, `users/${user.uid}/buddies/${editingBuddy.id}`), pendingUpdate.data);
-        setIsBuddyDialogOpen(false);
+      if (type === 'buddy' && currentEditingBuddy) {
+        await update(ref(rtdb, `users/${user.uid}/buddies/${currentEditingBuddy.id}`), data);
         setEditingBuddy(null);
-      } else if (pendingUpdate.type === 'node' && editingNode) {
-        await update(ref(rtdb, `users/${user.uid}/nodes/${editingNode.id}`), pendingUpdate.data);
-        setIsNodeDialogOpen(false);
+      } else if (type === 'node' && currentEditingNode) {
+        await update(ref(rtdb, `users/${user.uid}/nodes/${currentEditingNode.id}`), data);
         setEditingNode(null);
       }
       toast({ title: "Synchronization Complete", description: "Data successfully committed to master vault." });
     } catch (err: any) {
       toast({ variant: "destructive", title: "Sync Error", description: err.message });
-    } finally {
-      setPendingUpdate(null);
     }
   };
 
@@ -589,7 +598,7 @@ export default function DashboardPage() {
             <AlertDialogTitle className="text-xl font-black uppercase tracking-tight text-foreground flex items-center gap-3">
               <AlertTriangle className="h-5 w-5 text-destructive" /> Confirm Purge
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pt-4 leading-relaxed">
+            <AlertDialogDescription className="text-[10px] font-black uppercase tracking-widest text-foreground pt-4 leading-relaxed">
               Are you sure you want to remove <span className="text-foreground">{deleteConfirm?.name}</span>? This action is permanent and will decommission the asset from the terminal network.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -616,7 +625,7 @@ export default function DashboardPage() {
             <AlertDialogTitle className="text-xl font-black uppercase tracking-tight text-foreground flex items-center gap-3">
               <ShieldCheck className="h-5 w-5 text-primary" /> Confirm Synchronization
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pt-4 leading-relaxed">
+            <AlertDialogDescription className="text-[10px] font-black uppercase tracking-widest text-foreground pt-4 leading-relaxed">
               Are you sure you want to synchronize these changes to the master vault? Existing data signatures will be overwritten.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -770,7 +779,7 @@ export default function DashboardPage() {
                 <div className="h-12 w-12 neo-inset flex items-center justify-center text-destructive animate-pulse border border-destructive/30 bg-white rounded-full"><AlertTriangle className="h-6 w-6" /></div>
                 <div>
                   <DialogTitle className="text-xl font-black uppercase tracking-tight text-foreground">Tactical Intercept</DialogTitle>
-                  <p className={cn("text-[9px] font-black uppercase tracking-widest mt-1", interceptAlert?.type === 'sos' ? "text-destructive" : "text-primary")}>{interceptAlert?.type === 'sos' ? "High Intensity Alert Active" : "Tactical Telemetry Active"}</p>
+                  <p className={cn("text-[9px] font-black uppercase tracking-widest mt-1 text-foreground")}>{interceptAlert?.type === 'sos' ? "High Intensity Alert Active" : "Tactical Telemetry Active"}</p>
                 </div>
               </div>
               {interceptAlert?.type === 'sos' && <Badge className="bg-destructive text-foreground border-none text-[8px] font-black px-4 py-1 animate-pulse uppercase shadow-[0_0_15px_rgba(239,68,68,0.5)]">Critical</Badge>}
