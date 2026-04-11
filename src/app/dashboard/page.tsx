@@ -1007,7 +1007,20 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-2">
               <Label className="text-[9px] font-black text-foreground uppercase tracking-widest ml-1">Contact Signal</Label>
-              <Input name="phoneNumber" defaultValue={editingBuddy?.phoneNumber} required className="h-12 neo-inset bg-background text-foreground border-none px-5 font-black uppercase text-[10px]" />
+              <Input 
+                name="phoneNumber" 
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                onKeyPress={(e) => {
+                  if (!/[0-9]/.test(e.key)) {
+                    e.preventDefault();
+                  }
+                }}
+                defaultValue={editingBuddy?.phoneNumber} 
+                required 
+                className="h-12 neo-inset bg-background text-foreground border-none px-5 font-black uppercase text-[10px]" 
+              />
             </div>
             
             <div className="space-y-3">
