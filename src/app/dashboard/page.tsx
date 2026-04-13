@@ -57,7 +57,8 @@ import {
   LocateFixed,
   Zap,
   ZapOff,
-  MapPin
+  MapPin,
+  ChevronDown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ref, push, remove, update, onChildAdded, off, get, serverTimestamp } from "firebase/database";
@@ -67,10 +68,15 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useRtdb } from "@/firebase/database/use-rtdb";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 const SOSMap = dynamic(() => import("./sos-map"), { 
   ssr: false,
-  loading: () => <div className="h-[200px] sm:h-[250px] md:h-[350px] w-full neo-inset animate-pulse flex items-center justify-center text-[10px] font-bold uppercase tracking-widest opacity-40 text-foreground">Initializing Tactical Map...</div>
+  loading: () => <div className="h-[200px] sm:h-[250px] md:h-[350px] w-full neo-inset animate-pulse flex items-center justify-center text-[10px] font-black uppercase tracking-widest opacity-40 text-foreground">Initializing Tactical Map...</div>
 });
 
 type TabType = 'buddies' | 'nodes' | 'notifications' | 'settings' | 'guardian' | 'linked';
@@ -539,14 +545,14 @@ export default function DashboardPage() {
   if (!user) return null;
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-[#F0F4F8] text-foreground overflow-x-hidden">
+    <div className="flex flex-col md:flex-row min-h-screen bg-[#F0F4F8] text-foreground overflow-x-hidden font-body">
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex justify-around items-center p-4 bg-white/80 backdrop-blur-md border-t border-black/5 pb-8 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
         {navItems.map((item) => (
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id as TabType)}
             className={cn(
-              "flex flex-col items-center gap-1 transition-all text-[8px] font-bold uppercase tracking-widest relative px-2",
+              "flex flex-col items-center gap-1 transition-all text-[8px] font-black uppercase tracking-widest relative px-2",
               activeTab === item.id ? "text-primary scale-110" : "text-muted-foreground"
             )}
           >
@@ -568,7 +574,7 @@ export default function DashboardPage() {
             <div className="h-9 w-9 bg-primary/10 rounded-xl flex items-center justify-center text-primary shrink-0">
               <Hexagon className="h-5 w-5" />
             </div>
-            <h1 className="text-lg font-black tracking-tighter uppercase flex items-baseline gap-1 text-foreground">
+            <h1 className="text-lg font-black tracking-tighter uppercase flex items-baseline gap-1 text-foreground font-headline">
               1TAP <span className="text-primary">SECURE</span>
             </h1>
           </div>
@@ -617,7 +623,7 @@ export default function DashboardPage() {
           {activeTab === 'buddies' && (
             <div className="space-y-8">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Manage Buddies</h2>
+                <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground font-headline">Manage Buddies</h2>
                 <div className="flex gap-3 w-full sm:w-auto">
                   <Button onClick={() => { setEditingBuddy(null); setSelectedGroups([]); setIsBuddyDialogOpen(true); }} className="flex-1 sm:flex-none h-10 px-4 text-[9px] font-black uppercase tracking-widest bg-white text-foreground hover:text-primary transition-all border border-black/5 shadow-sm">
                     <PlusSquare className="h-4 w-4 mr-2 text-primary" /> ENLIST
@@ -682,7 +688,7 @@ export default function DashboardPage() {
           {activeTab === 'nodes' && (
             <div className="space-y-8">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Manage Nodes</h2>
+                <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground font-headline">Manage Nodes</h2>
                 <Button onClick={() => { setEditingNode(null); setIsNodeDialogOpen(true); }} className="w-full sm:w-auto h-10 px-4 text-[9px] font-black uppercase tracking-widest bg-primary text-white hover:bg-primary/90 transition-all rounded-xl shadow-lg shadow-primary/20">
                   <Cpu className="h-4 w-4 mr-2" /> ARM NODE
                 </Button>
@@ -746,7 +752,7 @@ export default function DashboardPage() {
 
           {activeTab === 'linked' && (
             <div className="space-y-8">
-              <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">LINKED Authorization</h2>
+              <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground font-headline">LINKED Authorization</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {links.length === 0 ? (
                   <div className="col-span-full bg-white rounded-[2rem] p-12 text-center opacity-30 flex flex-col items-center border border-black/5">
@@ -858,7 +864,7 @@ export default function DashboardPage() {
           {activeTab === 'notifications' && (
             <div className="space-y-8">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Alert Stream</h2>
+                <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground font-headline">Alert Stream</h2>
                 {notifications.length > 0 && (
                   <Button 
                     onClick={() => setDeleteConfirm({ id: 'all', type: 'clear-notifications', name: 'All Alerts' })}
@@ -868,7 +874,7 @@ export default function DashboardPage() {
                   </Button>
                 )}
               </div>
-              <div className="bg-white rounded-[2rem] p-6 sm:p-8 border border-black/5 shadow-sm">
+              <div className="bg-white rounded-[2rem] p-4 sm:p-8 border border-black/5 shadow-sm">
                 <ScrollArea className="h-[600px] pr-4">
                   {notifications.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-[300px] opacity-10">
@@ -879,54 +885,60 @@ export default function DashboardPage() {
                     notifications.map(n => {
                       const isTrack = n.trigger === 'TrackResponse' || n.type === 'telemetry';
                       const isSOS = n.type === 'sos' && n.trigger !== 'TrackResponse';
-                      const accentColor = isSOS ? "bg-destructive" : (isTrack ? "bg-primary" : "bg-primary");
-                      const label = isSOS ? "SOS ALERT" : (isTrack ? "TRACK ASSET" : "INCOMING SIGNAL");
+                      const accentColor = isSOS ? "bg-destructive" : "bg-primary";
+                      const label = isSOS ? "SOS ALERT" : "TRACK ASSET";
                       const badgeText = isSOS ? "URGENT" : (isTrack ? "ACTIVE" : "INFO");
 
                       return (
-                        <div key={n.id} className={cn("mb-6 p-6 bg-white rounded-[2rem] border border-black/5 relative group overflow-hidden transition-all duration-300 hover:shadow-lg flex gap-6")}>
-                          {/* Vertical Color Indicator */}
-                          <div className={cn("w-1.5 shrink-0 rounded-full", accentColor)} />
-                          
-                          <div className="flex flex-col justify-between items-start gap-6 relative z-10 flex-1">
-                            <div className="flex gap-4 items-center min-w-0 flex-1 w-full">
-                              <div className={cn("h-10 w-10 flex items-center justify-center bg-white rounded-full shrink-0 border border-black/5 shadow-sm", isSOS ? "text-destructive" : "text-primary")}>
-                                {isSOS ? <AlertTriangle className="h-5 w-5" /> : <Radar className="h-5 w-5" />}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2">
-                                  <p className={cn("text-[10px] font-black uppercase tracking-widest leading-relaxed", isSOS ? "text-destructive" : "text-primary")}>{label}</p>
-                                  <Badge className={cn("text-[7px] font-black px-2 py-0.5 rounded-sm uppercase border-none", isSOS ? "bg-destructive text-white animate-pulse" : "bg-primary text-white")}>
-                                    {badgeText}
-                                  </Badge>
-                                </div>
-                                <p className="text-[10px] font-black uppercase tracking-widest leading-relaxed text-foreground break-words mt-1">{n.message || 'Incoming Telemetry Fix'}</p>
-                                
+                        <Collapsible key={n.id} className="mb-6 group/item">
+                          <div className={cn("p-4 sm:p-6 bg-white rounded-[2rem] border border-black/5 relative overflow-hidden transition-all duration-300 hover:shadow-lg flex gap-4 sm:gap-6")}>
+                            {/* Tactical Vertical Bar - Increased to w-3 (12px) */}
+                            <div className={cn("w-2 sm:w-3 shrink-0 rounded-full", accentColor)} />
+                            
+                            <div className="flex flex-col justify-between items-start relative z-10 flex-1 min-w-0">
+                              <CollapsibleTrigger asChild>
+                                <button className="flex gap-4 items-center w-full text-left outline-none group">
+                                  <div className={cn("h-10 w-10 flex items-center justify-center bg-[#F8FAFC] rounded-full shrink-0 border border-black/5 shadow-sm", isSOS ? "text-destructive" : "text-primary")}>
+                                    {isSOS ? <AlertTriangle className="h-5 w-5" /> : <Radar className="h-5 w-5" />}
+                                  </div>
+                                  <div className="min-w-0 flex-1 pr-8">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <p className={cn("text-[10px] font-black uppercase tracking-widest leading-relaxed", isSOS ? "text-destructive" : "text-primary")}>{label}</p>
+                                      <Badge className={cn("text-[7px] font-black px-2 py-0.5 rounded-sm uppercase border-none", isSOS ? "bg-destructive text-white animate-pulse" : "bg-primary text-white")}>
+                                        {badgeText}
+                                      </Badge>
+                                    </div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest leading-relaxed text-foreground break-words mt-1 line-clamp-1">{n.message || 'Incoming Telemetry Fix'}</p>
+                                    <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest mt-1">{new Date(n.createdAt).toLocaleString()}</p>
+                                  </div>
+                                  <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 transition-transform group-data-[state=open]/item:rotate-180 absolute right-6 top-1/2 -translate-y-1/2" />
+                                </button>
+                              </CollapsibleTrigger>
+                              
+                              <CollapsibleContent className="w-full space-y-4 pt-6 animate-in fade-in slide-in-from-top-2 duration-300">
                                 {n.place && (
-                                  <div className="flex items-center gap-1.5 mt-2 p-2 bg-[#F8FAFC] rounded-lg border border-black/5 w-fit">
-                                    <MapPin className="h-3 w-3 text-muted-foreground" />
-                                    <p className="text-[9px] font-black text-foreground uppercase tracking-widest">{n.place}</p>
+                                  <div className="flex items-start gap-2.5 p-4 bg-[#F8FAFC] rounded-2xl border border-black/5">
+                                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                                    <p className="text-[9px] font-black text-foreground uppercase tracking-widest break-words flex-1 leading-relaxed">
+                                      {n.place}
+                                    </p>
                                   </div>
                                 )}
-
-                                <div className="flex items-center gap-3 mt-3">
-                                  <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">{new Date(n.createdAt).toLocaleString()}</p>
+                                
+                                <div className="flex flex-col sm:flex-row gap-3 w-full">
+                                  {n.latitude !== undefined && n.longitude !== undefined && (
+                                    <Button size="sm" className={cn("w-full h-12 text-[9px] font-black uppercase tracking-widest text-white rounded-xl", isSOS ? "bg-destructive hover:bg-destructive/90" : "bg-primary hover:bg-primary/90")} onClick={() => setInterceptAlert({ ...n, id: n.id })}>
+                                      <Eye className="h-4 w-4 mr-2" /> TACTICAL MAP
+                                    </Button>
+                                  )}
+                                  <Button size="sm" variant="outline" className="w-full h-12 text-[9px] font-black uppercase tracking-widest bg-white border border-black/5 text-foreground hover:bg-black/5 rounded-xl" onClick={() => window.open(`https://www.google.com/maps?q=${n.latitude},${n.longitude}`, '_blank')}>
+                                    <LocateFixed className="h-4 w-4 mr-2 text-primary" /> GOOGLE MAPS
+                                  </Button>
                                 </div>
-                              </div>
-                            </div>
-                            
-                            <div className="flex gap-3 w-full">
-                              {n.latitude !== undefined && n.longitude !== undefined && (
-                                <Button size="sm" className={cn("w-full h-10 px-4 text-[8px] font-black uppercase tracking-widest text-white rounded-xl", isSOS ? "bg-destructive hover:bg-destructive/90" : "bg-primary hover:bg-primary/90")} onClick={() => setInterceptAlert({ ...n, id: n.id })}>
-                                  <Eye className="h-3.5 w-3.5 mr-2" /> TACTICAL MAP
-                                </Button>
-                              )}
-                              <Button size="sm" variant="outline" className="w-full h-10 px-4 text-[8px] font-black uppercase tracking-widest bg-white border border-black/5 text-foreground hover:bg-black/5 rounded-xl" onClick={() => window.open(`https://www.google.com/maps?q=${n.latitude},${n.longitude}`, '_blank')}>
-                                <LocateFixed className="h-3.5 w-3.5 mr-2 text-primary" /> GOOGLE MAPS
-                              </Button>
+                              </CollapsibleContent>
                             </div>
                           </div>
-                        </div>
+                        </Collapsible>
                       );
                     })
                   )}
@@ -938,7 +950,7 @@ export default function DashboardPage() {
           {activeTab === 'guardian' && (
             <div className="space-y-8">
               <div className="flex flex-col gap-4">
-                <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Guardian Radar</h2>
+                <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground font-headline">Guardian Radar</h2>
                 <div className="flex gap-2 max-w-md">
                   <div className="relative flex-1">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/60" />
@@ -999,7 +1011,7 @@ export default function DashboardPage() {
 
           {activeTab === 'settings' && (
             <div className="space-y-8">
-               <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Personnel Profile</h2>
+               <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground font-headline">Personnel Profile</h2>
                <div className="bg-white rounded-[2rem] p-12 flex flex-col items-center gap-8 border border-black/5 shadow-sm">
                   <div className="h-32 w-32 bg-primary/5 rounded-[2rem] flex items-center justify-center text-4xl font-black text-primary border border-primary/10">{currentName[0].toUpperCase()}</div>
                   <div className="text-center space-y-2">
