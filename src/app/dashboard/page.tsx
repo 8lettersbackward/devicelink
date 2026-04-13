@@ -917,7 +917,7 @@ export default function DashboardPage() {
                             
                             <div className="flex gap-3 w-full">
                               {n.latitude !== undefined && n.longitude !== undefined && (
-                                <Button size="sm" className="w-full h-10 px-4 text-[8px] font-black uppercase tracking-widest bg-primary text-white hover:bg-primary/90 rounded-xl" onClick={() => setInterceptAlert({ ...n, id: n.id })}>
+                                <Button size="sm" className={cn("w-full h-10 px-4 text-[8px] font-black uppercase tracking-widest text-white rounded-xl", isSOS ? "bg-destructive hover:bg-destructive/90" : "bg-primary hover:bg-primary/90")} onClick={() => setInterceptAlert({ ...n, id: n.id })}>
                                   <Eye className="h-3.5 w-3.5 mr-2" /> TACTICAL MAP
                                 </Button>
                               )}
