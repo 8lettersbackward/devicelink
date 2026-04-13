@@ -239,43 +239,6 @@ export default function DashboardPage() {
 
   const logOutTerminal = useCallback(() => signOut(auth).then(() => router.push("/login")), [auth, router]);
 
-  const triggerManualSOS = async () => {
-    if (!user || !rtdb) return;
-    try {
-      const sosData = {
-        type: 'sos',
-        message: 'MANUAL SOS DISPATCHED',
-        latitude: 14.5995, // Default for demo
-        longitude: 120.9842,
-        timestamp: Date.now(),
-        createdAt: Date.now(),
-        trigger: 'Manual'
-      };
-
-      const updates: any = {};
-      // Save to self
-      const selfNotifRef = push(ref(rtdb, `users/${user.uid}/notifications`));
-      updates[`users/${user.uid}/notifications/${selfNotifRef.key}`] = sosData;
-
-      // Broadcast to all linked Guardians
-      links.forEach(link => {
-        if (link.status === 'linked' && link.guardianEmail) {
-          const guardianNotifRef = push(ref(rtdb, `users/${link.id}/notifications`));
-          updates[`users/${link.id}/notifications/${guardianNotifRef.key}`] = {
-            ...sosData,
-            message: `SOS FROM ${user.email}`,
-            senderUid: user.uid
-          };
-        }
-      });
-
-      await update(ref(rtdb), updates);
-      toast({ title: "SOS BROADCAST", description: "Signal dispatched to all linked guardians." });
-    } catch (err: any) {
-      toast({ variant: "destructive", title: "Dispatch Error", description: err.message });
-    }
-  };
-
   const handleRequestLink = async (targetUid: string, hardwareId: string) => {
     if (!user || !rtdb) return;
     try {
@@ -656,11 +619,6 @@ export default function DashboardPage() {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Manage Buddies</h2>
                 <div className="flex gap-3 w-full sm:w-auto">
-                  {userRole !== 'guardian' && (
-                    <Button onClick={triggerManualSOS} className="flex-1 sm:flex-none h-10 px-4 text-[9px] font-black uppercase tracking-widest bg-destructive text-white hover:bg-destructive/90 transition-all shadow-lg shadow-destructive/20">
-                      <AlertTriangle className="h-4 w-4 mr-2" /> TRIGGER SOS
-                    </Button>
-                  )}
                   <Button onClick={() => { setEditingBuddy(null); setSelectedGroups([]); setIsBuddyDialogOpen(true); }} className="flex-1 sm:flex-none h-10 px-4 text-[9px] font-black uppercase tracking-widest bg-white text-foreground hover:text-primary transition-all border border-black/5 shadow-sm">
                     <PlusSquare className="h-4 w-4 mr-2 text-primary" /> ENLIST
                   </Button>
