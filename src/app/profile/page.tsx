@@ -182,7 +182,7 @@ export default function ProfilePage() {
         <div className="md:col-span-2 space-y-10">
           <Card className="border-none shadow-2xl bg-white rounded-xl">
             <CardHeader className="border-b border-white/10">
-              <CardTitle className="text-sm uppercase font-bold tracking-[0.2em] text-secondary">Identification Profile</CardTitle>
+              <CardTitle className="text-sm uppercase font-bold tracking-[0.2em] text-foreground">Identification Profile</CardTitle>
               <CardDescription className="text-[10px] uppercase text-muted-foreground">Core system identity settings.</CardDescription>
             </CardHeader>
             <form onSubmit={handleUpdateProfile}>
@@ -192,13 +192,13 @@ export default function ProfilePage() {
                     <Label className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 text-muted-foreground">
                       <IdCard className="h-3 w-3" /> Unique ID
                     </Label>
-                    <Input value={user.uid} disabled className="bg-background border-none rounded-md h-12 font-mono text-[10px] text-secondary opacity-70" />
+                    <Input value={user.uid} disabled className="bg-background border-none rounded-md h-12 font-mono text-[10px] text-foreground" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 text-muted-foreground">
                       <Mail className="h-3 w-3" /> Master Email
                     </Label>
-                    <Input value={user.email || ""} disabled className="bg-background border-none rounded-md h-12 font-mono text-[10px] text-secondary opacity-70" />
+                    <Input value={user.email || ""} disabled className="bg-background border-none rounded-md h-12 font-mono text-[10px] text-foreground" />
                   </div>
                 </div>
 
@@ -209,7 +209,7 @@ export default function ProfilePage() {
                     placeholder="e.g. ALPHA-1" 
                     value={displayName} 
                     onChange={(e) => setDisplayName(e.target.value)} 
-                    className="bg-background border-white/10 focus:border-primary h-14 uppercase text-sm font-bold tracking-widest"
+                    className="bg-background border-white/10 focus:border-primary h-14 uppercase text-sm font-bold tracking-widest text-foreground"
                   />
                   <p className="text-[8px] text-muted-foreground uppercase">This name will be displayed across your terminal hub.</p>
                 </div>
@@ -224,7 +224,7 @@ export default function ProfilePage() {
 
           <Card className="border-none shadow-2xl bg-white rounded-xl">
             <CardHeader className="border-b border-white/10">
-              <CardTitle className="text-sm uppercase font-bold tracking-[0.2em] text-secondary flex items-center gap-2">
+              <CardTitle className="text-sm uppercase font-bold tracking-[0.2em] text-foreground flex items-center gap-2">
                 <Lock className="h-4 w-4" /> Change Password
               </CardTitle>
               <CardDescription className="text-[10px] uppercase text-muted-foreground">Update your master account password.</CardDescription>
