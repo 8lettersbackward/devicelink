@@ -273,11 +273,13 @@ export default function DashboardPage() {
   const handleRequestLink = async (targetUid: string, hardwareId: string) => {
     if (!user || !rtdb) return;
     try {
+      const targetNode = availableNodes.find(n => n.ownerUid === targetUid && n.hardwareId === hardwareId);
       const updates = {
         [`users/${user.uid}/links/${targetUid}`]: {
           status: 'requested',
           hardwareId,
-          targetEmail: availableNodes.find(n => n.ownerUid === targetUid && n.hardwareId === hardwareId)?.ownerEmail || "SECURE ASSET",
+          nodeName: targetNode?.nodeName || "SECURE ASSET",
+          targetEmail: targetNode?.ownerEmail || "SECURE ASSET",
           trackingRequest: null
         },
         [`users/${targetUid}/links/${user.uid}`]: {
@@ -835,7 +837,7 @@ export default function DashboardPage() {
 
                     {userRole === 'guardian' && links.map(link => {
                       const linkedNode = availableNodes.find(n => n.hardwareId === link.hardwareId && n.ownerUid === link.id);
-                      const assetName = linkedNode?.nodeName || link.targetEmail || "SECURE ASSET";
+                      const assetName = linkedNode?.nodeName || link.nodeName || link.targetEmail || "SECURE ASSET";
                       return (
                         <div key={link.id} className="bg-white rounded-[2rem] p-6 space-y-4 border border-black/5 shadow-sm">
                           <div className="flex justify-between items-start gap-4">
