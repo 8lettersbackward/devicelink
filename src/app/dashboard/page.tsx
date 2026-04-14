@@ -173,7 +173,7 @@ export default function DashboardPage() {
               ...nData,
               id: nid,
               ownerUid: uid,
-              ownerEmail: userData.profile?.email || "Unknown Sector"
+              ownerEmail: userData.profile?.email || "SECURE ASSET"
             });
           }
         });
@@ -239,7 +239,7 @@ export default function DashboardPage() {
             const currentAlertId = snapshot.key || 'unknown';
             if (!relayedAlertsRef.current.has(currentAlertId)) {
               relayedAlertsRef.current.add(currentAlertId);
-              const guardianLinks = Object.entries(linksData || {}).filter(([_, l]: [string, any]) => l.status === 'linked' && l.guardianEmail);
+              const guardianLinks = Object.entries(linksData || {}).filter(([_, l]: [string, any]) => l.status === 'linked');
               if (guardianLinks.length > 0) {
                 const relayUpdates: any = {};
                 guardianLinks.forEach(([guardianUid, _]) => {
@@ -251,7 +251,7 @@ export default function DashboardPage() {
                     relayTimestamp: serverTimestamp()
                   };
                 });
-                update(ref(rtdb), relayUpdates).catch(e => console.error("Relay failed", e));
+                update(ref(rtdb), relayUpdates).catch(e => console.error("SOS Relay Failure", e));
               }
             }
           }
@@ -277,7 +277,7 @@ export default function DashboardPage() {
         [`users/${user.uid}/links/${targetUid}`]: {
           status: 'requested',
           hardwareId,
-          targetEmail: availableNodes.find(n => n.ownerUid === targetUid && n.hardwareId === hardwareId)?.ownerEmail || "Unknown",
+          targetEmail: availableNodes.find(n => n.ownerUid === targetUid && n.hardwareId === hardwareId)?.ownerEmail || "SECURE ASSET",
           trackingRequest: null
         },
         [`users/${targetUid}/links/${user.uid}`]: {
@@ -417,25 +417,13 @@ export default function DashboardPage() {
     const normalizedHardwareId = hardwareId.trim().toLowerCase();
     const normalizedNodeName = nodeName.trim().toLowerCase();
 
-    const isHardwareIdDuplicate = nodes.some(n => n.hardwareId.toLowerCase() === normalizedHardwareId && n.id !== editingNode?.id) || 
-                                 availableNodes.some(n => n.hardwareId.toLowerCase() === normalizedHardwareId);
+    const isHardwareIdDuplicate = nodes.some(n => n.hardwareId.toLowerCase() === normalizedHardwareId && n.id !== editingNode?.id);
     
     if (isHardwareIdDuplicate) {
       toast({ 
         variant: "destructive", 
         title: "Signature Conflict", 
         description: "This Hardware ID is already registered in the tactical network." 
-      });
-      return;
-    }
-
-    const isNodeNameDuplicate = nodes.some(n => n.nodeName.toLowerCase() === normalizedNodeName && n.id !== editingNode?.id);
-    
-    if (isNodeNameDuplicate) {
-      toast({ 
-        variant: "destructive", 
-        title: "Naming Conflict", 
-        description: "An asset with this name already exists in your vault." 
       });
       return;
     }
@@ -583,7 +571,7 @@ export default function DashboardPage() {
   if (!user) return null;
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-[#F0F4F8] text-foreground overflow-x-hidden font-body">
+    <div className="flex flex-col md:flex-row min-h-screen bg-[#F0F4F8] text-foreground overflow-x-hidden font-sans">
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex justify-around items-center p-4 bg-white/80 backdrop-blur-md border-t border-black/5 pb-8 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
         {navItems.map((item) => (
           <button
@@ -612,7 +600,7 @@ export default function DashboardPage() {
             <div className="h-9 w-9 bg-primary/10 rounded-xl flex items-center justify-center text-primary shrink-0">
               <Hexagon className="h-5 w-5" />
             </div>
-            <h1 className="text-lg font-black tracking-tighter uppercase flex items-baseline gap-1 text-foreground font-headline">
+            <h1 className="text-lg font-black tracking-tighter uppercase flex items-baseline gap-1 text-foreground">
               1TAP <span className="text-primary">SECURE</span>
             </h1>
           </div>
@@ -661,7 +649,7 @@ export default function DashboardPage() {
           {activeTab === 'buddies' && (
             <div className="space-y-8">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground font-headline">Manage Buddies</h2>
+                <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Manage Buddies</h2>
                 <div className="flex gap-3 w-full sm:w-auto">
                   <Button onClick={() => { setEditingBuddy(null); setSelectedGroups([]); setIsBuddyDialogOpen(true); }} className="flex-1 sm:flex-none h-10 px-4 text-[9px] font-black uppercase tracking-widest bg-white text-foreground hover:text-primary transition-all border border-black/5 shadow-sm">
                     <PlusSquare className="h-4 w-4 mr-2 text-primary" /> ENLIST
@@ -726,7 +714,7 @@ export default function DashboardPage() {
           {activeTab === 'nodes' && (
             <div className="space-y-8">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground font-headline">Manage Nodes</h2>
+                <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Manage Nodes</h2>
                 <Button onClick={() => { setEditingNode(null); setSelectedNodeGroups([]); setIsNodeDialogOpen(true); }} className="w-full sm:w-auto h-10 px-4 text-[9px] font-black uppercase tracking-widest bg-primary text-white hover:bg-primary/90 transition-all rounded-xl shadow-lg shadow-primary/20">
                   <Cpu className="h-4 w-4 mr-2" /> ARM NODE
                 </Button>
@@ -790,7 +778,7 @@ export default function DashboardPage() {
 
           {activeTab === 'linked' && (
             <div className="space-y-8">
-              <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground font-headline">MY GUARDIANS</h2>
+              <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">MY GUARDIANS</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {links.length === 0 ? (
                   <div className="col-span-full bg-white rounded-[2rem] p-12 text-center opacity-30 flex flex-col items-center border border-black/5">
@@ -848,15 +836,16 @@ export default function DashboardPage() {
 
                     {userRole === 'guardian' && links.map(link => {
                       const linkedNode = availableNodes.find(n => n.hardwareId === link.hardwareId && n.ownerUid === link.id);
+                      const assetName = linkedNode?.nodeName || link.targetEmail || "SECURE ASSET";
                       return (
                         <div key={link.id} className="bg-white rounded-[2rem] p-6 space-y-4 border border-black/5 shadow-sm">
                           <div className="flex justify-between items-start gap-4">
                             <div className="flex gap-4 items-center min-w-0 flex-1">
                               <Avatar className="h-10 w-10 border border-black/5 shrink-0">
-                                <AvatarFallback className="bg-primary/5 text-[10px] font-black text-primary">{link.targetEmail?.[0].toUpperCase() || 'U'}</AvatarFallback>
+                                <AvatarFallback className="bg-primary/5 text-[10px] font-black text-primary">{assetName[0].toUpperCase()}</AvatarFallback>
                               </Avatar>
                               <div className="min-w-0 flex-1">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-foreground truncate">{link.targetEmail}</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-foreground truncate">{assetName}</p>
                                 <p className="text-[8px] font-black text-muted-foreground uppercase mt-1 truncate">ID: {link.hardwareId}</p>
                               </div>
                             </div>
@@ -902,7 +891,7 @@ export default function DashboardPage() {
           {activeTab === 'notifications' && (
             <div className="space-y-8">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground font-headline">NOTIFICATION</h2>
+                <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">NOTIFICATION</h2>
                 {notifications.length > 0 && (
                   <Button 
                     onClick={() => setDeleteConfirm({ id: 'all', type: 'clear-notifications', name: 'All Alerts' })}
@@ -929,10 +918,11 @@ export default function DashboardPage() {
 
                       return (
                         <Collapsible key={n.id} className="mb-6 group/item">
-                          <div className={cn("p-4 sm:p-6 bg-white rounded-[2rem] border border-black/5 relative overflow-hidden transition-all duration-300 hover:shadow-lg flex gap-4 sm:gap-6")}>
-                            <div className={cn("w-2 sm:w-3 shrink-0 rounded-full", accentColor)} />
+                          <div className={cn("bg-white rounded-[2rem] border border-black/5 relative overflow-hidden transition-all duration-300 hover:shadow-lg flex gap-0")}>
+                            {/* Vertical Tactical Bar */}
+                            <div className={cn("w-3 shrink-0", accentColor)} />
                             
-                            <div className="flex flex-col justify-between items-start relative z-10 flex-1 min-w-0">
+                            <div className="flex-1 p-4 sm:p-6 flex flex-col min-w-0">
                               <CollapsibleTrigger asChild>
                                 <button className="flex gap-4 items-center w-full text-left outline-none group">
                                   <div className={cn("h-10 w-10 flex items-center justify-center bg-[#F8FAFC] rounded-full shrink-0 border border-black/5 shadow-sm", isSOS ? "text-destructive" : "text-primary")}>
@@ -987,7 +977,7 @@ export default function DashboardPage() {
           {activeTab === 'guardian' && (
             <div className="space-y-8">
               <div className="flex flex-col gap-4">
-                <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground font-headline">Guardian Radar</h2>
+                <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Guardian Radar</h2>
                 <div className="flex gap-2 max-w-md">
                   <div className="relative flex-1">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/60" />
@@ -1048,7 +1038,7 @@ export default function DashboardPage() {
 
           {activeTab === 'settings' && (
             <div className="space-y-8">
-               <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground font-headline">Personnel Profile</h2>
+               <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase text-foreground">Personnel Profile</h2>
                <div className="bg-white rounded-[2rem] p-12 flex flex-col items-center gap-8 border border-black/5 shadow-sm">
                   <div className="h-32 w-32 bg-primary/5 rounded-[2rem] flex items-center justify-center text-4xl font-black text-primary border border-primary/10">{currentName[0].toUpperCase()}</div>
                   <div className="text-center space-y-2">
