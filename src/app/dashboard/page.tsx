@@ -198,11 +198,10 @@ export default function DashboardPage() {
     return userRole === 'guardian' 
       ? [{ id: 'guardian', label: 'RADAR', icon: Radar }, { id: 'linked', label: 'LINKED USER', icon: ShieldCheck }, { id: 'notifications', label: 'NOTIFICATION', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: UserIcon }]
       : [{ id: 'buddies', label: 'MANAGE BUDDIES', icon: Users }, { id: 'nodes', label: 'MANAGE NODES', icon: Cpu }, { id: 'linked', label: 'LINKED USER', icon: ShieldCheck }, { id: 'notifications', label: 'NOTIFICATION', icon: Bell }, { id: 'settings', label: 'PROFILE', icon: UserIcon }];
-  }, [userRole, UserIcon]);
+  }, [userRole]);
 
   const relayedAlertsRef = useRef<Set<string>>(new Set());
 
-  // Mount/Auth Initialization
   useEffect(() => {
     setHasMounted(true);
     const now = Date.now();
@@ -210,7 +209,6 @@ export default function DashboardPage() {
     setLastReadTimestamp(now);
   }, []);
 
-  // Auth Redirection
   useEffect(() => {
     if (!userLoading) {
       if (!user) {
@@ -221,7 +219,6 @@ export default function DashboardPage() {
     }
   }, [user, userLoading, router]);
 
-  // Real-time Listener and Profile Effect
   useEffect(() => {
     if (user && rtdb) {
       const profileRef = ref(rtdb, `users/${user.uid}/profile`);
@@ -247,13 +244,17 @@ export default function DashboardPage() {
         if (val.type === 'sos' && val.trigger !== 'TrackResponse' && (now - timestamp < 45000)) {
           setInterceptAlert({ ...val, id: snapshot.key });
           
-          if (userRole === 'user' && !val.isRelay) {
+          if (userRole === 'user' && !val.isRelay && !val.relayed) {
             const currentAlertId = snapshot.key || 'unknown';
             if (!relayedAlertsRef.current.has(currentAlertId)) {
               relayedAlertsRef.current.add(currentAlertId);
+              
               const guardianLinks = Object.entries(linksData || {}).filter(([_, l]: [string, any]) => l.status === 'linked');
               if (guardianLinks.length > 0) {
                 const relayUpdates: any = {};
+                // Mark original as relayed in DB to prevent multi-device re-relay
+                relayUpdates[`users/${user.uid}/notifications/${currentAlertId}/relayed`] = true;
+                
                 guardianLinks.forEach(([guardianUid, _]) => {
                   const relayKey = push(ref(rtdb, `users/${guardianUid}/notifications`)).key;
                   relayUpdates[`users/${guardianUid}/notifications/${relayKey}`] = {
@@ -432,7 +433,6 @@ export default function DashboardPage() {
     const hardwareId = formData.get('hardwareId') as string;
 
     const normalizedHardwareId = hardwareId.trim().toLowerCase();
-    
     const isHardwareIdDuplicate = nodes.some(n => n.hardwareId.toLowerCase() === normalizedHardwareId && n.id !== editingNode?.id);
     
     if (isHardwareIdDuplicate) {
@@ -539,9 +539,10 @@ export default function DashboardPage() {
   };
 
   const clearNotifications = async () => {
-    if (!user || !rtdb || !notificationsRef) return;
+    if (!user || !rtdb) return;
     try {
-      await remove(notificationsRef);
+      const explicitNotifRef = ref(rtdb, `users/${user.uid}/notifications`);
+      await remove(explicitNotifRef);
       toast({ title: "Stream Purged", description: "All alert logs have been decommissioned." });
     } catch (err: any) {
       toast({ variant: "destructive", title: "Purge Error", description: err.message });
@@ -935,7 +936,6 @@ export default function DashboardPage() {
                       return (
                         <Collapsible key={n.id} className="mb-6 group/item">
                           <div className={cn("bg-white rounded-[2rem] border border-black/5 relative overflow-hidden transition-all duration-300 hover:shadow-lg flex gap-0")}>
-                            {/* Vertical Tactical Bar - 12px Width */}
                             <div className={cn("w-3 shrink-0", accentColor)} />
                             
                             <div className="flex-1 p-4 sm:p-6 flex flex-col min-w-0">
@@ -1369,7 +1369,7 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={!!viewingBuddy} onOpenChange={(open) => !open && setViewingBuddy(null)}>
-        <DialogContent className="bg-white rounded-[2rem] p-8 border border-black/5 max-w-md shadow-2xl">
+        <DialogContent className="bg-white rounded-[2rem] p-8 border border-black/5 max-md shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-black uppercase tracking-tight text-foreground flex items-center gap-3">
               <Users className="h-5 w-5 text-primary" /> Personnel Signature
@@ -1459,3 +1459,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
