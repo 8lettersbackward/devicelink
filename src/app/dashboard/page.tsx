@@ -111,7 +111,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { toast } = useToast();
   
-  const [activeTab, setActiveTab] = useState<TabType>('buddies');
+  const [activeTab, setActiveTab] = useState<TabType>('notifications');
   const [hasMounted, setHasMounted] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [radarSearchTerm, setRadarSearchTerm] = useState("");
@@ -220,14 +220,14 @@ export default function DashboardPage() {
     if (profileData) {
       const role = profileData.role || 'user';
       setUserRole(role);
-      if (role === 'guardian' && (activeTab === 'buddies' || activeTab === 'nodes')) {
+      // Hardened tab redirection to prevent flicker
+      if (role === 'guardian' && (activeTab === 'buddies' || activeTab === 'nodes' || activeTab === 'notifications')) {
         setActiveTab('guardian');
-      }
-      if (role === 'user' && activeTab === 'guardian') {
+      } else if (role === 'user' && (activeTab === 'guardian' || activeTab === 'notifications')) {
         setActiveTab('buddies');
       }
     }
-  }, [profileData, activeTab]);
+  }, [profileData]);
 
   useEffect(() => {
     if (user && rtdb) {
@@ -574,7 +574,7 @@ export default function DashboardPage() {
     }
   };
 
-  if (userLoading || roleLoading || !hasMounted) {
+  if (userLoading || roleLoading || !hasMounted || !userRole) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background text-foreground">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
